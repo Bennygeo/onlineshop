@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+<head>
+  <title>Thinkspot-referral&share</title>
+  <style>
+    body,
+    html {
+      background: transparent;
+      border: none;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* container */
+    #share {
+      width: 100%;
+      margin: 36px auto;
+      text-align: center;
+    }
+
+    /* buttons */
+
+    #share a,
+    #share button {
+      width: 40px;
+      height: 40px;
+      display: inline-block;
+      margin: 8px;
+      border-radius: 50%;
+      font-size: 20px;
+      color: #fff;
+      opacity: 0.75;
+      transition: opacity 0.15s linear;
+    }
+
+    #share a:hover,
+    #share button:hover {
+      opacity: 1;
+    }
+
+    /* icons */
+
+    #share i {
+      position: relative;
+      transform: translateY(-77%);
+    }
+
+    .sharer {
+      border: none;
+      line-height: 70px;
+      outline: none;
+    }
+
+    /* colors */
+
+    .facebook {
+      background: #3b5998;
+    }
+
+    .twitter {
+      background: #55acee;
+    }
+
+    .googleplus {
+      background: #dd4b39;
+    }
+
+    .linkedin {
+      background: #0077b5;
+    }
+
+    .whatsapp_cs {
+      background: #00b536;
+    }
+
+    .email {
+      background: #dd4b39;
+    }
+
+    .pinterest {
+      background: #cb2027;
+    }
+  </style>
+
+<body cz-shortcut-listen="true">
+
+  <script>
+    var params = location.href.split('?')[1].split('&');
+    var url = "https://www.thinkspot.in/newux/";
+
+    data = {};
+    for (x in params) {
+      data[params[x].split('=')[0]] = params[x].split('=')[1];
+    }
+
+    var txt =
+      "Hey, looking for a cool solution that delivers all your natural food needs absolutely fresh.\n\nAnd here's more; get 5% off on your next 5 purchases of vegetables.\n\nDownload the app: https://thinkspot.in/app \n\nUse code: " +
+      data['id'] + "\n\n(or)\n\n";
+
+    window.onload = function () {
+      var ids = ["twitter", "fb", "linkedin", "whatsapp", "email"];
+
+      for (var i = 0; i < ids.length; i++) {
+        var fb = document.getElementById(ids[i]);
+        // debugger;
+        fb.setAttribute('data-url', url + '?id=' + data.id + '&type=' + data.type);
+        fb.setAttribute('data-image', "<img src='../assets/home/logo_wo.svg' />");
+        fb.setAttribute('data-title', txt);
+        // console.log("_____________");
+      }
+    }
+
+  </script>
+
+  <!-- 
+
+1. load font awesome with your favorite method
+2. replace items in {{ }}s with details specific to your content 
+
+-->
+
+  <div id="share">
+    <button class="sharer twitter" id="twitter" data-sharer="twitter" data-title="Hey, looking for a cool solution that delivers all your natural food needs absolutely fresh.
+
+And here's more; get 5% off on your next 5 purchases of vegetables
+
+Download the app:
+https://thinkspot.in/app
+
+Use code:" data-url="https://www.thinkspot.in/newux/">
+
+
+      <i class="fa fa-twitter"></i>
+    </button>
+
+    <button class="sharer facebook" data-sharer="facebook" id="fb" class="facebook">
+      <i class="fa fa-facebook"></i></button>
+
+    <button class="sharer linkedin" data-sharer="linkedin" id="linkedin">
+      <i class="fa fa-linkedin"></i></button>
+
+    <button class="sharer whatsapp_cs" id="whatsapp" data-sharer="whatsapp">
+      <i class=" fa fa-whatsapp"></i></button>
+
+    <button class="sharer email" data-sharer="email" id="email" data-subject="Hey! Check out that URL"><i
+        class="fa fa-envelope"></i></button>
+
+
+    <!-- <div class="col-lg-3">
+      <button class="sharer" data-sharer="telegram" data-title="sharer.js Examples"
+        data-url="https://www.thinkspot.in/referral">Share on Telegram</button>
+    </div> -->
+    <!-- <div class="col-lg-3">
+      <button class="sharer" data-sharer="viber" data-title="sharer.js Examples"
+        data-url="https://www.thinkspot.in/referral">Share on Viber</button>
+    </div> -->
+    <!-- <button class="sharer pinterest" id="pinterest" data-sharer="pinterest"
+      data-url="https://www.thinkspot.in/referral"><i class="fa fa-pinterest"></i></button> -->
+
+    <!-- <button class="sharer tumblr" id="tumblr" data-sharer="tumblr" data-caption=""
+      data-title="Share and avail exclusive offers." data-tags="social,share"
+      data-url="https://www.thinkspot.in/referral"><i class="fa fa-tumblr"></i></button> -->
+
+  </div>
+  <!-- <a href="intent://send?text=HERE#Intent;scheme=whatsapp;package=com.whatsapp;end">Share</a> -->
+
+  <!-- <a href="javascript:go('whatsapp://send?text=HERE')">Share --</a> -->
+  <!-- <a href="whatsapp://send?text=The text to share!" data-action="share/whatsapp/share">Share via Whatsapp</a> -->
+  </div>
+  <script src="js/sharer.min.js"></script>

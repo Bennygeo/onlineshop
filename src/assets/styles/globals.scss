@@ -1,0 +1,38 @@
+@import "global-constants.scss";
+
+html,
+body,
+div,
+p,
+span {
+    font-family: $inter;
+    font-size: $font-s;
+    font-display: swap;
+}
+
+h3 {
+    font-family: $inter !important;
+    color: #222;
+    width: 100%;
+    font-size: $font-xxl;
+    padding-top: 24px;
+    font-weight: normal;
+}
+
+h5 {
+    font-family: $inter;
+    color: #111;
+    text-align: center;
+    width: 100%;
+    padding-top: 24px;
+    padding-bottom: 6px;
+    font-size: 20px;
+    margin-bottom: 0;
+}
+
+.centerItems {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+

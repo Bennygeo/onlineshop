@@ -1,0 +1,89 @@
+<div *ngIf="type !== 'DELETE';else other_content">
+  <div class="popup_parent" [@fadeInOut] *ngIf="!animationDoneFlg">
+    <div class="popup_cont" *ngIf="addressShowFlg" [@translateEffect]>
+      <div>
+        <div id="loading1" *ngIf="detect_loc_loader_flg">
+          <span class="loader1"></span>
+          &nbsp; Fetching location details...
+        </div>
+
+        <div class="addressCont">
+
+          <div style="margin-bottom: 36px;" class="font-14">{{title}}</div>
+          <form [formGroup]="addressGroup">
+
+            <div class="fieldCont">
+              <label for="title">Title</label>
+              <input id="title" type="text" formControlName="title" class="primaryField"
+                [ngClass]="{'error': !addressGroup.get('title').valid}">
+            </div>
+
+            <div class="fieldCont">
+              <label for="name">Name</label>
+              <input id="name" type="text" formControlName="name" class="primaryField"
+                [ngClass]="{'error': !addressGroup.get('name').valid}">
+            </div>
+
+            <div class="fieldCont">
+              <label for="name">Address</label>
+              <textarea id="address" type="text" formControlName="address" class="primaryField" rows="3"
+                style="text-indent: 0;" [ngClass]="{'error': !addressGroup.get('address').valid}"></textarea>
+            </div>
+
+            <div class="fieldCont">
+              <label for="name">Pincode</label>
+              <input id="pincode" type="text" formControlName="pincode" class="primaryField" style="width: 100px;"
+                [ngClass]="{'error': !addressGroup.get('pincode').valid}">
+            </div>
+
+            <div class="fieldCont">
+              <label for="altMobile">Alternate mobile</label>
+              <input id="altMobile" type="text" formControlName="altMobile" class="primaryField"
+                [ngClass]="{'error': !addressGroup.get('altMobile').valid}">
+            </div>
+
+            <div (click)="detect_my_location($event)" style="position:relative; margin-top: 12px; margin-bottom: 12px;"
+              *ngIf="!detect_loc_loader_flg">
+              <span class="material-icons gps_icon" style="width: 20px; height: 17px;">
+                gps_fixed
+              </span>
+              <span class="gps_detect">Detect my current location.</span>
+            </div>
+
+            <div *ngIf="out_of_range" class="out_of_range" style="top:-6px; margin-bottom:6px;">We are not yet in your
+              area.
+            </div>
+
+            <button class="tnkspt_primary_btn" [disabled]="!valid_addr_flg || detect_loc_loader_flg"
+              (click)="udateAddress($event)">Save</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #other_content>
+  <div class="popup_parent" [@fadeInOut] *ngIf="!animationDoneFlg">
+    <div class="popup_cont" *ngIf="addressShowFlg" [@translateEffect]>
+      <div class="addressCont">
+        <div style="margin-bottom: 36px;" class="font-14">The address below will be deleted from your account. Can we
+          proceed?</div>
+
+        <div class="addressTitle">{{address.title}}
+        </div>
+        <div class="addressTxt">{{address.name}}</div>
+        <div class="addressTxt">{{address.addr_line_1}}</div>
+        <div class="addressPincode">{{address.pincode}}</div>
+      </div>
+
+      <div class="flex-box" style="position: absolute;
+      bottom: 20px;
+      width: 88%;
+      top:auto;">
+        <div class="tnkspt_secondary_btn edit-btn" (click)="deleteCancelAction()">Cancel</div>
+        <div class="tnkspt_primary_btn deliver-btn" (click)="deleteAction()">Delete address</div>
+      </div>
+    </div>
+  </div>
+</ng-template>

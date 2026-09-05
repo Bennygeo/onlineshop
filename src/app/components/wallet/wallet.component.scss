@@ -1,0 +1,187 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.walletContainer {
+    margin-top: 40px;
+    color: white;
+    letter-spacing: 1px;
+    .row {
+        margin: 9px;
+        background-color: #30d2ad;
+        border-radius: 16px;
+
+        .balanceBox {
+            padding: 24px;
+
+            .label {
+                color: #f6ffff;
+                font-size: $font-s;
+                font-weight: 400;
+                margin-bottom: 12px;
+            }
+
+            .balance {
+                font-size: 24px;
+                font-weight: 700;
+            }
+        }
+
+        .detailBox {
+            padding: 24px;
+            background-color: #0000001a;
+            border-radius: 0 0 16px 16px;
+
+            .box {
+                width: 50%;
+                position: relative;
+                float: left;
+
+                .label {
+                    color: #f6ffff;
+                    font-size: $font-s;
+                    font-weight: 400;
+                    margin-bottom: 6px;
+                }
+
+                .balanceLedger {
+                    font-size: 16px;
+                    font-weight: 700;
+                }
+
+                & > p {
+                    font-size: 9px;
+                    font-weight: 400;
+                    line-height: normal;
+                    margin-top: 9px;
+                    letter-spacing: 0;
+                    color: #f6ffff;
+                    padding-right: 12px;
+                    line-height: normal;
+                }
+            }
+        }
+    }
+
+    .addWallet {
+        background-color: white;
+        font-size: $font-l;
+        font-weight: 500;
+        color: rgb(50, 210, 173);
+        position: relative;
+        width: fit-content;
+        padding: 0 12px 0 12px;
+        margin: 0 auto;
+        top: -27px;
+        letter-spacing: 0;
+        -webkit-box-shadow: 1px -6px 18px 0px rgba(50, 210, 173, 0.5);
+        -moz-box-shadow: 1px -6px 18px 0px rgba(50, 210, 173, 0.5);
+        box-shadow: 1px -6px 18px 0px rgba(50, 210, 173, 0.5);
+    }
+
+    .history {
+        color: #67666d;
+        padding: 12px;
+        font-size: $font-l;
+        font-weight: 500;
+        letter-spacing: 0;
+
+        .historyCont {
+            max-height: 46vh;
+            overflow-y: scroll;
+        }
+
+        .loadMoreCont {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .loadMore {
+                position: absolute;
+                width: 191px;
+                height: 35px;
+                bottom: 24px;
+                background-color: #fff;
+                color: #e1e2e5;
+                border: 1px solid #e1e2e5;
+            }
+        }
+    }
+}
+
+.addWalletCont {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100%;
+    z-index: 100;
+
+    .bg {
+        background-color: #00000066;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100%;
+    }
+
+    .cont {
+        position: absolute;
+        background-color: white;
+        height: 90vh;
+        width: 100vw;
+        top: 10%;
+        border-radius: 32px 32px 0 0;
+        padding: 50px 24px 0 24px;
+    }
+
+    .rcAmount {
+        background-color: #ececec;
+        padding: 26px;
+        font-size: 32px;
+        font-weight: 500;
+        border-radius: 16px;
+        text-align: center;
+
+        input {
+            width: 100%;
+            background: none;
+            outline: none;
+            border-radius: 10px;
+            padding: 21px 12px 21px 12px;
+            text-indent: 10px;
+            border: none;
+            text-align: center;
+
+            &:focus {
+                border: none;
+            }
+
+            &.error {
+                border: none;
+            }
+            &.valid {
+                border: none;
+            }
+        }
+    }
+
+    .rcOptionCont {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 25px;
+
+        span {
+            padding: 14px;
+            border-radius: 17px;
+            border: 1px solid #adadad;
+            font-size: 12px;
+            font-weight: 400;
+        }
+
+        .active {
+            border: 1px solid #30d2ad;
+            color: #30d2ad;
+        }
+    }
+}

@@ -1,0 +1,62 @@
+<div class="walletContainer">
+    <div class="row">
+        <div class="balanceBox">
+            <div class="label">Balance</div>
+            <div class="balance">₹{{walletTotal}}</div>
+        </div>
+        <div class="detailBox">
+            <div class="box box1">
+                <div class="label">Available Balance</div>
+                <div class="balanceLedger">₹{{walletTotal}}</div>
+                <p>Your balance minus your ledger balance</p>
+            </div>
+            <div class="box box2">
+                <div class="label">Ledger Balance</div>
+                <div class="balanceLedger">₹0</div>
+                <p>This is the balance kept aside for your subscription</p>
+            </div>
+        </div>
+    </div>
+    <div class="tnkspt_primary_btn addWallet" (click)="this.rcWindowFlg = !this.rcWindowFlg;">Add money to
+        wallet</div>
+
+    <div class="history">
+        <div>Past activities</div>
+        <div class="historyCont" *ngIf="history.length>0; else no_history">
+            <div *ngFor="let wallet of history">
+                <wallet-history [walletData]="wallet"></wallet-history>
+            </div>
+        </div>
+
+        <ng-template #no_history>
+            <div>No entries found!</div>
+        </ng-template>
+
+        <div class="loadMoreCont">
+            <div class="tnkspt_primary_btn loadMore">View more transactions</div>
+        </div>
+    </div>
+</div>
+
+<div class="addWalletCont" *ngIf="rcWindowFlg" [@fadeInOut]>
+    <div class="bg" (click)="this.rcWindowFlg = !this.rcWindowFlg;"></div>
+    <div class="cont">
+        <p style="font-size: 14px; font-weight: 400;">Add money</p>
+        <p style="font-size: 12px; color: #98A1A1;">Enter the amount you want to add to Thinkspot wallet</p>
+        <div class="rcAmount">
+            <form [formGroup]="walletForm">
+                <input formControlName="amount" type="text" TextInputFilter />
+            </form>
+        </div>
+
+        <div class="rcOptionCont">
+            <span class="rechargeOptions" *ngFor="let amt of rechargeAmounts; let i=index;"
+                [class.active]="rechargeActiveAmtindex === i" (click)="rcOptionClickAction(amt)">
+                {{amt}}
+            </span>
+        </div>
+
+        <div class="tnkspt_primary_btn" style="width: auto; margin-top: 50px; font-size: 14px; font-weight: 500;"
+            (click)="addMoneyToWallet($event)">Add {{rechargeAmt}} to wallet</div>
+    </div>
+</div>

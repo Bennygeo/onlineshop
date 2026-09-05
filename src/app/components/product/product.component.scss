@@ -1,0 +1,93 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.std_delivery {
+    line-height: 24px;
+    font-size: $font-xs;
+    color: $product_name_clr;
+}
+
+.pName {
+    width: 100%;
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden !important;
+    text-overflow: ellipsis;
+    font-family: $inter;
+    font-weight: 600;
+    font-size: $font-l;
+    color: $product_name_clr;
+}
+
+.price {
+    font-weight: 800;
+    font-size: $font-m;
+    color: $price_clr;
+    line-height: 28px;
+}
+
+.stdDeliveryTxt {
+    font-family: $inter;
+    font-size: $font-xs;
+    margin-top: 6px;
+}
+
+.product_desc {
+    margin-left: 6px;
+}
+
+.plusMinusComp {
+    display: block;
+    margin-bottom: 3px;
+}
+
+.product_details {
+    background-color: $white-clr;
+    border-radius: 4px;
+    position: relative;
+    padding: 9px;
+    margin: 12px 12px 12px 0px;
+    height: 230px;
+}
+
+.onCart_bg_color {
+    background-color: $white;
+}
+
+.product_thumb {
+    width: 82px;
+    min-height: 82px;
+}
+
+.badge_txt {
+    display: inline-block;
+    position: absolute;
+    height: 15px;
+    background: #00000085;
+    padding: 0 6px 0 6px;
+    font-size: 7px;
+    margin-top: 19px;
+    color: #fff;
+    border-radius: 3px 0 0 3px;
+    text-align: center;
+    right: 0;
+    top: 9px;
+    line-height: 2.3;
+    text-transform: uppercase;
+    z-index: 6;
+}
+
+.view_subscription {
+    font-family: $inter;
+    position: absolute;
+    z-index: 7;
+}
+
+.subscribed {
+    display: inline-block;
+    height: 30px;
+    font-weight: 300;
+    line-height: 30px;
+    font-size: $font-s;
+    padding: 0 12px 0 12px;
+    background-color: $orange-60 !important;
+}

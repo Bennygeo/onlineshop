@@ -1,0 +1,110 @@
+<div class="popup_content_subs">
+    <div class="clearfix"></div>
+    <div class="row">
+        <div class="col-4">
+            <div style="text-align: center;">
+                <img [src]="productsOptions.product['img_url']" class="product_thumb"
+                    [alt]="productsOptions.product['name']" [style]="{'width':'100px'}">
+            </div>
+        </div>
+        <div class="col-8">
+            <div class="pName">
+                <span>{{productsOptions.product['name']}}</span>
+            </div>
+
+            <div *ngIf="productsOptions.product['badge']=='yes'" class="badge_txt">
+                {{productsOptions.product['badge_txt']}}</div>
+            <div>
+                <div class="product_weight">{{productsOptions.product["updated_weight"]}}
+                    {{productsOptions.product["unit_name"]}}</div>
+            </div>
+            <div style="font-weight: 800;" *ngIf="!productsOptions.product['disable']">₹ {{
+                productsOptions.product['price']}}
+                <span style="text-decoration: line-through; color:#aaa; font-size: 11px; font-weight: 500;">
+                    ₹ {{productsOptions.product['original_price']}} </span>
+            </div>
+            <span *ngIf="subs_options['type'] !=undefined && subs_options.price">
+                {{productsOptions.product["updated_weight"]}} {{productsOptions.product["unit_name"]}} x
+
+                <span *ngIf="subs_options['type'] == 'range'">{{subs_options.rangeCnt||0}} days =
+                    {{subs_options.price||0}}</span>
+                <span *ngIf="subs_options['type'] == 'multi_day'">{{subs_options.multiCnt||0}} days =
+                    {{subs_options.price||0}}</span>
+            </span>
+        </div>
+
+        <div class="col-12 centerItems" [style]="{'height':'50px'}">
+            <div [class.disabled]="subs_options.rangeCnt>0 || subs_options.multiCnt>0">
+                <div>Quantity per day</div>
+                <plus-minus style="position: relative; float: left;" class="plusMinusComp" [caption]=""
+                    [inputVal]="subs_options.units" [stepVal]="1" [minVal]="1" (onChange)="plusMinusSubsValue($event)">
+                </plus-minus>
+            </div>
+        </div>
+
+        <div class="col-12" style="margin-top: 24px;">
+            <div style="text-align:center;">
+                <div>Select delivery frequency</div>
+                <div class="flex-box" style="top:0">
+                    <div class="tnkspt_primary_btn subsOptionBtns" id="range"
+                        (click)="subscribeCalendarSelection('range')">
+                        Date Range</div>
+                    <div class="tnkspt_primary_btn subsOptionBtns" id="custom"
+                        (click)="subscribeCalendarSelection('multi_day')">
+                        Custom Dates</div>
+                </div>
+            </div>
+
+            <div>
+                <div *ngIf="subs_options['type'] == 'range'">
+                    <mat-calendar #calendar [minDate]="subs_options.minDate" [maxDate]="subs_options.maxDate"
+                        [selected]="subs_options.rangeSelected" (selectedChange)="rangeChange($event, calendar)"
+                        [dateClass]="isSelected"></mat-calendar>
+
+                    <div class="selected-days">Selected {{subs_options.rangeCnt ||0}} days.</div>
+                </div>
+
+                <div class="clearfix"></div>
+
+                <!-- Multi day selection calendar -->
+                <div *ngIf="subs_options['type'] == 'multi_day'">
+                    <mat-calendar #calendar1 (selectedChange)="select($event,calendar1)"
+                        [selected]="subs_options.multiDaySelected" [dateClass]="isSelected"
+                        [minDate]="subs_options.minDate" [maxDate]="subs_options.maxDate">
+                    </mat-calendar>
+
+                    <div class="selected-days">Selected {{subs_options.multiCnt||0}} days.</div>
+
+                    <div class="days-select-options">
+                        <button class="tnkspt_secondary_btn days-select-option" (click)="weekDays()">Week
+                            days</button>
+                        <button class="tnkspt_secondary_btn days-select-option" (click)="weekEnds()">Week
+                            ends</button>
+                        <button class="tnkspt_secondary_btn days-select-option"
+                            (click)="alternateDays()">Alternate</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="clearfix"></div>
+</div>
+
+<div class="flex-box" style="position: absolute; bottom:12px; top:auto; width:94%;">
+    <button class="tnkspt_secondary_btn" style="width: 40%;" (click)="clearSubscription()">Clear</button>
+    <button class="tnkspt_primary_btn" style="width: 60%;" (click)="subscribeAction()">Subscribe</button>
+</div>
+
+
+<div class="popup_parent" *ngIf="calendarSwitchFlg">
+    <div class="popup_cont alert-cont">
+        <div><span><img src="assets/general/alert.png" /></span><b class="alert">Alert!</b></div>
+        <p [innerHTML]="calendarSwitchMsg"></p>
+        <div class="flex-box">
+            <div class="tnkspt_secondary_btn cancel-btn" (click)="alertCancelAction()">Cancel</div>
+            <div class="tnkspt_primary_btn view-btn" (click)="alertGotoAction()" [innerHTML]="calenderSwitchBtnName">
+            </div>
+        </div>
+    </div>
+</div>

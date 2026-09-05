@@ -1,0 +1,43 @@
+<div class="address-cont">
+    <!-- <h4 style="margin-top: 24px;">Delivery addresses</h4> -->
+    <div class="close-btn-cont" style="position: absolute;right:20px;" (click)="popupClose()" *ngIf="!closebtnFlg"><img
+            src="assets/general/close.png" /></div>
+    <mat-radio-group style="margin:0; margin-left:6px;" (change)="addressChange($event)">
+        <div *ngFor="let address of this.addresses; let i=index" class="address-box" id="addr_{{i}}">
+
+            <div class="flex-box" [style]="{'top':'0px'}">
+                <mat-radio-button [value]="i" class="addressItems" [checked]="address.active==1?true:false">
+                    <!-- <div *ngIf="address.active==1" class="defaultAddress">{{address.name}}'s Home</div> -->
+                    <div class="addressTitle">{{address.title}} <span class="delivering-here"
+                            *ngIf="address.active==1">Delivering
+                            here</span>
+                    </div>
+                    <div class="addressTxt">{{address.name}}</div>
+                    <div class="addressTxt">{{address.addr_line_1}}</div>
+                    <div class="addressPincode">{{address.pincode}}</div>
+                </mat-radio-button>
+
+                <div class="delete-btn" (click)="deleteAction($event, address, i)">
+                    <img src="assets/address/address_delete.png" />
+                </div>
+            </div>
+
+            <div class="flex-box" [style]="{'top':'0px'}" *ngIf="address.active == 1">
+                <div class="tnkspt_secondary_btn edit-btn" (click)="editAddress(address)">Edit</div>
+                <div class="tnkspt_primary_btn deliver-btn" (click)="defaultAddress(address)">Deliver here</div>
+            </div>
+        </div>
+    </mat-radio-group>
+
+    <app-address [address]="selectedAddress" [editBtnFlg]=editBtnFlg [title]=addressTitle [type]="type"
+        (close)="closeEvent()" (update)="updateEvent($event)"></app-address>
+
+
+
+    <div style="display: flex;
+    align-items: center;
+    justify-content: center;">
+        <button (click)="addAddressAction()" class="tnkspt_primary_btn"
+            style="position: fixed; bottom: 20px; width:80%;">Add a new address</button>
+    </div>
+</div>

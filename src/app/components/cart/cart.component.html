@@ -1,0 +1,107 @@
+<div *ngIf="!product.subscribe">
+    <div class="row" style="margin-top: 24px; margin-bottom: 24px;" id="cart_{{index}}">
+        <div class="col-md-3 col-xs-3 col-3" style="text-align: center;">
+            <img style="width: 54px; margin-top: 0px;" src={{product.img_url}} />
+
+        </div>
+        <div class="col-md-4 col-xs-4 col-4">
+            <h4 class="pName">{{product.name}} <span *ngIf="product.subs_options">{{product.subs_options.type}}</span>
+            </h4>
+            <div>
+                <span class="productWeight">{{product.updated_weight}} {{product.unit_name}}</span>
+            </div>
+
+            <div *ngIf="!product.zoneAvailability">
+                <div class="price">₹ {{product.price|number}}</div>
+            </div>
+
+            <div *ngIf="product.zoneAvailability" class="unavailable">Not available for now.</div>
+        </div>
+
+        <div class="col-md-5 col-xs-5 col-5">
+            <div style="position: relative; top:12px;">
+                <div class="left">
+                    <plus-minus [inputVal]="(product.units || 0)" [stepVal]="1" [minVal]="1" [caption]="''"
+                        class="counterCont" (onChange)="plusMinusAction($event)"></plus-minus>
+                </div>
+
+                <div class="detete-cont" (click)="deleteItem($event)">
+                    <img [src]="'assets/cart/delete.png'">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="product.subscribe">
+    <div class="row" style="margin-top: 0px; margin-bottom: 6px;" id="cart_{{index}}">
+        <div class="col-3" style="text-align: center;">
+            <img style="width: 54px; margin-top: 0px;" src={{product.img_url}} />
+        </div>
+        <div class="col-7">
+            <h4 class="pName">{{product.name}} <span *ngIf="product.subs_options">{{product.subs_options.type}}</span>
+            </h4>
+            <div>
+                <span class="productWeight"></span>
+            </div>
+
+            <div *ngIf="!product.zoneAvailability">
+                <div class="price" style="margin: 6px 0 6px 0;">₹ {{product.subs_options.price|number}}</div>
+                <button class="tnkspt_secondary_btn"
+                    style="height: 25px; line-height: 20px; width: 100px; font-size: 12px; margin-bottom: 12px;"
+                    (click)="viewDates($event)">View dates</button>
+            </div>
+
+            <div *ngIf="product.zoneAvailability" class="unavailable">Not available for now.</div>
+
+        </div>
+        <div class="col-2 delete-cont" (click)="deleteItem($event)">
+            <div class="detete-cont">
+                <img [src]="'assets/cart/delete.png'">
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- product description -->
+<div class="popup_parent" *ngIf="viewDatesFlg">
+    <div class="popup_cont" style="padding: 12px;">
+
+        <div style="position:absolute; right:20px; top:20px; cursor: pointer; pointer-events: visiblePainted; background-color: #fff; z-index: 10;"
+            (click)="viewDatesCloseAction($event)">
+            <img src="assets/icons/close.png" />
+        </div>
+
+        <div class="popup_content" style="padding: 0; margin-top:36px;">
+            <div style="position: relative;">
+                <div *ngFor="let item of product.subs_options.rangeSelected;  let i=index;" class="row"
+                    style="margin: 12px 0 12px 0;">
+                    <div class="col-8" style="line-height: 40px;">
+                        {{i+1}}. {{item.date | date:'EEE, MMM d, y'}} - <b>{{product.updated_weight}}
+                            {{product.unit_name}}</b>
+                    </div>
+
+                    <div class="col-4 ms-auto text-end">
+                        <!-- <plus-minus [inputVal]="(product.units || 0)" [stepVal]="1" [minVal]="1" [caption]="''"
+                            (onChange)="plusMinusSubsAction($event)"></plus-minus> -->
+                    </div>
+                </div>
+
+                <div *ngFor="let item of product.subs_options.multiDaySelected; let i=index;" class="row"
+                    style="margin: 12px 0 12px 0;">
+                    <div class="col-8" style="line-height: 20px;">
+                        {{i+1}}. {{item.date | date:'EEE, MMM d, y'}} - <b>{{product.updated_weight}}
+                            {{product.unit_name}}</b>
+                    </div>
+
+                    <div class="col-4 ms-auto text-end">
+                        <!-- <plus-minus [inputVal]="(product.units || 0)" [stepVal]="1" [minVal]="1" [caption]="''"
+                            [disable]="true"></plus-minus> -->
+                    </div>
+                </div>
+            </div>
+            <div class="clearfix"></div>
+        </div>
+    </div>
+</div>

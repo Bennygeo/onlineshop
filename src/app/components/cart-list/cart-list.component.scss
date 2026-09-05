@@ -1,0 +1,328 @@
+@import "../../../assets/styles/global-constants.scss";
+#view-cont {
+    margin-top: 60px;
+    overflow-x: hidden;
+
+    .shopnow-btn {
+        width: auto;
+        padding: 0 24px 0 24px;
+        margin: 0 auto;
+        margin-top: 24px;
+    }
+
+    .item-cont {
+        @include center-column;
+        img {
+            width: 50%;
+            margin-left: -28px;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+        p {
+            text-align: center;
+            margin-bottom: 0px;
+        }
+
+        .empty {
+            font-weight: 600;
+            font-size: $font-l;
+            margin: 24px 0 24px 0;
+        }
+    }
+}
+
+.item-cont-1 {
+    width: 80%;
+    margin: 0 auto;
+    text-align: center;
+    img {
+        width: 50%;
+        text-align: center;
+        margin-bottom: 18px;
+    }
+    p {
+        text-align: center;
+        margin-bottom: 0px;
+    }
+
+    .empty {
+        font-weight: 600;
+        font-size: $font-l;
+        margin: 24px 0 24px 0;
+    }
+
+    .order-id {
+        font-size: $font-l;
+        margin: 24px 0 24px 0;
+    }
+
+    .delivery-info {
+        margin: 24px 0 24px 0;
+    }
+}
+
+.cart-cont {
+    margin-bottom: 0px;
+    background: #fff;
+
+    .cat_title {
+        font-size: $font-s;
+        padding: 6px;
+        background-color: #f7f7f7;
+        font-weight: 600;
+        border-radius: 18px;
+        text-indent: 18px;
+        margin-top: 18px;
+        color: #111719;
+        margin-bottom: 18px;
+    }
+}
+
+.tg {
+    width: 100%;
+    font-weight: normal;
+    font-family: $inter;
+    font-size: $font-s;
+
+    tr {
+        border-bottom: 1px solid #f1f2f3;
+
+        th {
+            padding-top: 12px;
+            padding-bottom: 6px;
+        }
+
+        .tg-col1 {
+            text-align: left;
+            font-weight: normal;
+            font-size: $font-m;
+        }
+
+        .tg-col2 {
+            text-align: right;
+            font-weight: bold;
+            font-size: $font-s;
+            min-width: 100px;
+        }
+    }
+}
+
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+}
+
+.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+}
+
+.tab button:hover {
+    background-color: #ddd;
+}
+
+.tab button.active {
+    background-color: #ccc;
+}
+
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+.promo-style {
+    position: relative;
+    margin: 18px 0 18px 0;
+    padding: 0;
+    float: left;
+    left: 12px;
+    width: calc(100vw - 36px);
+    height: 36px;
+    background-color: white;
+    border-radius: 24px;
+}
+
+.promoCode {
+    @extend .promo-style;
+    border: 1px solid #eeeeee;
+    -webkit-transition: border 0.5s;
+    transition: border 0.5s;
+}
+
+.promoCode-error {
+    @extend .promo-style;
+    border: 1px solid $error;
+    -webkit-transition: border 0.5s;
+    transition: border 0.5s;
+}
+
+.promo-success {
+    color: $teal-100;
+    text-indent: 12px;
+}
+
+.promoInput {
+    text-transform: uppercase;
+    position: relative;
+    left: 20px;
+    top: 6px;
+    width: calc(100vw - 160px);
+    font-size: $font-l;
+    color: #67666d;
+    border: none;
+}
+
+.promoInput:focus {
+    outline: none;
+}
+
+.applyBtn {
+    position: relative;
+    float: right;
+    right: 3px;
+    top: 2px;
+    width: 94px;
+    background-color: $teal-100;
+    text-align: center;
+    border-radius: 24px;
+    padding: 5px;
+    color: white;
+    border: none;
+    -webkit-transition: background-color 1s;
+    transition: background-color 1s;
+
+    &:disabled {
+        background-color: $grey-80;
+        color: #aaa;
+    }
+}
+.radioBtnTxt {
+    margin-bottom: 20px;
+}
+
+::ng-deep .mdc-form-field {
+    margin-bottom: 18px !important;
+}
+
+.loadingCont {
+    @include center;
+    position: fixed;
+    height: 100%;
+    font-size: $font-l;
+    left: 30%;
+    top: 0%;
+}
+
+.promo-error {
+    position: relative;
+    left: 6px;
+    top: -12px;
+    text-indent: 12px;
+}
+
+.container {
+    .title {
+        font-size: $font-l;
+        font-weight: 500;
+        margin-top: 40px;
+        margin-bottom: 18px;
+    }
+    .row {
+        .col-4 {
+            .box {
+                min-height: 94px;
+                border: 1px solid #e5e6e8;
+                border-radius: 5px;
+                padding: 9px;
+                padding-top: 18px;
+
+                img {
+                    display: block;
+                    height: 24px;
+                }
+                p {
+                    font-size: $font-s;
+                    margin-top: 12px;
+                    margin-bottom: 0;
+                    line-height: 14px;
+                }
+            }
+            .box-active {
+                border: 1px solid $teal-100;
+                color: $teal-100;
+            }
+        }
+
+        .col-12 {
+            textarea {
+                border: 1px solid #e5e6e8;
+                border-radius: 5px;
+                width: 100%;
+                padding: 12px;
+                margin-bottom: 36px;
+
+                &:focus {
+                    border: 1px solid $teal-100;
+                    outline: $teal-100;
+                }
+            }
+        }
+    }
+}
+
+.pay-cont {
+    margin: 36px 0 24px 0;
+}
+
+.popup_parent {
+    .popup_cont {
+        overflow-y: scroll;
+        overflow-x: hidden;
+        top: calc(100% - 460px);
+        min-height: 460px;
+        margin: 24px;
+        padding: 48px 12px 48px 12px;
+
+        .head {
+            font-size: $font-l;
+            margin: 18px 0 18px 0;
+            font-weight: 500;
+        }
+
+        p {
+            font-size: $font-m;
+        }
+
+        img {
+            display: flex;
+            margin: 0 auto;
+            margin-top: 50px;
+            margin-bottom: 24px;
+        }
+    }
+}
+
+
+
+.order-paced-cont {
+    width: 90%;
+    margin: 0 auto;
+    margin-top: 60px;
+}
+
+.disabled-coupon-txt {
+    color: $grey-40;
+    font-weight: normal;
+}
+.coupon-txt {
+    color: $grey-10;
+    font-weight: normal;
+}

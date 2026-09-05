@@ -1,0 +1,52 @@
+.profileHeader {
+    position: relative;
+    width: 200px;
+    margin: 0 auto;
+    text-align: center;
+    margin-top: 37px;
+    margin-bottom: 46px;
+}
+
+.fieldCont {
+    width: calc(100vw - 20px);
+    margin-left: 10px;
+    margin-top: 36px;
+
+    & > input {
+        width: 100%;
+        outline: none;
+        border-radius: 10px;
+        padding: 21px 12px 21px 12px;
+        text-indent: 10px;
+        border: 1px solid #eeeeee;
+
+        &:focus {
+            border: 1px solid #30d2ad;
+        }
+
+        &.error {
+            border: 1px solid #f00;
+        }
+        &.valid {
+            border: 1px solid #30d2ad;
+        }
+    }
+
+    .primaryField {
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .secField {
+        font-size: 17px;
+        font-weight: 500;
+    }
+
+    & > label {
+        position: relative;
+        left: 6px;
+        top: -9px;
+        font-size: 16px;
+        color: #9796a1;
+    }
+}

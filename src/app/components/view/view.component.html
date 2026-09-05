@@ -1,0 +1,103 @@
+<div class="baseCont" id="viewCont">
+    <div class="welcomeCont">
+        <div class="userName">Hi {{userName||'there!'}},</div>
+        <div class="wishes">{{greeting}}</div>
+    </div>
+    <div id="featureCont">
+        <div class="search-title">
+            What are you looking for today?<span style="float:right;" [routerLink]="['/products/search']">
+                <img src="assets/home/search.png" />
+            </span>
+        </div>
+
+        <div class="row" style="margin:0px; position: relative;">
+            <div class="container recent-group" style="padding: 0;">
+                <div class="row text-center" style="margin: 0px;">
+                    <div class="col-4" *ngFor="let item of categories; let i=index;" style="width:21.4% !important;">
+                        <div class="categoryItems" [routerLink]="[item.routerLink]" [queryParams]="{tnk: timestamp}">
+                            <div class="imgBg">
+                                <img [src]=item.imgUrl width="49" class="categories" alt="...">
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">{{item.name}}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="seeAll" (click)="sellAllAction()" [routerLink]="['/products/category/Vegetables']">See All</div>
+
+        <div class="tnkspt-because-title" *ngIf="!bannerDownloadFlg">
+            Thinkspot because...
+        </div>
+
+        <div class="container recent-group">
+            <div class="row" *ngIf="bannerDownloadFlg">
+                <div class="col-10">
+                    <div class="categoryItems_1">
+                        <div class="lines shine" style="width: 70%; height: 30px;"></div>
+                        <div class="lines shine" style="width: 50%; height: 12px;"></div>
+                        <div class="lines shine" style="width: 84%; height: 12px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row text-center" style="margin: 0px;">
+                <div class="col-10" *ngFor="let banner of banners; let i=index;">
+                    <div class="categoryItems_1" [style.background]=banner.bgClr>
+                        <div [style]="{'text-wrap':'wrap', 'padding':'0 12px 0 12px'}">
+                            <h3>#{{banner.title}}</h3>
+                            <p>{{banner.desc}}</p>
+                        </div>
+                        <div class="card-body">
+                            <!-- <h5 class="card-title">{{banner.name}}</h5> -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tnkspt-because-title">
+            Recommended
+        </div>
+
+        <div class="row" style="margin:0px; position: relative;">
+
+            <div class="container recent-group" style="padding: 0; margin: 0;">
+                <div class=" row text-center" style="margin: 0px;">
+                    <div class="col-3" style="width: 36% !important;"
+                        *ngFor="let product of recommended_products; let i=index;">
+                        <div class="categoryItems_2">
+                            <div class="imgBg_1">
+                                <img [src]=product.img_url height="64" width="64" class="categories" alt="...">
+                            </div>
+                            <div class="p_info">
+                                <p class="card-title-plain">{{product.name}} - {{product.updated_weight ||
+                                    product.weight}} {{product.unit_name}}
+                                </p>
+                                <p class="price">₹{{product.price}}</p>
+                            </div>
+
+                            <plus-minus [caption]="" [inputVal]="(product['units']||0)" [stepVal]="1" [minVal]="0"
+                                (onChange)="plusMinusValue($event, product)"
+                                *ngIf="!product.disabled; else NotAvailable">
+                            </plus-minus>
+
+                            <ng-template #NotAvailable>
+                                <span style="color: red;">Not Available</span>
+                            </ng-template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="margin:6px; position: relative;" *ngIf="cartS.isCart$ | async">
+            <div style="height: 64px;"></div>
+        </div>
+    </div>
+    <div class="clearfix"></div>
+    <!-- <app-footer></app-footer> -->
+</div>

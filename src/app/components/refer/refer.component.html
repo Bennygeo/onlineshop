@@ -1,0 +1,49 @@
+<div class="referCont">
+    <div class="label">
+        Refer your friends and earn money
+    </div>
+
+    <div class="imgCont">
+        <img src="assets/refer/refer.png" alt="Refer and Support Image">
+    </div>
+
+    <div class="innerCont">
+        <div class="row">
+
+            <div class="myowap">
+                <ul class="myoin" style="padding-left: 0;">
+                    <li>
+                        <span class="myonumb"><a class="first_li" href="">1</a></span>
+                    </li>
+
+                    <li>
+                        <span class="myonumb"><a href="">2</a></span>
+                    </li>
+                    <li style="padding-right: 0px;">
+                        <span class="myonumb"><a href="">3</a></span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-lg-8 col-md-8 col-sm-8 col-xs-12" style="margin:0 auto;">
+                <div class="row">
+                    <div class="col-4 lables">
+                        Refer your friend to Thinkspot
+                    </div>
+                    <div class="col-4 lables">Your friend will get 25% CASHBACK on their purchase
+                    </div>
+                    <div class="col-4 lables">You will get 25% CASHBACK for referring your friend</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ref-code">YOUR REFERRAL CODE</div>
+
+        <div class="referalCode">{{referralId}}</div>
+
+        <div class="tnkspt_primary_btn ref-btn" (click)="shareAction()" *ngIf="!shareFlg">
+            Refer now</div>
+    </div>
+
+    <iframe *ngIf="shareFlg" [src]="urlSafe"></iframe>
+</div>

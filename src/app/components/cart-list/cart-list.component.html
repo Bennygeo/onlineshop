@@ -1,0 +1,208 @@
+<div class="container">
+    <div id="view-cont" *ngIf="orderInformation.totalItemsCount==0 && fetchUserBagFlg && !cartService.orderPlacedFlag">
+        <div class="item-cont ">
+            <img [src]="'assets/cart/EmptyCart.png'" />
+            <p class="empty">Your bag is empty</p>
+            <p>You have no item in your cart.</p>
+            <p>Let's go buys something!</p>
+            <button class="tnkspt_primary_btn shopnow-btn" (click)="shopNowAction()">
+                Shop Now
+            </button>
+        </div>
+    </div>
+
+    <div *ngIf="orderInformation.totalItemsCount > 0">
+        <div class="col-12 row">
+            <div *ngFor="let dte of cartProductsDateWise|keyvalue; let ind=index;">
+                <div class="cart-cont">
+
+                    <div class="cat_title">{{dte.key|ReplaceAll:"_":" "}}</div>
+
+                    <div *ngFor="let product of dte.value; let i=index;">
+                        <cart [product]="product" [index]="ind+'-'+i" id="cart-list-{{ind}}-{{i}}"></cart>
+                    </div>
+
+                    <!-- <div style="padding: 6px; color: #2eb9ac; background: #fdfbfb; z-index: 10;"
+                    (click)="deliveryInfoAction($event)">
+                    <span style="position: relative;left:9px;">Standard delivery charges
+                        applicable.</span>
+                    <span style="margin-left:12px;"><img [src]="'assets/general/info.png'" /></span>
+
+                </div> -->
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 row" [@fadeInOut] *ngIf="fetchUserBagFlg">
+            <form
+                [ngClass]="couponForm.invalid && (couponForm.dirty || couponForm.touched)? 'promoCode-error' : 'promoCode'"
+                [formGroup]="couponForm" (ngSubmit)="couponApplyBtn()">
+                <span>
+                    <input class="promoInput"
+                        [ngClass]="couponForm.invalid  && (couponForm.dirty || couponForm.touched) ? 'my_class1' : 'my_class2'"
+                        type="text" placeholder="Promo Code" formControlName="coupon" />
+                </span>
+                <button class="applyBtn" (click)="couponApplyBtn()" [disabled]="couponForm.invalid">Apply</button>
+            </form>
+            <div class="error promo-error"
+                *ngIf="couponForm.get('coupon').invalid  && (couponForm.get('coupon').dirty || couponForm.get('coupon').touched)">
+                The coupon code you have entered is invalid!
+            </div>
+
+            <div class="error promo-error" *ngIf="couponS.coupons.couponExistFlg">Coupon already exist!</div>
+            <div class="promo-success" *ngIf="couponS.coupons.addedFlg">Coupon added sucessfully!</div>
+            <div class="error promo-error" *ngIf="couponS.coupons.invalidFlg">Invalid coupon code!</div>
+
+        </div>
+
+        <div class="col-12 row" style="margin-bottom: 18px; margin-top: 12px;" *ngIf="fetchUserBagFlg" [@fadeInOut]>
+            <mat-radio-group class="example-radio-group" (change)="onCouponChange($event)" [disabled]="false"
+                style="margin:0; margin-left:6px;">
+                <mat-radio-button *ngFor="let coupon of this.couponS.coupons.users; let i=index"
+                    [value]="this.couponS.coupons.users[i]" class="radioBtnTxt"
+                    [disabled]="coupon.count == coupon.used_count">
+                    <div [ngClass]="(coupon.count == coupon.used_count)?'disabled-coupon-txt':'coupon-txt'">
+                        {{coupon.code}} <span>({{coupon.count -
+                            coupon.used_count}} of
+                            {{coupon.count}} remaining)</span>
+                    </div>
+                    <div [ngClass]="(coupon.count == coupon.used_count)?'disabled-coupon-txt':'coupon-txt'">
+                        {{coupon.description}}</div>
+                </mat-radio-button>
+            </mat-radio-group>
+        </div>
+
+        <div class="container">
+            <div class="title">Delivery instructions</div>
+            <div class="row ">
+                <div class="col-4" *ngFor="let inst of deliveryInstructions; let i=index;">
+                    <div class="box" [ngClass]="{'box-active': selectedInstructionIndex === i}"
+                        (click)="setInstructionIndex(i)">
+                        <img [src]="inst.activeUrl" [alt]="inst.txt" *ngIf="selectedInstructionIndex === i"
+                            loading="lazy" />
+                        <img [src]="inst.url" [alt]="inst.txt" *ngIf="selectedInstructionIndex !== i" loading="lazy" />
+                        <p>{{inst.txt}}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="title">Special requests (if any)</div>
+            <div class="row">
+                <div class="col-12">
+                    <textarea placeholder="" rows="3" (input)="onTextChange($event)"
+                        [value]="cartService.deliveryInst"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 row" *ngIf="orderInformation.subTotal > 0" [@fadeInOut] style=" margin: 0 auto;">
+            <div
+                style="background-color: #fff; padding: 0; padding-left: 12px; padding-right: 12px; margin-bottom: 12px;">
+
+                <div style="text-align: center;"></div>
+                <table class="tg">
+                    <tr>
+                        <th class="tg-col1">Sub Total</th>
+                        <th class="tg-col2">₹ {{orderInformation.subTotal |number}}</th>
+                    </tr>
+
+                    <tr *ngIf="orderInformation.selectedCoupon">
+                        <th class="tg-col1">Cashback</th>
+                        <th class="tg-col2">{{orderInformation.selectedCoupon?.offer}}</th>
+                    </tr>
+
+                    <tr>
+                        <th class="tg-col1">Tax and Fees</th>
+                        <th class="tg-col2">₹ {{orderInformation.taxAndFees}}</th>
+                    </tr>
+
+                    <tr>
+                        <th class="tg-col1">Delivery</th>
+                        <th class="tg-col2">₹ {{orderInformation.totalDeliveryCharges}}</th>
+                    </tr>
+
+                    <tr>
+                        <th class="tg-col1" style="font-weight: bolder;">Total <span
+                                style="color: #BEBEBE;  font-weight: normal;">({{orderInformation.totalItemsCount}}
+                                items)</span></th>
+                        <th class="tg-col2" style="font-weight: bolder; font-size: 14px;">₹
+                            {{orderInformation.total
+                            |number}}</th>
+                    </tr>
+
+                    <tr>
+                        <th class="tg-col1">Wallet Balance</th>
+                        <th class="tg-col2">₹ {{loginS.user.wallet}}</th>
+                    </tr>
+
+                    <tr>
+                        <th class="tg-col1" style="font-size: 16px; font-weight: bolder;">Amount to be Paid</th>
+                        <th class="tg-col2" style="font-size: 14px; font-weight:bolder;">₹
+                            {{this.cartService.remainingToPay|number}}</th>
+                    </tr>
+                </table>
+            </div>
+            <div class="pay-cont">
+                <button class="tnkspt_primary_btn pay-btn" *ngIf="cartService.remainingToPay > 0; else else_content"
+                    (click)="payAction()" style="margin-right: 0px;">Pay ₹{{this.cartService.remainingToPay|number}} &
+                    Checkout</button>
+
+
+                <ng-template #else_content>
+                    <button class="tnkspt_primary_btn pay-btn" (click)="payAction()" style="margin-right: 0px;">
+                        Checkout</button>
+                </ng-template>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- product description -->
+<!-- <div class="popup_parent" *ngIf="deliveryInfoFlg" [@fadeInOut]>
+    <div class="popup_cont">
+
+        <div class="popup_content" style="padding-bottom: 6px;">
+            <div style="margin-top:6px; margin-bottom:6px;">Delivery charge of ₹10 applicable per delivery.</div>
+        </div>
+
+        <div style="position:relative; cursor: pointer; pointer-events: visiblePainted; background-color: #fff; z-index: 10;"
+            (click)="infoCloseAction()">
+            <div style="width: 50px;background: #eee;border-radius: 4px;margin: 0 auto; text-align: center;     height: 30px;
+            font-weight: 500;
+            line-height: 30px;
+            margin-bottom: 6px;">
+                Okay</div>
+        </div>
+    </div>
+</div> -->
+
+<div class="popup_parent" *ngIf="payFlg" [@fadeInOut]>
+    <div class="popup_cont" style="padding:24px">
+        <div class="head">Add money to wallet</div>
+        <p>Would you like to add money to your wallet to make checkout proceess easier for the future?</p>
+        <img [src]="'assets/cart/wallet.png'" />
+        <div class="flex-box" style="position: absolute; bottom:12px; width:88%;">
+            <div class="tnkspt_secondary_btn cancel-btn" (click)="addMoneyToWalletAction()">Add Money to wallet</div>
+            <div class="tnkspt_primary_btn view-btn" (click)="payWalletAction()">Pay
+                ₹{{this.cartService.remainingToPay}} & Checkout</div>
+        </div>
+    </div>
+</div>
+
+
+
+<div class="order-paced-cont" *ngIf="cartService.orderPlacedFlag">
+    <div class="item-cont-1">
+        <img [src]="'assets/general/order_placed.gif'" />
+        <p class="empty">Order placed successfully. Thank You!</p>
+        <p class="order-id">Order ID: {{this.cartService.orderID}}</p>
+        <p class="delivery-info">Your order will be delivered on
+            <b>{{this.cartService.deliveryDate|date:'EEEE d MMMM'}}</b> between 8:00 am - 10:00 am
+        </p>
+        <div class="flex-box">
+            <div class="tnkspt_secondary_btn cancel-btn" routerLink="/home/orders">Goto my orders</div>
+            <div class="tnkspt_primary_btn view-btn" (click)="shopNowAction()">Browse products</div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,22 @@
+<div class="mainCont">
+    <div class="handle-counter" id="handleCounter">
+
+        <button class="addBtnAlign" *ngIf="type=='type1' && inputVal==0 && minVal == 0"
+            (click)="addButtonClickHandler()">
+            <div style="position: relative;">{{label}}</div>
+        </button>
+
+        <div class="btnCont" *ngIf="inputVal>0">
+            <button class="btn" style="float:left; border-radius: none; margin-right: 2px;"
+                [disabled]="minusBtnFlg || disabled" (click)="decrement()">
+                <img class="imgCls" [src]="'assets/icons/minus.png'" />
+            </button>
+            <div class="txtCont" [ngClass]="disabled ? 'txt-disabled' : 'txt-enabled'">
+                {{inputVal}}</div>
+
+            <button class="btn" style="float:left;" (click)="increment()" [disabled]="plusBtnFlg || disabled">
+                <img class="imgCls" [src]="'assets/icons/plus.png'" />
+            </button>
+        </div>
+    </div>
+</div>

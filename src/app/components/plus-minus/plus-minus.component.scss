@@ -1,0 +1,88 @@
+@import "../../../assets/styles/global-constants.scss";
+@import "../../../assets/styles/utils.scss";
+
+.mainCont {
+    padding-right: 6px;
+    display: block;
+    margin-top: 6px;
+
+    .handle-counter {
+        overflow: hidden;
+        border: 0px solid #eee;
+        margin-top: 0px;
+        width: 100%;
+        position: relative;
+        margin: 0 auto;
+
+        .addBtnAlign {
+            z-index: 2;
+            background: $teal-100;
+            width: 80px;
+            height: 27px;
+            border: 0px solid $teal-100;
+            color: $white-clr;
+            border-radius: $border-radius-xxl;
+            font-size: $font-s;
+        }
+
+        .btnCont {
+            display: flex;
+            align-items: left;
+            justify-content: left;
+
+            .btn {
+                float: left;
+                text-align: center;
+                font-family: $inter;
+                border-radius: 50px !important;
+
+                background-color: $teal-100;
+                outline: none;
+                border: none;
+                height: 27px;
+                width: 27px;
+
+                &:active {
+                    background: $teal-100 !important;
+                }
+                &:focus {
+                    background: $teal-100 !important;
+                }
+                &:disabled {
+                    background: $teal-100;
+                    opacity: 0.5;
+                    color: black;
+                    cursor: not-allowed;
+                }
+
+                .imgCls {
+                    width: 18px;
+                    margin-left: -6px;
+                    margin-top: -7px;
+                }
+            }
+
+            .txtCont {
+                width: 23px;
+                float: left;
+                text-align: center;
+                margin-top: 2px;
+                font-family: $inter;
+                font-size: $font-xl;
+                color: $para-txt-clr;
+            }
+
+            .txt-disabled {
+                opacity: 0.5;
+            }
+
+            .txt-enabled {
+                opacity: 1;
+            }
+        }
+    }
+}
+
+plus-minus {
+    width: 100%;
+}

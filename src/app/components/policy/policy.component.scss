@@ -1,0 +1,19 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.row {
+    width: 100%;
+    margin: 0 auto;
+
+    .col-12 {
+        margin-bottom: 36px;
+        & > p {
+            text-align: justify;
+        }
+        .ques {
+            font-family: $inter;
+            font-weight: 500;
+            margin-top: 36px;
+            font-size: $font-m;
+        }
+    }
+}

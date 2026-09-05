@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>Tnkspt</title>
+  <base href="/">
+  <meta name="theme-color" content="#30d2ad" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link href="https://fonts.googleapis.com/css?family=Material+Icons|Material+Icons+Round" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+</head>
+
+<style>
+  #loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    font-size: 14px;
+  }
+
+  .loader {
+    width: 18px;
+    height: 23px;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.6) 33%, #09c9af 100%);
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+  }
+
+  .loader::after {
+    content: '';
+    box-sizing: border-box;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #30d2ad;
+  }
+
+  @keyframes rotation {
+    0% {
+      transform: rotate(0deg)
+    }
+
+    100% {
+      transform: rotate(360deg)
+    }
+  }
+</style>
+
+<body class="mat-typography">
+  <div id="loading">
+    <span class="loader"></span>
+    &nbsp; Loading goodness...
+  </div>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzWREAOD8BQGpEo8srrlwpCznAXgauODM"
+    type="text/javascript"></script>
+  <app-root></app-root>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</body>
+
+</html>

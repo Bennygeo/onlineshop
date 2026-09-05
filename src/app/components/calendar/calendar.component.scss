@@ -1,0 +1,125 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.alert-cont {
+    top: calc(100% - 43%);
+    max-height: 43%;
+    overflow-y: scroll;
+    width: 100vw;
+    .flex-box {
+        // @include center-row;
+        align-items: flex-end;
+        width: 86vw;
+        gap: 12px;
+        position: absolute;
+        bottom: 24px;
+
+        .cancel-btn {
+            width: 40%;
+            flex: 0 0 0 20%;
+        }
+
+        .view-btn {
+            width: 60%;
+        }
+    }
+}
+
+.subsOptionBtns {
+    background-color: #ccc;
+    display: inline-block;
+    width: 40%;
+    margin: 12px 3px 0px 3px;
+    border-radius: 24px;
+}
+
+.remove-subs {
+    @include center;
+    margin-top: 24px;
+}
+
+.days-select-options {
+    @include center;
+    .days-select-option {
+        margin-right: 6px;
+    }
+
+    .days-select-option:last-child {
+        margin-right: 0px;
+    }
+}
+
+.week-ends {
+    background-color: $grey-96 !important;
+    border-radius: 24px;
+    border: 2px solid $white-clr !important;
+}
+
+.alert {
+    font-size: $font-m;
+}
+
+.selected-days {
+    text-align: center;
+    padding: 12px 12px 24px 12px;
+}
+
+.mat-calendar-body-cell-content {
+    border: none !important;
+}
+
+.mat-calendar-body-cell.selected {
+    background-color: $teal-100 !important;
+    border-radius: 50%;
+    border: 3px solid $white;
+    color: $white !important;
+}
+
+@mixin range-common {
+    height: 44px;
+    margin-top: 3px;
+    border: none;
+    color: $white !important;
+}
+
+.mat-calendar-body-cell.firstChild {
+    background-color: $teel-90 !important;
+    border-radius: 25px 0 0 25px;
+    width: 60px;
+    @include range-common;
+}
+
+.mat-calendar-body-cell.lastChild {
+    background-color: $teel-90 !important;
+    border-radius: 0 25px 25px 0;
+    @include range-common;
+}
+
+.mat-calendar-body-cell.square {
+    background-color: $teal-100 !important;
+    border-radius: 0;
+    @include range-common;
+}
+
+.mat-calendar-body-disabled {
+    color: $disabled-style-2;
+}
+
+.popup_content_subs {
+    max-height: calc(100% - 48px);
+    overflow-x: hidden;
+    overflow-y: scroll;
+    padding: 12px 0 12px 0;
+    .row {
+        .col-8 {
+            .pName {
+                width: 100%;
+                display: inline-block;
+                white-space: nowrap;
+                overflow: hidden !important;
+                text-overflow: ellipsis;
+                font-family: $inter;
+                font-weight: 600;
+            }
+        }
+    }
+}

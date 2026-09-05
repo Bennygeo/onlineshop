@@ -1,0 +1,218 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.orders-cont {
+    margin: 18px;
+    margin-top: 35px;
+    .tab {
+        width: 100%;
+        border-radius: 25px;
+        border: 1px solid #f2eaea;
+
+        .tablinks {
+            width: 50%;
+            border-radius: 25px;
+            font-size: $font-l;
+            color: $teal-100;
+        }
+        button {
+            border: none;
+            outline: none;
+            background-color: white;
+            height: 34px;
+        }
+
+        button:hover {
+            @include active;
+        }
+
+        button:active {
+            @include active;
+        }
+
+        .active {
+            @include active;
+        }
+    }
+
+    .tabcontent {
+        margin-bottom: 24px;
+        .active-orders {
+            @include shadow;
+            border-radius: 12px;
+            padding: 12px;
+            margin-top: 24px;
+            height: auto;
+            transition: max-height 0.3s ease-in-out;
+
+            .clearfix {
+                .order-id {
+                    color: $order-id;
+                    font-size: $font-l;
+
+                    .past-info {
+                        font-size: $font-l;
+                        text-align: left;
+                        font-weight: 500;
+                        margin-top: 9px;
+                        color: $black-clr;
+                    }
+                }
+
+                .float-start {
+                    .label {
+                        font-size: $font-m;
+                        color: $sub-color;
+                    }
+
+                    .info {
+                        font-size: $font-xxxl;
+                        text-align: right;
+                        font-weight: 700;
+                    }
+                }
+
+                .float-end {
+                    .placed-status {
+                        background-color: $orange-10;
+                        padding: 6px 12px 6px 12px;
+                        border-radius: 25px;
+                        font-size: $font-l;
+                        color: $orange-60;
+                    }
+                    .delivered-status {
+                        background-color: $green-10;
+                        padding: 6px 12px 6px 12px;
+                        border-radius: 25px;
+                        font-size: $font-l;
+                        color: $green-60;
+                    }
+                    .cancelled-status {
+                        background-color: #ff000033;
+                        padding: 6px 12px 6px 12px;
+                        border-radius: 25px;
+                        font-size: $font-l;
+                        color: red;
+                    }
+                    .label {
+                        font-size: $font-m;
+                        color: $sub-color;
+                        margin-top: 9px;
+                    }
+                    .info {
+                        font-size: $font-xxxl;
+                        text-align: right;
+                        font-weight: 700;
+                        margin-top: 9px;
+                    }
+                }
+            }
+        }
+
+        .past-order-label {
+            font-size: $font-m;
+            margin: 54px 0 32px 0;
+        }
+
+        .order-info {
+            margin-top: 24px;
+
+            .clearfix {
+                .contents {
+                    .order-id {
+                        color: $order-id;
+                        font-size: $font-l;
+                    }
+
+                    .float-start {
+                        .label {
+                            font-size: $font-m;
+                            color: $sub-color;
+                            margin-top: 9px;
+                        }
+
+                        .info {
+                            font-size: $font-xxxl;
+                            text-align: right;
+                            font-weight: 700;
+                            margin-top: 9px;
+                        }
+                    }
+
+                    .float-end {
+                        .label {
+                            font-size: $font-m;
+                            color: $sub-color;
+                            margin-top: 9px;
+                        }
+                        .info {
+                            font-size: $font-xxxl;
+                            text-align: right;
+                            font-weight: 700;
+                            margin-top: 9px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+.product_thumb {
+    width: 62px;
+    min-height: 62px;
+}
+
+.product-cont {
+    margin: 18px 0 18px 0;
+    .col-8 {
+        .pName,
+        .price {
+            font-size: $font-l;
+            font-weight: 500;
+        }
+    }
+}
+
+.canel-popup {
+    .popup_cont {
+        top: 80%;
+        height: calc(100% - 80%);
+        overflow-y: scroll;
+    }
+}
+
+.flex-container {
+    display: flex; /* Enable flexbox layout */
+
+    .order-img {
+        background-color: $teal-100;
+        padding: 12px;
+        border-radius: 100%;
+    }
+
+    .flex-item {
+        // flex: 0.8; /* Make all columns equally sized initially */
+        min-width: 0; /* Allow columns to shrink to content */
+    }
+
+    .first-col {
+        width: 66px;
+        height: 66px;
+
+        & > img {
+            margin: 4px;
+        }
+    }
+
+    .last-column {
+        justify-self: flex-end; /* Align the last column to the end */
+        & > img {
+            padding: 12px;
+        }
+    }
+
+    .second-column {
+        flex: 2; /* Make the second column twice as wide as others */
+        padding: 0 12px 0 12px;
+    }
+}

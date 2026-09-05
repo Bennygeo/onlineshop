@@ -1,0 +1,17 @@
+<mat-calendar #calendar2 (selectedChange)="select($event,calendar2)" [selected]="subs_options.rangeSelected"
+    [dateClass]="isSelected">
+</mat-calendar>
+<div class="legend-cont">
+    <div class="legend-child">
+        <span [style.background]="'#30D2AD'"></span>
+        <span>Delivered</span>
+    </div>
+    <div class="legend-child">
+        <span [style.background]="'#FFEECC'"></span>
+        <span>Scheduled</span>
+    </div>
+    <div class="legend-child">
+        <span [style.background]="'#FFA800'"></span>
+        <span>Missed</span>
+    </div>
+</div>

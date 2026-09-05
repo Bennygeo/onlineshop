@@ -1,0 +1,177 @@
+<app-login *ngIf="loginFlg"></app-login>
+
+<div *ngIf="addressFlg" class="popup_parent" [@fadeOut] (click)="addressOutsideClickAction($event)">
+    <div class="popup_cont" (click)="addressOutsideClickAction($event)" [@translateEffect]>
+        <app-addresses></app-addresses>
+    </div>
+</div>
+
+
+<div style="z-index: 100; padding: 13px 23px 9px 12px; height: 52px; background-color: #30d2ad;" *ngIf="type==='type1'">
+    <div>
+        <div (click)="homeBtnClick()" class="headerItems">
+            <div class="logoCont">
+                <img src="assets/home/logo_main.svg" class="logoImg" />
+            </div>
+        </div>
+
+        <div class="headerItems rightMenu">
+            <div style="position: relative; right: 15px; top:6px;" (click)="addressSelection()">
+                <div style="line-height: 12px;">Deliver to&nbsp;&nbsp;<span class="down-arrow">▼</span></div>
+                <div class="addressTitle">{{addressName}}</div>
+            </div>
+            <div style="width: 40px; height: 40px; background-color: #FFC529; border-radius: 12px;"
+                (click)="profileAction()">
+                <img src="assets/home/profile_icon.png" alt="user" style="margin-top: 3px; margin-right: 9px;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="z-index: 100; padding: 13px 23px 9px 12px; height: 52px;" *ngIf="type==='type2'">
+    <div>
+        <div class="backBtn" (click)="backBtnAction()">
+            <div style="position: relative; float: left; min-width:36px; text-align: right; text-align: center;">
+                <span class="material-icons arrow-left">
+                    keyboard_arrow_left
+                </span>
+
+                <span style="display: inline-block; position: absolute;left: 7px; bottom: -31px;">
+                    <img src="assets/icons/shadow.png" />
+                </span>
+            </div>
+        </div>
+
+        <div class="headerItems rightMenu">
+            <div style="position: relative; right: 15px; top:6px;" (click)="addressSelection()">
+                <div style="line-height: 12px; font-weight: 500; color: #111719; ">Deliver to&nbsp;&nbsp;<span
+                        class="down-arrow">▼</span></div>
+                <div style="text-align: right; font-weight: 500; font-size: 14px; color: #111719;">{{addressName}}</div>
+            </div>
+            <div style="width: 40px; height: 40px; background-color: #FFC529; border-radius: 12px;"
+                (click)="profileAction()">
+                <img src="assets/home/profile_icon.png" alt="user" style="margin-top: 2px; margin-right: 9px;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<div style="z-index: 100; padding: 13px 23px 9px 12px; height: 52px;" *ngIf="type==='type3'">
+    <div>
+        <div class="backBtn" (click)="backBtnAction()">
+            <div style="position: relative; float: left; min-width:36px; text-align: right; text-align: center; top:0">
+                <span class="material-icons" style="position: relative;
+top: 12px;
+left: 0px;
+font-size: 20px; font-weight: bolder;">
+                    keyboard_arrow_left
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div style="z-index: 100; padding: 9px 23px 9px 12px; height: 52px; background-color: #30d2ad;" *ngIf="type==='type4'">
+    <div>
+        <div class="backBtn" (click)="backBtnAction()">
+            <div style="position: relative; float: left; min-width:36px; text-align: right; text-align: center;">
+                <span class="material-icons" style="position: relative;
+  top: 10px;
+  left: 0px;
+  font-size: 20px; font-weight: bolder;">
+                    keyboard_arrow_left
+                </span>
+
+                <span style="display: inline-block; position: absolute;left: 7px; bottom: -31px;">
+                    <img src="assets/icons/shadow.png" style="margin-top: 2px; " />
+                </span>
+            </div>
+        </div>
+
+        <div class="headerItems rightMenu">
+            <div style="position: relative; right: 15px; top:6px;" (click)="addressSelection()">
+                <div style="line-height: 12px;">Deliver to&nbsp;&nbsp;<span class="down-arrow">▼</span></div>
+                <div class="addressTitle">{{addressName}}</div>
+            </div>
+            <div style="width: 40px; height: 40px; background-color: #FFC529; border-radius: 12px; margin-top: 3px;"
+                (click)="profileAction()">
+                <img src="assets/home/profile_icon.png" alt="user" style="margin-top: 2px;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div style="z-index: 100; padding: 13px 23px 9px 12px; height: 52px;" *ngIf="type==='type5'">
+    <div>
+        <div class="backBtn" (click)="backBtnAction()">
+            <div style="position: relative; float: left; min-width:40px; text-align: right; text-align: center; top:0">
+                <span class="material-icons" style="position: relative;
+top: 12px;
+left: 0px;
+font-size: 20px; font-weight: bolder;">
+                    keyboard_arrow_left
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="headerItems rightMenu">
+        <div style="width: 40px; height: 40px; background-color: #FFC529; border-radius: 12px;"
+            (click)="profileAction()">
+            <img src="assets/home/profile_icon.png" alt="user" style="margin-top: 2px; " />
+        </div>
+    </div>
+</div>
+
+
+<div style="z-index: 100; padding: 13px 23px 9px 12px; height: 54px; background-color: #f5f5f5; position: absolute; top:0; width: 100vw;"
+    *ngIf="type==='type6'">
+    <div>
+        <div class="searchBar" style="top:-6px">
+            <img class="searchIcon" src="assets/home/search.png" />
+            <span>
+                <input class="searchInput" type="text" placeholder="Search vegetables.."
+                    (input)="searchChange($event)" />
+            </span>
+        </div>
+
+        <div class="headerItems rightMenu">
+            <div style="width: 40px; height: 40px; background-color: #FFC529; border-radius: 12px; margin-top: -6px;"
+                (click)="profileAction()">
+                <img src="assets/home/profile_icon.png" alt="user" style="margin-right: 9px;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="navbg" (click)="closeNav()"></div>
+<div id="mySidenav" class="sidenav menuSpacing">
+    <!-- <a href="javascript:void(0)" class="closebtn" (click)="closeNav()">&times;</a> -->
+    <div style="padding-top: 36px; padding-bottom: 12px;">
+        <img src="assets/profile/user.png" />
+    </div>
+    <div style="margin-bottom: 43px;">
+        <p class="userNameMenu">{{userName}}</p>
+        <p class="userNumMenu">{{user.mobile}}</p>
+    </div>
+
+    <div *ngFor="let menu of menus" (click)="menuClick()">
+        <a class="userMenuText" [routerLink]=menu.path routerLinkActive="active">
+            <span class="menuIconWidth"> <img [src]="menu.img_url" class="profileImages" /></span>
+            {{menu.name}}
+        </a>
+    </div>
+
+    <button class="logoutBtn" (click)="logoutAction()"><img class="logoutIcon" src="assets/icons/logout.png"
+            (click)="menuClick()" /> Log out</button>
+    <!-- <div style="max-width: 280px; margin:20px;" class="desclaimer">Please note that you are accessing the BETA version
+        of
+        www.thinkspot.in.<br /><br />
+
+        Should you encounter any bugs, glitches, lack of functionality, delayed deliveries, billing errors or other
+        problems on the beta website, please email us on <a href="mailto:hey@thinkspot.in">{{support_email}}</a>
+    </div> -->
+</div>

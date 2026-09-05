@@ -1,0 +1,205 @@
+<!-- --------------------Location access---------------- -->
+
+<div *ngIf="bgClickFlg" [@fadeOut]>
+    <div class="popup_parent" *ngIf="!validOTPFlg" [@fadeInOut] (click)="overlayClick($event)">
+        <div class="popup_cont" *ngIf="locationPageFlg" [@translateEffect] (click)="contClickAction($event)">
+            <div class="container-center">
+                <div style="margin-top: 35px;"><img src="assets/profile/location.png" /></div>
+                <div class="info-2" style="font-weight: 400;">Loaction access</div>
+                <p class="info">We will need your location to give you a
+                    better
+                    experience</p>
+
+                <div class="info-2">Enter your pincode</div>
+
+                <div style="display: flex; flex-direction: row;">
+                    <mat-form-field class="" style="margin-top: 21px; width: 140px;">
+                        <input matInput placeholder="Pincode" type="number"
+                            onKeyPress="if(this.value.length==6) return false;" [formControl]="pincodeFormControl"
+                            [errorStateMatcher]="matcher"
+                            style="font-size:18px; letter-spacing:1.3px; text-align: center; position: relative; top:-3px; line-height: 28px;">
+
+                        <mat-error
+                            *ngIf="pincodeFormControl.hasError('checkLimit') && !pincodeFormControl.hasError('required')">
+                        </mat-error>
+                        <mat-error *ngIf="pincodeFormControl.hasError('required')" class="info-3">
+                            Pincode is <strong>required</strong>
+                        </mat-error>
+                    </mat-form-field>
+
+                    <div class="goButton" (click)="goNext()"
+                        [ngClass]="{'goButtonDisabled': !pincodeFormControl.valid}"><span class="material-icons" style="
+        position: relative;
+            top: 3px;
+            font-size: 24px;">
+                            keyboard_arrow_right
+                        </span></div>
+                </div>
+
+                <div style="margin-top: 25px;">
+                    <span class="breakLine" style="right:8px"></span>
+                    <span class="orBreak">or</span>
+                    <span class="breakLine" style="right: -8px;"></span>
+                </div>
+
+                <button class="tnkspt_primary_btn" style="width: 180px; margin-top: 45px;"
+                    [disabled]="locationFetchBtnFlg" (click)="fetchLocation($event)">Use my
+                    current location</button>
+
+                <div class="fetch-status">{{fetchStatus}}</div>
+
+                <div class="notNow" (click)="skipAction($event)">Not now</div>
+            </div>
+        </div>
+
+
+        <!-- ----------------Login please------------- -->
+        <div class="popup_cont" *ngIf="mobilePageFlg" [@translateEffect]>
+
+            <div class="container-center">
+                <div style="margin-top: 69px; font-weight: 400;" class="font-14">Login please</div>
+                <div style="margin-top: 69px; font-weight: 400; color: #98A1A1; text-align: center;" class="font-12">
+                    Your number will be used only in urgent situations and won’t be forwarded to third parties.
+                </div>
+
+                <div style="margin-top: 69px;" class="font-14">Enter your phone number</div>
+
+                <form #myForm="ngForm" (ngSubmit)="sendOTPAction()">
+                    <div style="display: flex; flex-direction: row; margin-left: -34px;">
+                        <div class="mobile-prefix">
+                            +91
+                        </div>
+
+                        <mat-form-field style="margin-top: 19px; width: 176px;">
+                            <input matInput placeholder="Phone Number" type="number" [formControl]="mobileFormControl"
+                                [errorStateMatcher]="matcher"
+                                style=" font-size:18px; letter-spacing:1.3px; text-align: left; margin-left: 19px; position: relative; top:-3px;  line-height: 28px;">
+
+                            <mat-error
+                                *ngIf="mobileFormControl.hasError('checkLimit') && !mobileFormControl.hasError('required')">
+                            </mat-error>
+                            <mat-error *ngIf="mobileFormControl.hasError('required')" style="text-align:center;"
+                                class="font-11">
+                                Mobile number is <strong>required</strong>
+                            </mat-error>
+                        </mat-form-field>
+                    </div>
+
+                    <button [disabled]="!sendOTPBtnFlg" class="tnkspt_primary_btn"
+                        style="width: 180px; margin-top: 104px;" (click)="sendOTPAction()">Send
+                        verification code
+                    </button>
+                </form>
+                <div class="font-10">{{fetchStatus}}</div>
+            </div>
+        </div>
+
+
+        <div class="popup_cont" *ngIf="otpPageFlg" [@translateEffect]>
+            <div class="container-center">
+                <div class="verify-no">Verify your number</div>
+                <div class="info">
+                    You will get a confirmation code via SMS to +91{{userID}}, please enter the code below in order to
+                    continue:</div>
+
+                <div style="margin-top: 69px;" class="font-14">Enter your verification code</div>
+
+                <form class="login-form" #otpForm="ngForm" (ngSubmit)="otpSubmit()">
+                    <div id="otpBox" class="otpSection" [ngClass]="{'otpSectionDisabled':validOTPFlg}">
+                        <input type="number" maxlength="1"
+                            [ngClass]="(this.otpStatus == 'Invalid') ? 'otpInput-error' : 'otpInput'" #otp1
+                            (input)="onOtpChange($event)" (keyup)="onKeyUpHandler($event,otp2)" id="otp_1"
+                            onKeyDown="if(this.value.length==1 && event.keyCode!=8 && event.keyCode!=46) return false;"
+                            (paste)="onPasteAction($event)" (keydown)="onKeydown($event)"
+                            (focus)="focusFunction($event)" />
+
+                        <input type="number" maxlength="1"
+                            [ngClass]="(this.otpStatus == 'Invalid') ? 'otpInput-error' : 'otpInput'" #otp2
+                            (input)="onOtpChange($event)" (keyup)="onKeyUpHandler($event,otp3)" id="otp_2"
+                            onKeyDown="if(this.value.length==1 && event.keyCode!=8) return false;"
+                            (paste)="onPasteAction($event)" (keydown)="onKeydown($event)"
+                            (focus)="focusFunction($event)" />
+
+                        <input type="number" maxlength="1"
+                            [ngClass]="(this.otpStatus == 'Invalid') ? 'otpInput-error' : 'otpInput'" #otp3
+                            (input)="onOtpChange($event)" (keyup)="onKeyUpHandler($event,otp4)" id="otp_3"
+                            onKeyDown="if(this.value.length==1 && event.keyCode!=8) return false;"
+                            (paste)="onPasteAction($event)" (keydown)="onKeydown($event)"
+                            (focus)="focusFunction($event)" />
+
+                        <input type="number" maxlength="1"
+                            [ngClass]="(this.otpStatus == 'Invalid') ? 'otpInput-error' : 'otpInput'" #otp4
+                            (input)="onOtpChange($event)" (keyup)="onKeyUpHandler($event,false)" id="otp_4"
+                            onKeyDown="if(this.value.length==1 && event.keyCode!=8) return false;"
+                            (paste)="onPasteAction($event)" (keydown)="onKeydown($event)"
+                            (focus)="focusFunction($event)" />
+                    </div>
+
+                    <button [disabled]="otpFlag" class="tnkspt_primary_btn" style="margin-top: 96px;"
+                        (click)="otpSubmit()">
+                        {{btnName}}</button>
+
+                    <div class="info-3">{{otpStatus}}</div>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- ----------------Referral------------- -->
+        <div class="popup_cont" *ngIf="referralFlg" [@translateEffect]>
+
+            <div style="margin-top: 69px; font-weight: 400; text-align: center;" class="font-14">Referral Code</div>
+            <div class="container-center" *ngIf="!referralSuccessFlg; else successMsg">
+
+                <div style="margin-top: 69px; font-weight: 400; color: #98A1A1; text-align: center;" class="font-12">
+                    Has someone referred us to you? If yes, we want to thank them!
+                </div>
+
+                <div style="margin-top: 69px;" class="font-14">Enter your referral code</div>
+
+                <form #myForm="ngForm" (ngSubmit)="submitRefferalCode()">
+                    <div style="display: flex; flex-direction: row; top:-3px;">
+
+                        <mat-form-field style="margin-top: 19px; width: 176px;">
+                            <input matInput placeholder="Referral Code" [formControl]="referralFormControl"
+                                [errorStateMatcher]="matcher" [maxlength]="6"
+                                style=" font-size:18px; letter-spacing:1.3px; text-align: left; position: relative; text-align: center;">
+
+                            <mat-error *ngIf="referralFormControl.hasError('required')" style="text-align:center;"
+                                class="font-11">
+                                Referral code is <strong>required</strong>
+                            </mat-error>
+
+                        </mat-form-field>
+                    </div>
+                    <div *ngIf="referralErrorCodeFlg" style="text-align:center; color: red;" class="font-11">
+                        Invalid or used code.
+                    </div>
+
+                    <div class="flex-box">
+                        <div class="tnkspt_secondary_btn cancel-btn" (click)="couponContinue()">Skip</div>
+                        <div class="tnkspt_primary_btn view-btn" (click)="referralValidation()">Continue</div>
+                    </div>
+                </form>
+            </div>
+
+
+            <ng-template #successMsg>
+                <div class="container-center">
+                    <img [src]="'assets/refer/referral_sucess.png'" style="margin-top: 96px; margin-bottom: 53px;">
+                    <p>Yaay!! Its time to thank <b>{{loginS.referrrarinfo.referrer_name}}</b>.
+                        You will get {{loginS.referrrarinfo.coupon_desc}}.</p>
+
+                    <button class="tnkspt_primary_btn" style="width: 180px; margin-top: 90px;"
+                        (click)="couponContinue()">Continue
+                    </button>
+                </div>
+
+            </ng-template>
+
+        </div>
+
+
+    </div>
+
+</div>

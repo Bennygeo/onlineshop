@@ -1,0 +1,224 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.baseCont {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    left: 0;
+    top: 0;
+    background-color: $teal-100;
+    width: 100vw;
+    height: 40vh;
+
+    #featureCont {
+        background-color: white;
+        border-radius: 32px 32px 0 0;
+
+        .seeAll {
+            font-size: $font-xs;
+            margin: 0px 23px 0px 0px;
+            text-align: right;
+            color: $title-txt-clr;
+        }
+
+        .search-title {
+            font-family: $inter;
+            color: $title-txt-clr;
+            font-size: $font-l;
+            padding: 34px 29px 24px 29px;
+            font-weight: 600;
+        }
+        .tnkspt-because-title {
+            font-family: $inter;
+            color: $title-txt-clr;
+            font-size: $font-l;
+            padding: 34px 29px 9px 34px;
+            font-weight: 600;
+        }
+    }
+
+    .welcomeCont {
+        margin: 0px 24px 12px 24px;
+        margin-bottom: 24px;
+
+        .userName {
+            font-family: $inter;
+            color: #fff;
+            font-size: $font-s;
+            margin-bottom: 9px;
+            padding-top: 24px;
+        }
+
+        .wishes {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 400;
+        }
+    }
+}
+
+.categoryItems {
+    position: relative;
+    height: 110px;
+    -webkit-box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.05);
+    -moz-box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.05);
+    box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.05);
+    border-radius: $border-radius-xxl;
+
+    .imgBg {
+        position: relative;
+        top: 12px;
+        text-align: center;
+    }
+
+    .card-body {
+        .card-title {
+            font-size: $font-xs;
+            color: $title-txt-clr;
+            width: 90%;
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden !important;
+            text-overflow: ellipsis;
+            margin-left: 5%;
+            font-family: $inter;
+            text-align: center;
+        }
+    }
+}
+
+.recent-group > .row {
+    display: block;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    margin: 0px;
+    padding: 0px;
+    min-height: 156px;
+    .col-4 {
+        display: inline-block;
+        color: #fff;
+        padding: 9px;
+        min-width: 12% !important;
+        height: 150px;
+        margin: 0;
+
+        &:first-child {
+            margin-left: 15px;
+        }
+
+        &:last-child {
+            margin-right: 15px;
+        }
+    }
+    .col-3 {
+        display: inline-block;
+        color: #fff;
+        padding: 3px;
+        height: auto;
+        margin: 0;
+
+        &:first-child {
+            margin-left: 23px;
+        }
+
+        &:last-child {
+            margin-right: 23px;
+        }
+    }
+    .col-10 {
+        display: inline-block;
+        color: #fff;
+        padding: 3px;
+        min-width: 12% !important;
+
+        &:first-child {
+            margin-left: 21px;
+        }
+
+        &:last-child {
+            margin-right: 21px;
+        }
+    }
+}
+
+.categoryItems_1 {
+    @include center-column;
+    margin-top: 3px;
+    margin-right: 3px;
+    margin-left: 3px;
+    padding-top: 15px !important;
+    background: none;
+    background-color: #fff;
+    border: none;
+    border: 1px solid #eee;
+    height: 138px !important;
+    border-radius: 12px;
+    text-align: center;
+    text-wrap: balance;
+    width: auto;
+
+    div {
+        h3 {
+            color: $para-txt-clr;
+            font-size: $font-xxxl;
+            font-weight: 600;
+            margin: 0;
+            text-align: center;
+            margin-top: -6px;
+            margin-bottom: 6px;
+        }
+        p {
+            color: $para-txt-clr;
+            font-size: $font-s;
+        }
+    }
+}
+
+.categoryItems_2 {
+    @include center-column;
+    margin-top: 12px;
+    margin-right: 3px;
+    margin-left: 3px;
+    background: none;
+    background-color: #fff;
+    border: none;
+    height: 176px !important;
+    border-radius: 12px;
+    -webkit-box-shadow: 1px -6px 18px 0px rgba(0, 0, 0, 0.05);
+    -moz-box-shadow: 1px -6px 18px 0px rgba(0, 0, 0, 0.05);
+    box-shadow: 1px -6px 18px 0px rgba(0, 0, 0, 0.05);
+
+    .p_info {
+        width: 98%;
+
+        .card-title-plain {
+            font-size: $font-xs;
+            white-space: normal;
+            width: 96%;
+            font-family: $inter;
+            margin: 0;
+            margin-left: 2%;
+            color: $para-txt-clr;
+            font-weight: 500;
+            line-height: 18px;
+        }
+
+        .price {
+            font-family: $inter;
+            color: $para-txt-clr;
+            font-size: $font-m;
+            font-weight: 600;
+        }
+
+        & > p {
+            margin: 0;
+            padding: 6px 0 6px 0;
+        }
+    }
+}
+
+//overriding exising class value from addresses-component
+::ng-deep .address-cont {
+    height: calc(100% - 48px) !important;
+}

@@ -1,0 +1,148 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.addressItems {
+    // margin: 12px;
+    margin-top: 24px;
+    margin-bottom: 3px;
+    width: 100%;
+
+    div {
+        margin-bottom: 3px;
+        margin-bottom: 3px;
+    }
+
+    span {
+        display: inline-block;
+    }
+}
+
+.defaultAddress {
+    font-weight: 700;
+}
+
+.addressTitle {
+    font-weight: 600;
+}
+
+.flex-box {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 12px;
+
+    .edit-btn {
+        width: 130px;
+        flex: 0 0 0 20%;
+    }
+
+    .deliver-btn {
+        width: 130px;
+    }
+
+    .delete-btn {
+        display: flex;
+        align-items: center;
+        padding: 18px;
+        border-left: 1px solid #bebebe;
+        height: 60px;
+        top: 40px;
+        position: relative;
+    }
+}
+
+.address-cont {
+    width: 90%;
+    height: calc(100% - 46px);
+    overflow-y: scroll;
+    margin: 0 auto;
+
+    .address-box {
+        margin-bottom: 12px;
+        -webkit-transition: opacity 300ms linear;
+        -ms-transition: opacity 300ms linear;
+        transition: opacity 300ms linear;
+    }
+}
+
+.delivering-here {
+    float: right;
+    background-color: #30d2ad;
+    padding: 0 9px 0 9px;
+    display: inline-block;
+    border-radius: 3px;
+    color: white;
+}
+
+::ng-deep .mdc-radio {
+    // top: 6px;
+}
+
+::ng-deep .mdc-form-field,
+::ng-deep .mdc-label {
+    width: 100% !important;
+}
+
+// For outer circle
+::ng-deep
+    .mat-mdc-radio-button
+    .mdc-radio
+    .mdc-radio__native-control:enabled:checked
+    + .mdc-radio__background
+    .mdc-radio__outer-circle {
+    border-color: #30d2ad !important;
+}
+
+//For inner circle
+::ng-deep
+    .mat-mdc-radio-button
+    .mdc-radio
+    .mdc-radio__native-control:enabled
+    + .mdc-radio__background
+    .mdc-radio__inner-circle {
+    border-color: #30d2ad !important;
+}
+
+.fieldCont {
+    width: calc(100vw - 20px);
+    margin-left: 10px;
+    margin-top: 36px;
+
+    & > input {
+        width: 100%;
+        outline: none;
+        border-radius: 10px;
+        padding: 21px 12px 21px 12px;
+        text-indent: 10px;
+        border: 1px solid #eeeeee;
+
+        &:focus {
+            border: 1px solid #30d2ad;
+        }
+
+        &.error {
+            border: 1px solid #f00;
+        }
+
+        &.valid {
+            border: 1px solid #30d2ad;
+        }
+    }
+
+    .primaryField {
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .secField {
+        font-size: 17px;
+        font-weight: 500;
+    }
+
+    & > label {
+        position: relative;
+        left: 6px;
+        top: -9px;
+        font-size: $font-xxl;
+        color: #9796a1;
+    }
+}

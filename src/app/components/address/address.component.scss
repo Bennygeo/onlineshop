@@ -1,0 +1,111 @@
+@import "../../../assets/styles/global-constants.scss";
+.referralCont {
+    margin-bottom: 6px;
+    margin-top: 12px;
+    font-size: $font-s;
+}
+
+#referral {
+    height: 28px;
+    margin-right: 6px;
+    width: 140px;
+    margin-bottom: 6px;
+    font-size: $font-m;
+    margin-top: 6px;
+    border-radius: 12px;
+    border: 1px solid #999;
+    text-align: center;
+}
+
+.referralStatus {
+    color: brown;
+    font-size: $font-s;
+}
+
+mat-form-field {
+    display: block;
+}
+
+.gps_detect {
+    position: absolute;
+    margin-top: 0px;
+    margin-left: 6px;
+}
+
+.saveBtn {
+    color: #fff !important;
+    padding-left: 18px;
+    padding-right: 18px;
+    width: 100%;
+    height: 32px;
+}
+
+.ref-apply {
+    padding: 4px 12px 4px 12px;
+}
+
+.addressCont {
+    margin-top: 24px;
+
+    .fieldCont {
+        width: calc(100vw - 50px);
+        margin-bottom: 36px;
+
+        & > input,
+        & > textarea {
+            width: 100%;
+            outline: none;
+            border-radius: 5px;
+            padding: 9px 12px 9px 12px;
+            text-indent: 10px;
+            border: 1px solid #eeeeee;
+
+            &:focus {
+                border: 1px solid #30d2ad;
+            }
+
+            &.error {
+                border: 1px solid #f00;
+            }
+
+            &.valid {
+                border: 1px solid #30d2ad;
+            }
+        }
+
+        .primaryField {
+            font-size: $font-s;
+            font-weight: 500;
+        }
+
+        .secField {
+            font-size: $font-s;
+            font-weight: 500;
+        }
+
+        & > label {
+            position: relative;
+            left: 3px;
+            top: -6px;
+            font-size: $font-s;
+            color: #9796a1;
+            width: 100%;
+        }
+    }
+}
+
+.addressTitle {
+    font-weight: 600;
+}
+
+.flex-box {
+    .delete-btn {
+        display: flex;
+        align-items: center;
+        padding: 18px;
+        border-left: 1px solid #bebebe;
+        height: 60px;
+        top: 40px;
+        position: relative;
+    }
+}

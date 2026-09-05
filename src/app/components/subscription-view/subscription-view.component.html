@@ -1,0 +1,126 @@
+<div *ngFor="let order of subsData | keyvalue" class="order-cont">
+    <!-- <div class="order-details"></div> -->
+    <div *ngFor="let subs of subsData[order.key.toString()]" class="subs-cont">
+        <div class="product-info" style="margin-top: 0;">
+            <div class="clearfix">
+                <div class="contents">
+
+                    <div class="float-start order-id">
+                        <div class="label">
+                            <img [src]="subs['img_url']" class="product_thumb" [alt]="subs['name']">
+                        </div>
+                        <div>{{subs['productID']}}</div>
+                    </div>
+
+                    <div class="float-end">
+                        <div class="order-details">#{{order.key}}</div>
+                        <div class="delivered-status">{{subs.name}}</div>
+                    </div>
+
+                    <div class="clearfix" style="margin-bottom: 18px; border-bottom: 1px solid #eee;"></div>
+                    <div class="float-start order-id">
+                        <div class="past-info">Next Delivery</div>
+                        <div class="next-delivery" [ngClass]="subs['next_delivery'] === 'Paused' ? 'pause' : ''">
+                            {{subs['next_delivery']}}</div>
+                    </div>
+                    <div class="float-end">
+                        <div class="delivered-status">Deliveries completed</div>
+                        <div class="info">{{subs['remaining_count']}} of {{subs['total_count']}}</div>
+                    </div>
+
+                    <div class="clearfix"></div>
+                    <div style="margin-top: 24px;">{{subs.address}}</div>
+                </div>
+            </div>
+            <div class="flex-box" [style.top]="'24px'">
+                <div class="tnkspt_secondary_btn cancel-btn" (click)="viewAction(subs)">View</div>
+                <button class="tnkspt_secondary_btn view-btn" [disabled]="subs.subsStatus === 'paused'"
+                    (click)="editAction(subs)">Edit</button>
+                <button class="tnkspt_secondary_btn view-btn" (click)="pauseAction(subs)"
+                    [disabled]="subs.subscriptionType == 'multi_day'">
+                    <span *ngIf="subs.subsStatus === 'paused'; else resume">Resume</span>
+                    <ng-template #resume>Pause</ng-template>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popup_parent" *ngIf="viewFlg">
+    <div class="popup_cont" style="top: 30%; height: calc(100% - 30%);">
+        <div class="close-btn-cont" (click)="popupClose()"><img src="assets/general/close.png" />
+        </div>
+        <div [style.marginTop]="'12px'">
+            <app-subs-child-view [data]="activeSubsData"></app-subs-child-view>
+        </div>
+    </div>
+</div>
+
+<div class="popup_parent" *ngIf="editFlg">
+    <div class="popup_cont">
+        <div class="close-btn-cont" (click)="popupClose()"><img src="assets/general/close.png" />
+        </div>
+        <div [style.marginTop]="'50px'">
+            <div *ngFor="let item of activeSubsData.datesArray; let ind= index" class="edit-items">
+                <div class="left">{{item.date|date:'EEEE, d MMM'}}</div>
+                <div class="right">
+                    <plus-minus [inputVal]="item.count" [stepVal]="1" [label]="'Add'"
+                        (onChange)="plusMinusSubsValue(item,$event, ind)"></plus-minus>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-box" [style]="{'position': 'absolute', 'bottom': '20px','width': '88%', 'top': 'auto'}">
+            <button class="tnkspt_secondary_btn cancel-btn" (click)="discardChangesAction()"
+                role="button">Cancel</button>
+            <button class="tnkspt_primary_btn view-btn" [disabled]="!isModifiedFlg"
+                (click)="saveChangesAction(modifiedData)" role="button">Save
+                Changes</button>
+        </div>
+
+    </div>
+</div>
+
+<div class="popup_parent" *ngIf="alertFlg" style="z-index: 1000;">
+    <div class="popup_cont" style="top: 80%; height: calc(100% - 80%); overflow-y: scroll;">
+        <div class="alerts">
+            <p [innerHTML]="alert.msg"></p>
+
+            <div class="flex-box" *ngIf="alert.type === 'type1'">
+                <div class="tnkspt_secondary_btn cancel-btn" (click)="cancelUpdateAction()">Cancel</div>
+                <div class="tnkspt_secondary_btn view-btn" (click)="rechargeAction()">Goto
+                    Wallet</div>
+            </div>
+
+            <div class="flex-box" *ngIf="alert.type === 'type2'">
+                <div class="tnkspt_secondary_btn cancel-btn" (click)="cancelUpdateAction()">Cancel</div>
+                <div class="tnkspt_secondary_btn view-btn" (click)="editUpdateAction()">Update</div>
+            </div>
+
+            <div class="flex-box" *ngIf="alert.type === 'type3'">
+                <div class="tnkspt_secondary_btn cancel-btn" (click)="cancelUpdateAction()">No</div>
+                <div class="tnkspt_secondary_btn view-btn" (click)="discardConfirm()">Yes</div>
+            </div>
+
+            <div class="flex-box" *ngIf="alert.type === 'type4'">
+                <div class="tnkspt_secondary_btn cancel-btn" (click)="cancelUpdateAction()">No</div>
+                <div class="tnkspt_secondary_btn view-btn" (click)="editUpdateAction()">Yes</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="popup_parent" *ngIf="pauseFlg">
+    <div class="popup_cont">
+        <div>
+            <p [innerHTML]="pausePlay.msg"></p>
+
+            <div class="flex-box pause-resume">
+                <div class="tnkspt_secondary_btn cancel-btn" style="width: 30%;" (click)="popupClose()">Cancel</div>
+                <div class="tnkspt_primary_btn view-btn" style="width: 70%;" (click)="pausePlayConfirmAction()">
+                    {{pausePlay.btnName}}
+                    Subscription</div>
+            </div>
+        </div>
+    </div>
+</div>

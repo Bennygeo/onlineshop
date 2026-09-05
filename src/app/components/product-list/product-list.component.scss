@@ -1,0 +1,147 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.containerProducts {
+    position: relative;
+    @include left-top;
+    background-color: $white-95;
+    width: 100vw;
+    height: 100%;
+    overflow: hidden;
+
+    .logo {
+        position: fixed;
+        background-color: $white;
+        width: 55px;
+        height: 50px;
+        top: 0;
+        left: 3px;
+        margin: 0;
+        padding: 9px 9px 9px 12px;
+    }
+
+    .popup_parent {
+        .popup_cont {
+            top: 3px;
+            height: calc(100% - 3px);
+            padding: 12px;
+            .desc-close-btn {
+                position: absolute;
+                right: 12px;
+                top: 12px;
+                cursor: pointer;
+                pointer-events: visiblePainted;
+                background-color: #fff;
+                z-index: 10;
+            }
+
+            .popup_content {
+                .descScrollCont {
+                    position: relative;
+                    overflow-y: scroll;
+                    max-height: 250px;
+                    scrollbar-width: 4px;
+                    padding-right: 12px;
+                    overflow-wrap: break-word;
+                }
+
+                .descScrollCont::-webkit-scrollbar {
+                    width: 3px;
+                    height: auto;
+                    background-color: #eee;
+                }
+
+                div {
+                    .imgAlign {
+                        text-align: center;
+                        margin-top: 9px;
+                    }
+                }
+            }
+        }
+    }
+
+    .menu-cont {
+        position: relative;
+        top: 54px;
+
+        .sub_menu {
+            position: fixed;
+            display: block;
+            top: 50px;
+            left: 0px;
+            overflow-y: scroll;
+            max-height: calc(100% - 50px);
+
+            background: #fff;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 0;
+            padding-left: 0;
+            width: 55px;
+            margin: 0;
+            margin-left: 3px;
+            z-index: 100;
+
+            .item {
+                display: block;
+                overflow: hidden;
+                width: 55px;
+                line-height: 55px;
+                padding: 18px 0;
+                margin: 3px 0 0;
+            }
+
+            .selected_sub {
+                border-right: 3px solid $teal-100 !important;
+                z-index: 100;
+                font-weight: bold;
+            }
+
+            .item_t {
+                display: inline-block;
+                vertical-align: top;
+                transform: translate(0, 100%) rotate(-90deg);
+                transform-origin: 0 0;
+                white-space: nowrap;
+                font-size: $font-m;
+                font-weight: 500;
+                color: $cat-title-clr;
+                text-transform: uppercase;
+            }
+
+            .item_t:after {
+                content: "";
+                float: left;
+                margin-top: 100%;
+            }
+        }
+    }
+
+    .productsCont {
+        margin: 0;
+        padding: 0;
+        width: 100vw;
+        margin-top: 48px;
+        width: calc(100vw - 67px);
+        overflow-y: scroll;
+        position: relative;
+        display: block;
+        float: right;
+    }
+}
+
+::-webkit-scrollbar-thumb {
+    background: $teal-100;
+    border-radius: 3px;
+}
+
+.notify-me {
+    font-size: $font-s;
+    max-width: 30%;
+    margin-top: 12px;
+    margin-left: 6px;
+}
+
+.selected {
+    color: $teal-100 !important;
+}

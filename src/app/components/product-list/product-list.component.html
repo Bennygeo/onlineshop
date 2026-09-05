@@ -1,0 +1,137 @@
+<div style="position: fixed; background: #f5f5f5; width: 100%; height: 100%;"></div>
+<div class="containerProducts" id="viewCont">
+    <div style="position: relative; z-index: 100;">
+        <div class="logo" routerLink="/home/view">
+            <img src="assets/home/logo_wo.svg" />
+        </div>
+
+        <div class="menu-cont" [@fadeInOut]>
+            <ul class="sub_menu">
+                <li class="item" *ngFor="let item of menus.list; let i=index;"
+                    (click)="menus.menuClickHandler(item, $event)" id="{{item}}">
+                    <span class="item_t" [class.selected]="item == menus.activeMenu">{{item}}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="productsCont" *ngIf="productsOptions.loadingFlg" style="top:0;">
+        <div class="container">
+            <div class="row" style="padding: 6px 15px 6px 6px; top:-55px;" [@fadeInOut]>
+                <!-- shimmer effect -->
+                <div class="lines shine" style="width: 100%; height: 20px; margin-bottom: 12px;"></div>
+                <div *ngFor="let item of [1,2,3,4,5,6]" class="col-md-3 col-sm-6 col-xs-6 col-6 shimmerCont row"
+                    style="margin: 0; margin-bottom: 9px; overflow: hidden;">
+                    <div style="border-radius: 4px; padding: 12px;">
+                        <div class="col-md-12 col-xs-5 col-5 box shine"></div>
+                        <div class="col-12">
+                            <div class="lines shine" style="width: 80%;"></div>
+                            <div class="lines shine" style="width: 50%;"></div>
+                            <div class="lines shine" style="width: 94%;"></div>
+                            <div class="lines shine" style="width: 60%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="productsCont" *ngIf="!productsOptions.loadingFlg">
+        <div class="container">
+            <div class="row" style="padding: 3px 3px 0 3px;" *ngFor="let sub_cat of menus.subCategoryList"
+                id="{{sub_cat|ReplaceAll:' ':'_'}}_title">
+                <div class="col-12" style="padding:0; margin: 0;">
+                    <div style="margin: 3px; padding: 6px; background-color: #f5f5f5;">
+                        <b style="font-weight: 600; color: #333;">{{sub_cat}}</b>
+                    </div>
+                </div>
+
+                <div class="row" style="padding: 0; margin: 0;"
+                    *ngIf="productsOptions.productsCategoryWise[sub_cat]; else noProductsFlg">
+                    <div class="col-6 col-md-3 col-lg-2 products"
+                        *ngFor="let product of productsOptions.productsCategoryWise[sub_cat].products">
+                        <div>
+                            <product [product]="product" (valueChanges)="onProductChanges(product)"></product>
+                        </div>
+                    </div>
+                </div>
+
+                <ng-template #noProductsFlg>
+                    <div [style]="{'textIndex':'6px'}">We will be listing soon.</div>
+                    <button class="tnkspt_primary_btn notify-me" (click)="notifyMe(sub_cat)">
+                        Notify me</button>
+                </ng-template>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="popup_parent" *ngIf="productsOptions.product && productsOptions.product['subscribe']" [@fadeInOut]>
+        <div class="popup_cont">
+
+            <!-- <div style="position:absolute; right:24px; top:24px; cursor: pointer;" (click)="popup_close_click_action()">
+                <img src="assets/icons/close.png" />
+            </div> -->
+
+            <app-calendar [data]="{productsOptions:productsOptions, subsOptions:subsOptions}"
+                (changesEvent)="popup_close_click_action()"></app-calendar>
+        </div>
+    </div>
+
+    <!-- product description -->
+    <div class="popup_parent" *ngIf="productDescFlg" [@fadeInOut]>
+        <div class="popup_cont">
+
+            <div class="desc-close-btn" (click)="descCloseAction($event)">
+                <img src="assets/icons/close.png" />
+            </div>
+
+            <div class="popup_content">
+
+                <div style="position: relative;">
+                    <div class="imgAlign">
+                        <img [src]="descriptionOptions.imgurl" class="product_thumb">
+                    </div>
+                    <h5 class="p_desc_sub_titles" style="text-align: center;">{{descriptionOptions.productname}}
+                    </h5>
+                    <div style="margin-bottom:12px;">Images shown are for representation purpose
+                        only. Actual product might look different.</div>
+                </div>
+
+                <div class="descScrollCont">
+                    <!-- Short description with titles -->
+                    <h5 [@fadeInOut] class="p_desc_sub_titles" *ngIf="descriptionOptions.shortdesctitle">
+                        {{descriptionOptions.shortdesctitle}}
+                    </h5>
+                    <ul [@fadeInOut] *ngIf="descriptionOptions.shortdesc">
+                        <li *ngFor="let item of descriptionOptions.shortdesc.split('$')">{{item}}</li>
+                    </ul>
+
+                    <!-- Long description 1 with titles -->
+                    <h5 [@fadeInOut] class="p_desc_sub_titles" *ngIf="descriptionOptions.longdesc1title">
+                        {{descriptionOptions.longdesc1title}}
+                    </h5>
+                    <ul [@fadeInOut] *ngIf="descriptionOptions.longdesc1">
+                        <li *ngFor="let item of descriptionOptions.longdesc1.split('#')">{{item}}</li>
+                    </ul>
+
+                    <!-- Long description 2 with titles -->
+                    <h5 [@fadeInOut] class="p_desc_sub_titles" *ngIf="descriptionOptions.longdesc2title">
+                        {{descriptionOptions.longdesc2title}}
+                    </h5>
+                    <ul [@fadeInOut] *ngIf="descriptionOptions.longdesc2">
+                        <li *ngFor="let item of descriptionOptions.longdesc2.split('#')">{{item}}</li>
+                    </ul>
+
+                    <!-- Long description 3 with titles -->
+                    <h5 [@fadeInOut] class="p_desc_sub_titles" *ngIf="descriptionOptions.longdesc3title">
+                        {{descriptionOptions.longdesc3title}}
+                    </h5>
+                    <ul [@fadeInOut] *ngIf="descriptionOptions.longdesc3">
+                        <li *ngFor="let item of descriptionOptions.longdesc3.split('#')">{{item}}</li>
+                    </ul>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,44 @@
+<div class="profileCont">
+    <div class="profileHeader">
+        <div style="padding-top: 36px; padding-bottom: 12px;">
+            <img src="assets/profile/user.png" />
+        </div>
+        <div style="margin-bottom: 43px; margin-top: 22px;">
+            <p class="userNameMenu">{{user.name}}</p>
+            <p class="userNumMenu">Edit Profile</p>
+        </div>
+    </div>
+
+    <div>
+        <form [formGroup]="profileForm">
+            <div class="fieldCont">
+                <label for="name">
+                    Full name
+                </label>
+                <input id="name" type="text" formControlName="name" class="primaryField"
+                    [ngClass]="{'error': !profileForm.get('name').valid}" (focusout)="focusOut($event)">
+            </div>
+
+            <div class="fieldCont">
+                <label for="email">
+                    E-mail
+                </label>
+                <input id="email" type="text" formControlName="email"
+                    [ngClass]="{'error': !profileForm.get('email').valid}" class="secField"
+                    (focusout)="focusOut($event)">
+            </div>
+
+            <div class="fieldCont">
+                <label for="mobile">
+                    Phone Number
+                </label>
+                <input id="mobile" type="text" formControlName="mobile" class="secField">
+            </div>
+
+            <!-- <button class="button" type="submit">Update</button> -->
+        </form>
+
+
+    </div>
+
+</div>

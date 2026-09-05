@@ -1,0 +1,173 @@
+@import "../../../assets/styles/global-constants.scss";
+
+.search-products {
+    position: relative;
+    left: 0;
+    top: 0;
+    background-color: #f3f7f8;
+    width: 100vw;
+    height: 100%;
+    overflow: hidden;
+
+    .products-cont {
+        margin: 0;
+        padding: 0;
+        width: calc(100vw - 60px);
+        height: calc(100% - 117px);
+        top: 60px;
+        overflow-y: scroll;
+        position: relative;
+        display: block;
+        float: right;
+
+        .container {
+            .row {
+                .products {
+                    margin: 0;
+                    padding: 0;
+                    height: 230px;
+                    margin-bottom: 12px;
+                }
+
+                .shimmerCont {
+                    // background-color: white;
+                    margin-top: 18px;
+                    padding-bottom: 6px;
+                    border-radius: 4px;
+                    padding: 3px;
+                    padding-bottom: 0;
+                }
+
+                .lines {
+                    display: inline-block;
+                    height: 12px;
+                    width: 100%;
+                    border-radius: 4px;
+                    margin-bottom: 3px;
+                    margin-top: 3px;
+                }
+
+                .box {
+                    height: 104px;
+                    width: 120px;
+                    max-width: 120px;
+                    margin-bottom: 12px;
+                    border-radius: 4px;
+                }
+
+                .shine {
+                    background: #f6f7f8;
+                    background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+                    background-repeat: no-repeat;
+                    background-size: 800px 104px;
+                    display: inline-block;
+                    position: relative;
+
+                    -webkit-animation-duration: 2s;
+                    -webkit-animation-fill-mode: forwards;
+                    -webkit-animation-iteration-count: infinite;
+                    -webkit-animation-name: placeholderShimmer;
+                    -webkit-animation-timing-function: linear;
+
+                    color: grey;
+                    -webkit-mask: linear-gradient(90deg, $teal-100 30%, #0005, $teal-100 70%) right/300% 100%;
+                    background-repeat: repeat;
+                    animation: shimmer 1.5s infinite;
+                    font-size: 50px;
+                }
+
+                @keyframes shimmer {
+                    0% {
+                        background-position: -318px 0;
+                    }
+
+                    100% {
+                        background-position: 318px 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.container-center {
+    .inner-cont {
+        position: absolute;
+        z-index: 10;
+        top: 20%;
+        max-width: 200px;
+        right: 70px;
+
+        p {
+            text-align: center;
+        }
+    }
+}
+
+.menu-cont {
+    position: relative;
+    top: 54px;
+
+    .sub_menu {
+        position: fixed;
+        display: block;
+        top: 50px;
+        left: 0px;
+        overflow-y: scroll;
+        max-height: calc(100% - 50px);
+
+        background: #fff;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-right: 0;
+        padding-left: 0;
+        width: 55px;
+        margin: 0;
+        margin-left: 3px;
+        z-index: 100;
+
+        .item {
+            display: block;
+            overflow: hidden;
+            width: 55px;
+            line-height: 55px;
+            padding: 18px 0;
+            margin: 3px 0 0;
+        }
+
+        .selected_sub {
+            border-right: 3px solid $teal-100 !important;
+            z-index: 100;
+            font-weight: bold;
+        }
+
+        .item_t {
+            display: inline-block;
+            vertical-align: top;
+            transform: translate(0, 100%) rotate(-90deg);
+            transform-origin: 0 0;
+            white-space: nowrap;
+            font-size: $font-l;
+            font-weight: 500;
+            color: $cat-title-clr;
+            text-transform: uppercase;
+        }
+
+        .item_t:after {
+            content: "";
+            float: left;
+            margin-top: 100%;
+        }
+    }
+}
+
+.logo {
+    position: fixed;
+    background-color: #fff;
+    width: 55px;
+    height: 50px;
+    top: 0;
+    left: 3px;
+    margin: 0;
+    padding: 9px 9px 9px 12px;
+}

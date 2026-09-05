@@ -1,0 +1,171 @@
+@import "../../../assets/styles/global-constants.scss";
+
+#resendTimer {
+  font-family: $inter;
+}
+
+#otpBox {
+  padding-top: 6px;
+  padding-bottom: 0px;
+  letter-spacing: 1.1px;
+  width: 200px;
+}
+
+.otpInput {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin: 5px;
+  border: none;
+  border: 1px solid #cccccc;
+  font-size: $font-xxxl;
+  text-align: center;
+  outline: none;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  color: #30d2ad;
+}
+.otpInput-error {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  margin: 5px;
+  border: none;
+  border: 1px solid #dd0505;
+  font-size: $font-xxxl;
+  text-align: center;
+  outline: none;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  color: #dd0505;
+}
+.mobile-prefix {
+  font-size: $font-xl;
+  height: 21px;
+  position: relative;
+  top: 19px;
+  left: 28px;
+  color: $grey-40;
+}
+
+.otpSection {
+  font-size: $font-m;
+  pointer-events: all;
+}
+
+.otpSectionDisabled {
+  pointer-events: none;
+}
+
+#verifyBtn {
+  background-color: #30d2ad;
+  border-radius: 25px;
+  color: #fff;
+  width: 86px;
+  font-size: $font-s;
+}
+
+.titleCls {
+  text-align: "center";
+  margin: "0";
+  font-family: $inter;
+  font-size: $font-s;
+  padding-top: 36px;
+  padding-bottom: 24px;
+  text-align: center;
+}
+
+.orBreak {
+  background-color: #ccc;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  line-height: 40px;
+  display: inline-block;
+  font-size: $font-l;
+  color: $grey-10;
+}
+
+.breakLine {
+  display: inline-block;
+  width: 40px;
+  border-bottom: 1px solid #000000;
+  position: relative;
+}
+
+.container-center {
+  @include center-column;
+  .login-form {
+    .otpSection {
+      input:focus {
+        border: 1px solid #30d2ad;
+      }
+    }
+  }
+
+  .verify-no {
+    margin-top: 69px;
+    font-size: $font-l;
+    font-weight: 400;
+  }
+  .info {
+    margin-top: 69px;
+    font-size: $font-s;
+    font-weight: 400;
+    color: #98a1a1;
+    text-align: center;
+  }
+
+  div > .goButton {
+    background-color: #30d2ad;
+    right: -16px;
+    top: 12px;
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    line-height: 30px;
+    text-align: center;
+    pointer-events: all;
+  }
+
+  div > .goButtonDisabled {
+    pointer-events: none;
+    background-color: #d9d9d9;
+    right: -16px;
+    top: 12px;
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    line-height: 30px;
+    text-align: center;
+  }
+
+  .notNow {
+    color: #30d2ad;
+    font-size: $font-s;
+    font-style: normal;
+    font-weight: 700;
+    margin-top: 21px;
+  }
+}
+
+.info {
+  margin-top: 29px;
+  font-size: $font-s;
+  color: #98a1a1;
+}
+.info-2 {
+  margin-top: 29px;
+  font-size: $font-m;
+}
+.info-3 {
+  text-align: center;
+  font-size: $font-xs;
+}
+
+.fetch-status {
+  font-size: $font-xs;
+}

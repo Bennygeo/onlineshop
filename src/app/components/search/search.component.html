@@ -1,0 +1,83 @@
+<div class="search-products">
+
+    <div style="position: relative; z-index: 100;">
+        <div class="logo" routerLink="/home/view">
+            <img src="assets/home/logo_wo.svg" />
+        </div>
+
+        <div class="menu-cont">
+            <ul class="sub_menu">
+                <li class="item" *ngFor="let item of menus.list; let i=index;"
+                    (click)="menus.menuClickHandler(item, $event)" id="{{item}}">
+                    <span class="item_t" [class.selected]="item == menus.activeMenu">{{item}}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="products-cont" *ngIf="loadingFlg" style="top:0;">
+        <div class="container">
+            <div class="row" style="padding: 12px; top:-55px;">
+                <!-- shimmer effect -->
+                <div class="lines shine" style="width: 100%; height: 20px; margin-bottom: 12px;"></div>
+                <div *ngFor="let item of [1,2,3,4,5,6]" class="col-md-3 col-sm-6 col-xs-6 col-6 shimmerCont row"
+                    style="margin: 0; margin-bottom: 9px; overflow: hidden;">
+                    <div style="border-radius: 4px; padding: 12px; background-color: white;">
+                        <div class="col-md-12 col-xs-5 col-5 box shine"></div>
+                        <div class="col-12">
+                            <div class="lines shine" style="width: 80%;"></div>
+                            <div class="lines shine" style="width: 50%;"></div>
+                            <div class="lines shine" style="width: 94%;"></div>
+                            <div class="lines shine" style="width: 60%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="products-cont">
+        <div class="container">
+            <div class="row" style="padding-left: 12px;" *ngFor="let sub_cat of priorityIndexedCategories">
+                <div style="margin: 3px; padding: 6px; background-color: #f5f5f5; margin-top: 36px;">
+                    <b style="font-weight: 600; color: #333;">{{sub_cat | uppercase}}</b>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2 products"
+                    *ngFor="let product of productCategoryWise[sub_cat].products">
+                    <product [product]="product" (valueChanges)="onProductChanges(product)"></product>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="popup_parent" *ngIf="productsOptions.product && productsOptions.product['subscribe']">
+        <div class="popup_cont">
+
+            <div style="position:absolute; right:24px; top:24px; cursor: pointer;" (click)="popup_close_click_action()">
+                <img src="assets/icons/close.png" />
+            </div>
+
+            <app-calendar [data]="{productsOptions:productsOptions, subsOptions:subsOptions}"></app-calendar>
+        </div>
+    </div>
+
+</div>
+
+<div class="container-center" *ngIf="notFoundFlg">
+    <img [src]="'../assets/general/search.gif'" style="position: absolute; bottom:60px; left:40%" />
+    <div class="inner-cont">
+
+        <!-- <img [src]="'assets/general/search_not_found.png'" style="width:70%; margin-left:10%;" />
+
+        <p style="font-weight: 600; margin-bottom: 24px; font-size: 14px;">Sorry! No results found.</p>
+        <p>We couldn't find anything on what you are
+            looking for.</p>
+        <p style="margin-bottom:48px;">Please check your spelling or try different keywords.!
+        </p> -->
+
+
+
+        <!-- <button class="tnkspt_primary_btn" [routerLink]="['/products/category/Vegetables']">Go to products</button> -->
+    </div>
+</div>

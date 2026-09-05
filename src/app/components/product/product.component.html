@@ -1,0 +1,53 @@
+<div class="product_details">
+    <div style="width: 100%;">
+
+        <div class="pName">
+            <span>{{product['name']}}</span>
+        </div>
+
+        <div *ngIf="product['badge']=='yes'" class="badge_txt">{{product['badge_txt']}}</div>
+
+        <div style="text-align: center; margin-top: -4px;" (click)="detailed_view($event)">
+            <img [src]="product['img_url']" class="product_thumb" (load)="onImageLoad($event)" [alt]="product['name']">
+        </div>
+
+        <div>
+            <div class="product_weight">{{product["updated_weight"]}} {{product["unit_name"]}}</div>
+        </div>
+
+        <div class="price" *ngIf="!product['disable']">₹ {{ this.product['price'] | number}}
+            <span style="text-decoration: line-through; color:#aaa; font-weight: 500;" class="font-12">
+                ₹ {{this.product['original_price']}} </span>
+        </div>
+
+        <div *ngIf="!product['disable']">
+            <div class="std_delivery">
+                Delivery: <span style="font-weight: 500; color:#e87517;"
+                    class="font-11">{{product["delivery_date_enhanced"]}}</span>
+            </div>
+        </div>
+
+        <div *ngIf="!product.disabled; else NotAvailable">
+            <plus-minus style="position: relative; float: left;" class="plusMinusComp" [caption]=""
+                [inputVal]="(product['units']||0)" [stepVal]="1" [minVal]="0" (onChange)="plusMinusValue($event)"
+                [disabled]="product['disable']"
+                *ngIf="!(product.subs_options ? ((product.subs_options.rangeSelected.length>0) || (product.subs_options.multiDaySelected.length > 0)) : false)">
+            </plus-minus>
+
+            <div *ngIf="(product.subs_options.multiDaySelected && product.subs_options.multiDaySelected.length==0) && (product.subs_options.rangeSelected && product.subs_options.rangeSelected.length==0) && this.product.units == 0"
+                (click)="viewSubscription($event)" style="position: relative; float: right; margin-top: 6px;">
+                <img *ngIf="product['subscribeFlg']" class="noselect" src="assets/general/calendar.png" width="28" />
+            </div>
+
+            <div class="view_subscription" (click)="viewSubscription($event)"
+                style="position: relative; float: right; margin-top: 6px;"
+                *ngIf="(product.subs_options) ? ((product.subs_options.rangeSelected.length>0) || (product.subs_options.multiDaySelected.length > 0)) : false">
+                <!-- <img [src]="'assets/general/calendar_active.png'" width="28" /> -->
+                <span class="tnkspt_primary_btn subscribed">Subscribed</span>
+            </div>
+        </div>
+        <ng-template #NotAvailable>
+            <span style="color: red; display: inline-block; margin-top: 9px; font-weight: 500;">Not available</span>
+        </ng-template>
+    </div>
+</div>

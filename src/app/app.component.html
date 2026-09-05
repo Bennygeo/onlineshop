@@ -1,0 +1,33 @@
+<div *ngIf="isMobile; else mobileContent">
+    <loader></loader>
+    <app-header></app-header>
+    <router-outlet></router-outlet>
+
+    <div id="bottom_cart_view" [class]="bottombarClass" *ngIf="cartS.isCart$ | async">
+        <div class="bag_img_cont">
+            <img src="assets/cart/cart_bag.png" width="23" height="23" alt="Cart bag" />
+        </div>
+        <div class="bag_content">
+            {{cart_details['totalItems']}} items
+        </div>
+        <div [routerLink]="'products/cart'" class="cart-box">
+            <span class="cart-total">₹ {{cart_details['total'] | number}}</span>
+            <span class="material-icons arrow-icon">
+                keyboard_arrow_right
+            </span>
+        </div>
+    </div>
+
+    <div class="popup_parent" *ngIf="popupItem.flag">
+        <div class="popup_cont">
+            <p [innerHTML]="popupItem.msg"></p>
+            <button class="tnkspt_secondary_btn popup-close-btn" (click)="alertClose()">Okay</button>
+        </div>
+    </div>
+</div>
+
+
+<ng-template #mobileContent>
+    <loader></loader>
+    <router-outlet></router-outlet>
+</ng-template>

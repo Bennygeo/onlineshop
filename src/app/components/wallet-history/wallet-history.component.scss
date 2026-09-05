@@ -1,0 +1,65 @@
+@import "../../../assets/styles/global-constants.scss";
+.walletCont {
+    display: flex;
+    border-bottom: 1px solid #f1f2f3;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 9px;
+    min-height: 85px;
+
+    .box {
+        position: relative;
+        float: left;
+    }
+
+    .box1 {
+        width: 70%;
+
+        .desc {
+            font-size: $font-s;
+            font-weight: 400;
+            @include ellipsis-2-line;
+        }
+
+        .timestamp {
+            color: #98a1a1;
+            font-size: $font-xxs;
+        }
+
+        .trxn-id {
+            color: #98a1a1;
+            font-size: $font-xxs;
+        }
+    }
+
+    .box2 {
+        width: 30%;
+        text-align: right;
+        .failed {
+            color: $error;
+            text-align: right;
+            font-size: $font-xs;
+            font-weight: 400;
+            position: absolute;
+            bottom: 0;
+        }
+        .balance {
+            font-size: $font-xs;
+            color: #98a1a1;
+            position: relative;
+            top: 18px;
+        }
+        .debit {
+            color: $debit-color;
+        }
+
+        .credit {
+            color: $credit-color;
+        }
+    }
+
+    .box2 > div {
+        font-size: 16px;
+        font-weight: 400;
+    }
+}

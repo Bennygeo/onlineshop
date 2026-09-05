@@ -1,0 +1,186 @@
+<div class="clearfix"></div>
+<div class="orders-cont">
+    <div class="tab">
+        <button class="tablinks" [class.active]="activeTab === 'Daily'"
+            (click)="openTab($event, 'Daily')">Daily</button>
+        <button class="tablinks" (click)="openTab($event, 'Subscribed')"
+            [class.active]="activeTab === 'Subscribed'">Subscribed</button>
+    </div>
+
+    <!-- Tab content -->
+    <div id="Daily" class="tabcontent">
+        <div class="active-orders" *ngFor="let item of upcomingOrders">
+
+            <!-- <div class="clearfix">
+                <div class="float-start order-id">
+                    <div>#{{item.order_id}}</div>
+                    <div class="label">{{item.items_count}} Items</div>
+                </div>
+                <div class="float-end">
+                    <div class="placed-status">Order placed</div>
+                </div>
+            </div>
+
+            <div class="order-info">
+                <div class="clearfix">
+                    <div class="contents">
+                        <div class="float-start order-id">
+                            <div class="label">Estimated delivery</div>
+                            <div class="info">{{item.delivery_date | date:'EEEE, MMM d'}}</div>
+                        </div>
+                        <div class="float-end">
+                            <div class="label">Order total</div>
+                            <div class="info"></div>
+                        </div>
+                        <div class="clearfix"></div>
+                        <div style="margin-top: 24px;">{{item.address}}</div>
+                    </div>
+                </div>
+                <div class="flex-box">
+                    <div class="tnkspt_secondary_btn cancel-btn" (click)="orderCancelAction(item)">Cancel</div>
+                    <div class="tnkspt_primary_btn view-btn" (click)="orderViewAction(item)">View items</div>
+                </div>
+            </div> -->
+
+            <div class="flex-container">
+                <div class="flex-item first-col order-img">
+                    <img [src]="'assets/orders/orders_veg.png'">
+                </div>
+                <div class="flex-item second-column">
+                    <div>Order #{{item.order_id}}</div>
+                    <div>Placed on{{item.delivery_date | date:'EEEE, MMM d'}}</div>
+
+                    <div>Items :10 &nbsp;&nbsp;&nbsp;&nbsp; Total :₹{{item.order_total}}</div>
+
+                </div>
+                <div class="flex-item last-column" (click)="orderViewAction(item)">
+                    <img [src]="'assets/orders/down_arrow.png'" />
+                </div>
+            </div>
+            <div *ngIf="item.expanded">
+                <hr />
+                <div style="display: grid; max-height: 100%;">
+
+                    <div *ngFor="let pro of products">{{pro.name}}</div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="past-order-label" *ngIf="pastOrders.length>0; else noOrders">Past Orders</div>
+        <ng-template #noOrders>
+            <div style="margin-top: 24px; text-indent: 12px; padding-bottom: 24px;">
+                No past orders found!
+            </div>
+        </ng-template>
+
+        <div class="active-orders" style="height: 260px; margin-top: 24px; position: relative; bottom: 24px;"
+            *ngFor="let item of pastOrders">
+            <div class="order-info" style="margin-top: 0;" *ngIf="item.status==='DELIVERED'">
+                <div class="clearfix">
+                    <div class="contents">
+                        <div class="float-start order-id">
+                            <div class="label">{{item.delivered_at| date:'MMM d, h:mm a'}} . {{item.items_count}} Items
+                            </div>
+                            <div class="past-info">#{{item.order_id}}</div>
+                        </div>
+                        <div class="float-end">
+                            <div class="delivered-status">Delivered</div>
+                            <div class="info">₹{{item.order_total}}</div>
+                        </div>
+
+                        <div class="clearfix"></div>
+                        <div style="margin-top: 24px;">{{item.address}}</div>
+                    </div>
+                </div>
+                <div class="flex-box">
+                    <div class="tnkspt_secondary_btn cancel-btn" (click)="pastOrderViewAction(item)">View items</div>
+                    <div class="tnkspt_primary_btn view-btn" (click)="orderAgainAction(item)">Order again</div>
+                </div>
+            </div>
+
+            <div class="order-info" style="margin-top: 0;" *ngIf="item.status==='CANCELLED'">
+                <div class="clearfix">
+                    <div class="contents">
+                        <div class="float-start order-id">
+                            <div class="label">{{item.items_count}} Items
+                            </div>
+                            <div class="past-info">#{{item.order_id}}</div>
+                        </div>
+                        <div class="float-end">
+                            <div class="cancelled-status">Cancelled</div>
+                            <div class="info">₹{{item.order_total}}</div>
+                        </div>
+
+                        <div class="clearfix"></div>
+                        <div style="margin-top: 24px;">{{item.address}}</div>
+                    </div>
+                </div>
+                <div class="flex-box">
+                    <div class="tnkspt_secondary_btn cancel-btn" (click)="pastOrderViewAction(item)">View items</div>
+                    <div class="tnkspt_primary_btn view-btn" (click)="orderAgainAction(item)">Order again</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="Subscribed" class="tabcontent">
+        <div *ngIf="activeTab ==='Subscribed'" style="margin-bottom: 36px;">
+            <div style="margin-top: 24px; text-indent: 12px;" *ngIf="subscriptionOrdersLength === 0">
+                No active subscriptions found!
+            </div>
+            <app-subscription-view [subsData]="subscriptionOrders"></app-subscription-view>
+        </div>
+    </div>
+</div>
+
+<!-- <div class="popup_parent" *ngIf="orderViewFlag">
+    <div class="popup_cont">
+        <div class="close-btn-cont" (click)="alertClose()"><img src="assets/general/close.png" /> </div>
+
+        <div *ngIf="subscribedProducts.length > 0"><b>Items</b></div>
+        <div *ngFor="let product of products" class="row product-cont">
+            <div class="col-4">
+                <div style="text-align: center; margin-top: -4px;">
+                    <img [src]="product['img_url']" class="product_thumb" [alt]="product['name']">
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="pName"> <span>{{product['name']}}</span></div>
+
+                <div class="product_weight">{{product["weight"]}} {{product["unit_name"]}} x {{product["units"]}}</div>
+                <div class="price" *ngIf="!product['disable']">₹ {{ this.product['price'] | number}}</div>
+            </div>
+        </div>
+        <div class="clearfix"></div>
+
+        <div *ngIf="subscribedProducts.length > 0"><b>Subscribed Items</b></div>
+        <div *ngFor="let product of subscribedProducts" class="row product-cont">
+            <div class="col-4">
+                <div style="text-align: center; margin-top: -4px;">
+                    <img [src]="product['img_url']" class="product_thumb" [alt]="product['name']">
+                </div>
+            </div>
+            <div class="col-8">
+                <div class="pName"> <span>{{product['name']}}</span></div>
+                <div class="price" *ngIf="!product['disable']">₹ {{ this.product['price'] | number}}</div>
+                <div class="tnkspt_secondary_btn"
+                    style="width: 100px; height: 24px; line-height: 24px; font-size: 12px; margin-top: 6px;">View Dates
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+
+<div class="popup_parent canel-popup" *ngIf="orderCancelFlag">
+    <div class="popup_cont">
+        <p>Are you sure to cancel the order <b>#{{targetOrder.order_id}}</b>?</p>
+        <div class="clearfix"></div>
+
+        <div class="flex-box">
+            <div class="tnkspt_secondary_btn cancel-btn" (click)="alertClose()">Back</div>
+            <div class="tnkspt_primary_btn view-btn" (click)="orderCancelConfirmAction()">Okay</div>
+        </div>
+    </div>
+</div>

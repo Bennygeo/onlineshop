@@ -1,0 +1,94 @@
+@import "../../../assets/styles/global-constants.scss";
+.order-cont {
+    margin-top: 12px;
+    @include shadow;
+    padding: 12px;
+    margin-bottom: 12px;
+    transition: height 3s ease-in-out;
+
+    .order-details {
+        color: $order-id;
+        font-size: $font-l;
+    }
+
+    .subs-cont {
+        min-height: 220px;
+        margin-bottom: 12px;
+        .product-info {
+            .clearfix {
+                .contents {
+                    .float-start {
+                        .next-delivery {
+                            font-size: $font-xxxl;
+                            text-align: left;
+                            font-weight: 500;
+                            margin-top: 9px;
+                            color: $black-clr;
+                        }
+                        .label {
+                            & > img {
+                                width: 62px;
+                            }
+                        }
+                    }
+                    .float-end {
+                        .info {
+                            font-size: $font-xxxl;
+                            text-align: right;
+                            font-weight: 700;
+                        }
+                        .order-details {
+                            color: $order-id;
+                            font-size: $font-l;
+                            margin-top: 12px;
+                        }
+                        .delivered-status {
+                            text-align: right;
+                        }
+                    }
+                    .order-id {
+                    }
+                }
+            }
+        }
+    }
+}
+
+.edit-items {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid $grey-90;
+    padding: 12px 0 12px 0;
+
+    .left {
+        flex: 0 0 auto;
+        text-align: left;
+        font-weight: 400;
+        font-size: $font-l;
+        line-height: 33px;
+    }
+
+    .right {
+        flex: 0 0 auto;
+        text-align: right;
+    }
+}
+
+.pause {
+    color: $orange-60 !important;
+}
+
+.pause-resume {
+    align-items: flex-end;
+    width: 86vw;
+    gap: 12px;
+    position: absolute;
+    bottom: 24px;
+}
+
+.alerts > .flex-box {
+    position: absolute;
+    bottom: 20px;
+    width: 88%;
+    top: auto;
+}

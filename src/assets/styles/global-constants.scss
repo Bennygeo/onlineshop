@@ -1,0 +1,114 @@
+$inter: "Inter", sans-serif;
+
+$break-small: 320px;
+$break-large: 760px;
+$mobilewidth: 480px;
+
+$primary-bg-color: #efefef;
+
+$border-radius: 4px;
+$border-radius-xl: 12px;
+$border-radius-xxl: 36px;
+$border-radius-xxxl: 100%;
+
+// $font-xxs: 10px;
+// $font-xs: 11px;
+// $font-s: 12px;
+// $font-m: 13px;
+// $font-l: 14px;
+// $font-xl: 15px;
+// $font-xxl: 16px;
+// $font-xxxl: 18px;
+
+$font-xxs: 0.7rem;
+$font-xs: 0.8rem;
+$font-s: 0.9rem;
+$font-m: 1rem;
+$font-l: 1.1rem;
+$font-xl: 1.2rem;
+$font-xxl: 1.3rem;
+$font-xxxl: 1.4rem;
+
+$black-clr: #000000;
+$title-txt-clr: #404040;
+$para-txt-clr: #444;
+$cat-title-clr: #67666d;
+$price_clr: #67666d;
+$product_name_clr: $price_clr;
+
+$grey-10: #292a34;
+$grey-40: #9796a1;
+$grey-80: #e8e8e8;
+$grey-90: #f6f7f9;
+$grey-96: #f6f7f9;
+
+$white-95: #f3f7f8;
+$white: #fff;
+
+$disabled-clr: #444;
+$disabled-style-2: #ccc;
+
+$white-clr: #fff;
+$sub-color: #9796a1;
+
+$teal-100: #30d2ad;
+$teel-90: #0ba082;
+
+$item-active: rgba(27, 188, 157, 0.4);
+$item-selected: #fff;
+
+$order-id: #fe724c;
+$orange-60: #fc820a;
+$orange-50: #ffa800;
+$orange-40: #ffeecc;
+$orange-10: #fff5eb;
+
+$green-60: #00ab56;
+$green-10: #effff4;
+
+$error: #ff3600;
+$debit-color: #ff0000;
+$credit-color: #24a731;
+
+@mixin left-top {
+    left: 0;
+    top: 0;
+}
+
+@mixin center-column {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}
+@mixin center-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: row;
+}
+
+@mixin center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin ellipsis-2-line {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@mixin active {
+    background-color: $teal-100;
+    color: $white-clr;
+}
+
+@mixin shadow {
+    -webkit-box-shadow: 0px 6px 12px 0px rgba(0, 0, 0, 0.05);
+    -moz-box-shadow: 0px 6px 12px 0px rgba(0, 0, 0, 0.05);
+    box-shadow: 0px 6px 12px 0px rgba(0, 0, 0, 0.05);
+}
