@@ -158,6 +158,7 @@ export class CartService {
     this.loginS.loginChangeEvent.subscribe((result: string) => {
       if (result === Common.loginStatus.LOGIN) {
         this.userID = this.loginS.user.mobile;
+        this.orderID = undefined;
         this.init();
       }
     });
@@ -189,15 +190,15 @@ export class CartService {
         this.currentPage = route[route.length - 1].split("?")[0];
         this.updateCartVisibility();
       }
-      // NavigationEnd
-      // NavigationCancel
-      // NavigationError
-      // RoutesRecognized
     });
 
     this.cartUpdateEvent.subscribe((cartAndTarget: CartAndTarget) => {
 
-      if (this.orderID && cartAndTarget.product) {
+      if (cartAndTarget.product) {
+        this.ensureOrderID();
+        if (cartAndTarget.info != "clear") {
+          this.orderPlacedFlag = false;
+        }
         this.updateProduct(cartAndTarget.product, cartAndTarget.unit);
         this.calculateCart(cartAndTarget.cart);
 
@@ -274,6 +275,13 @@ export class CartService {
   }
 
   init() {
+    const savedCart = this.storageS.getItem("tnkspt_cart_products");
+    if (savedCart && Object.keys(savedCart).length > 0) {
+      this.cartProducts = { ...savedCart, ...this.cartProducts };
+      this.calculateCart(this.cartProducts);
+      this.updateCartVisibility();
+    }
+
     //Recieve time from the serve
     this.apiS.getApi('com/get_time.php').subscribe((time: Date) => {
       this.serverTime = time;
@@ -331,6 +339,16 @@ export class CartService {
       });
     }
   }
+  ensureOrderID(): string {
+    if (!this.orderID) {
+      this.orderID = 'ORD_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+      if (this.loginS && this.loginS.user) {
+        this.loginS.user.orderID = this.orderID;
+      }
+    }
+    return this.orderID;
+  }
+
   /**
    * Check wether the user logged in or not
    * if not logged in ask them to login
@@ -416,7 +434,8 @@ export class CartService {
       product['delivery_date'] = this.getNextDeliveryDate(product);
 
       //write in the cart object
-      this.cartProducts[product.id] = Object.assign({}, product);//JSON.parse(JSON.stringify(product));
+      this.cartProducts[product.id] = Object.assign({}, product);
+      delete this.cartProducts[product.id].changeInProduct;
 
       if (!product.subscribe) {
         product.subs_options = {
@@ -538,16 +557,8 @@ export class CartService {
   read_cart_products(observer: Observer<string>) {
     //get the items in the cart based on customer_id
     this.apiS.postApi('products/get_cart.php', { customerID: this.userID, status: "CART" }).subscribe((products: Array<CartProductTable>) => {
-      if (this.loginS.user.zone == "zone2") {
-        products = [];
-        this.cartLiveProducts = {};
-        this.cartProducts = {};
-        this.cartLiveProducts = {};
-        this.calculateCart(this.cartProducts);
-        this.isCartVisible.next(false);
-      }
       //If cart products not empty
-      if (typeof products != "string") {
+      if (typeof products != "string" && products && products.length > 0) {
 
         const products_list = products.map((product) => { return product.productID });
         this.apiS.postApi("products/download_multiple_products.php", {
@@ -575,7 +586,7 @@ export class CartService {
                 _product.subscribe = true;
                 if (_product.subscriptionType == "range") {
 
-                  _product.rangeDates = JSON.parse(_product.rangeDates);
+                  _product.rangeDates = (typeof _product.rangeDates === 'string') ? JSON.parse(_product.rangeDates) : _product.rangeDates;
                   /*
                   * NOTE: 'subs_options' should be available in Product type by default, if it's not available
                   * recreate it
@@ -602,7 +613,7 @@ export class CartService {
                 }
 
                 if (_product.subscriptionType == "multi_day") {
-                  _product.subscribedDates = JSON.parse(_product.subscribedDates);
+                  _product.subscribedDates = (typeof _product.subscribedDates === 'string') ? JSON.parse(_product.subscribedDates) : _product.subscribedDates;
                   _product.subs_options = {
                     type: _product.subscriptionType,
                     units: _product.quantity
@@ -626,6 +637,7 @@ export class CartService {
             });
             this.updateRecommendedProducts();
             this.calculateCart(this.cartProducts);
+            this.storageS.setItem("tnkspt_cart_products", this.cartProducts);
 
             observer.complete();
           },
@@ -682,6 +694,42 @@ export class CartService {
   }
 
   placeOrder(callback) {
+    this.ensureOrderID();
+    const itemsList = Object.values(this.cartProducts || {}).map((p: any) => {
+      const unitP = Number(p.unit_price || p.price || 0);
+      const subUnits = Number(p.subs_options?.units || p.units || p.quantity || 1);
+      let totalPrice = Number(p.price || 0);
+
+      if ((p.subscribe || p.subs_options) && p.subs_options) {
+        let dayCount = 1;
+        if (p.subs_options.type === 'range' && p.subs_options.rangeSelected && p.subs_options.rangeSelected.length > 0) {
+          dayCount = p.subs_options.rangeSelected.length;
+        } else if (p.subs_options.type === 'multi_day' && p.subs_options.multiDaySelected && p.subs_options.multiDaySelected.length > 0) {
+          dayCount = p.subs_options.multiDaySelected.length;
+        }
+        if (p.subs_options.price) {
+          totalPrice = Number(p.subs_options.price);
+        } else {
+          totalPrice = unitP * subUnits * dayCount;
+        }
+      }
+
+      return {
+        id: p.id || p.product_id,
+        name: p.name || p.product_name,
+        quantity: subUnits,
+        price: totalPrice,
+        weight: p.weight || p.updated_weight || '',
+        img_url: p.img_url || '',
+        subscriptionType: p.subs_options?.type || p.subscriptionType || (p.subscribe ? 'range' : 'none'),
+        rangeDates: p.subs_options?.rangeSelected ? JSON.stringify(p.subs_options.rangeSelected) : (p.rangeDates || '[]'),
+        subscribedDates: p.subs_options?.multiDaySelected ? JSON.stringify(p.subs_options.multiDaySelected) : (p.subscribedDates || '[]'),
+        subsStatus: 'active',
+        startDate: p.subs_options?.startDate ? new Date(p.subs_options.startDate).toDateString() : '',
+        endDate: p.subs_options?.endDate ? new Date(p.subs_options.endDate).toDateString() : ''
+      };
+    });
+
     this.apiS.postApi("orders/place_order.php", {
       "ordersDetails": JSON.stringify({
         "mobile": this.userID,
@@ -694,14 +742,15 @@ export class CartService {
         "delivery_inst": this.deliveryInst,
         "other_charges": STD_TAX_FEE,
         "amount": this.orderInformation.total,
-        "wallet_total": this.loginS.user.wallet - this.orderInformation.total,
+        "wallet_total": (this.loginS.user?.wallet || 0) - this.orderInformation.total,
         "description": "Purchase",
         "status": "placed",
-        "address": JSON.stringify(this.loginS.user.address),
+        "address": JSON.stringify(this.loginS.user?.address || {}),
         "items_count": this.cartDetails.totalItems,
-        "delivery_date": this.deliveryDate.toDateString(),
+        "delivery_date": this.deliveryDate ? `${this.deliveryDate.getFullYear()}-${String(this.deliveryDate.getMonth() + 1).padStart(2, '0')}-${String(this.deliveryDate.getDate()).padStart(2, '0')}` : '',
         "coupon": this.orderInformation.selectedCoupon?.code || "",
         "coupon_offer": this.orderInformation.selectedCoupon?.offer || "",
+        "items": itemsList
       })
     }).subscribe({
       next: (res) => {
@@ -709,6 +758,10 @@ export class CartService {
         if (this.orderInformation.selectedCoupon)
           this.updateUserCoupon(this.orderInformation.selectedCoupon);
         this.clearCart();
+        this.orderID = undefined;
+        if (this.loginS.user) {
+          this.loginS.user.orderID = undefined;
+        }
         callback(res);
       },
       error: (err: Error) => {
@@ -732,15 +785,13 @@ export class CartService {
 
   //Emtrying the cart after place the order
   clearCart() {
-    // this.cartProducts = {};
-    for (let product in this.cartProducts) {
-      this.cartUpdateEvent.next({ cart: this.cartProducts, product: this.cartProducts[product], unit: 0, info: "clear" });
-    }
+    this.cartProducts = {};
     this.cartLiveProducts = {};
-    this.calculateCart(this.cartProducts);
     this.deliveryInst = "";
     this.storageS.removeItem("tnkspt_inst");
     this.storageS.removeItem("tnkspt_delivery_mode");
+    this.storageS.removeItem("tnkspt_cart_products");
+    this.calculateCart(this.cartProducts);
   }
 
   /*
@@ -752,10 +803,21 @@ export class CartService {
     this.cartDetails.totalItems = Object.keys(products).length;
 
     for (var key in products) {
-      if (products[key].subscribe) this.cartDetails.total += Number(products[key].subs_options['price']);
-      else this.cartDetails.total += Number(products[key]['price']);
+      if (products[key].subscribe && products[key].subs_options && products[key].subs_options['price']) {
+        this.cartDetails.total += Number(products[key].subs_options['price']);
+      } else {
+        this.cartDetails.total += Number(products[key]['price']);
+      }
     }
 
+    if (this.cartDetails.totalItems > 0) {
+      this.storageS.setItem("tnkspt_cart_products", products);
+    } else {
+      this.storageS.removeItem("tnkspt_cart_products");
+    }
+
+    this.updateCartVisibility();
+    this.notifyCartEvent.next();
   }
 
   /*

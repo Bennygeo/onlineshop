@@ -17,6 +17,17 @@ export class WalletHistoryComponent implements OnInit {
   ngOnInit(): void {
   }
 
+  safeDate(rawDate: any): Date {
+    if (!rawDate || rawDate === "undefined" || rawDate === "null" || rawDate === "Invalid Date" || rawDate === "0000-00-00 00:00:00" || rawDate === "0000-00-00") {
+      return new Date();
+    }
+    if (rawDate instanceof Date) {
+      return isNaN(rawDate.getTime()) ? new Date() : rawDate;
+    }
+    const d = new Date(rawDate);
+    return isNaN(d.getTime()) ? new Date() : d;
+  }
+
   descView() {
     this.loginS.popupEvent.next({
       flag: true,

@@ -38,11 +38,12 @@ export class AppComponent implements OnInit {
       this.popupItem = res;
     });
 
+    this.cartS.notifyCartEvent.subscribe(() => {
+      this.cart_details = this.cartS.cartDetails;
+    });
+
     this.loginS.loginChangeEvent.subscribe((res: any) => {
       if (res === Common.loginStatus.LOGIN) {
-        this.cartS.notifyCartEvent.subscribe(() => {
-          this.cart_details = this.cartS.cartDetails;
-        });
       }
     });
 

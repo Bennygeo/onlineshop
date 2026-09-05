@@ -94,12 +94,22 @@ export class User {
         return this.gpsInfo;
     }
 
+    private ledgerAmt: number = 0;
+
     public set wallet(amt: number) {
         this.walletAmt = amt;
     }
 
     public get wallet(): number {
         return this.walletAmt;
+    }
+
+    public set ledger(amt: number) {
+        this.ledgerAmt = amt;
+    }
+
+    public get ledger(): number {
+        return this.ledgerAmt;
     }
 
     public set walletHistory(list: Array<Wallet>) {

@@ -7,12 +7,12 @@
         <div class="detailBox">
             <div class="box box1">
                 <div class="label">Available Balance</div>
-                <div class="balanceLedger">₹{{walletTotal}}</div>
+                <div class="balanceLedger">₹{{ (walletTotal - user.ledger) > 0 ? (walletTotal - user.ledger) : 0 }}</div>
                 <p>Your balance minus your ledger balance</p>
             </div>
             <div class="box box2">
                 <div class="label">Ledger Balance</div>
-                <div class="balanceLedger">₹0</div>
+                <div class="balanceLedger">₹{{ user.ledger }}</div>
                 <p>This is the balance kept aside for your subscription</p>
             </div>
         </div>
@@ -21,19 +21,23 @@
         wallet</div>
 
     <div class="history">
-        <div>Past activities</div>
-        <div class="historyCont" *ngIf="history.length>0; else no_history">
-            <div *ngFor="let wallet of history">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-weight: 600; font-size: 16px;">Past activities {{ showAllHistory ? '(All)' : '(Last 5 Days)' }}</span>
+            <span *ngIf="history.length > displayedHistory.length && !showAllHistory" (click)="showAllHistory = true" style="cursor: pointer; color: #30d2ad; font-size: 13px; font-weight: 500;">Show All History</span>
+        </div>
+
+        <div class="historyCont" *ngIf="displayedHistory.length > 0; else no_history">
+            <div *ngFor="let wallet of displayedHistory">
                 <wallet-history [walletData]="wallet"></wallet-history>
             </div>
         </div>
 
         <ng-template #no_history>
-            <div>No entries found!</div>
+            <div style="padding: 16px 0; color: #888;">No transactions recorded in the last 5 days.</div>
         </ng-template>
 
-        <div class="loadMoreCont">
-            <div class="tnkspt_primary_btn loadMore">View more transactions</div>
+        <div class="loadMoreCont" *ngIf="history.length > displayedHistory.length && !showAllHistory">
+            <div class="tnkspt_primary_btn loadMore" (click)="showAllHistory = true">View full transaction history</div>
         </div>
     </div>
 </div>

@@ -157,11 +157,11 @@ export class LoginService {
                 if (res && Array.isArray(res)) {
                     this.user.walletHistory = res.reverse();
                     this.user.wallet = res[0]?.total || 0;
+                    this.user.ledger = (res[0] as any)?.ledger_balance || 0;
                     this.walletUpdateEvent.next(res);
                 }
             },
             error: (err: Error) => {
-                alert("Read wallet error");
             }
         });
     }

@@ -1,26 +1,22 @@
 <div class="walletCont">
 
     <div class="box box1">
-        <div class="timestamp">{{walletData.timestamp| date:'M/d/yy, h:mm a'}}</div>
+        <div class="timestamp">{{safeDate(walletData?.timestamp) | date:'M/d/yy, h:mm a'}}</div>
         <div class="desc" (click)="descView()">{{walletData.description}}</div>
         <div class="trxn-id">Transaction ID: {{walletData.trxn_id}}</div>
     </div>
 
-    <div class="box box2" *ngIf="walletData.status===payment.PaymentStaus.AUTHORIZED">
+    <div class="box box2" *ngIf="walletData.status === payment.PaymentStaus.AUTHORIZED || walletData.status === payment.PaymentStaus.CAPTURED || walletData.status === payment.PaymentStaus.PLACED || walletData.status === 'success'">
         <div class="credit" *ngIf="walletData.type==='Credit'">+₹{{walletData.amount}}</div>
         <div class="debit" *ngIf="walletData.type==='Debit'">-₹{{walletData.amount}}</div>
 
         <div class="balance">Balance: ₹{{walletData.total}}</div>
     </div>
 
-    <div class="box box2" *ngIf="walletData.status===payment.PaymentStaus.FAILED;">
+    <div class="box box2" *ngIf="walletData.status === payment.PaymentStaus.FAILED || walletData.status === payment.PaymentStaus.CANCELLED || walletData.status === 'failed' || walletData.status === 'cancelled'">
         <div class="debit">₹{{walletData.amount}}</div>
-        <div class="failed">Tranasaction failed</div>
-    </div>
-
-    <div class="box box2" *ngIf="walletData.status===payment.PaymentStaus.PLACED;">
-        <div class="debit" *ngIf="walletData.type==='Debit'">-₹{{walletData.amount}}</div>
-        <div class="credit" *ngIf="walletData.type==='Credit'">+₹{{walletData.amount}}</div>
-        <div class="balance">Balance: ₹{{walletData.total}}</div>
+        <div class="failed" style="color: #e53e3e; font-weight: 500;">
+            {{ (walletData.status === payment.PaymentStaus.CANCELLED || walletData.status === 'cancelled') ? 'Transaction cancelled' : 'Transaction failed' }}
+        </div>
     </div>
 </div>

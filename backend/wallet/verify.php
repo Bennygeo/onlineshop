@@ -5,11 +5,17 @@ $paymentId = getParam('razorpay_payment_id') ?: ('pay_' . substr(md5(uniqid(rand
 $orderId = getParam('razorpay_order_id');
 $signature = getParam('razorpay_signature');
 $mobile = getParam('mobile') ?: getParam('user_id');
+$statusParam = strtolower(getParam('status', 'authorized')); // 'authorized', 'failed', 'cancelled'
 
 $amountRupees = 0;
 
 if ($pdo) {
     try {
+        // Ensure status column exists in wallets table
+        try {
+            $pdo->exec("ALTER TABLE wallets ADD COLUMN status VARCHAR(20) DEFAULT 'authorized'");
+        } catch (Exception $e) {}
+
         // Find matching razorpay order if exists
         if ($orderId) {
             $stmt = $pdo->prepare("SELECT mobile, amount FROM razorpay_orders WHERE order_id = ?");
@@ -19,15 +25,15 @@ if ($pdo) {
                 if (!$mobile) $mobile = $order['mobile'];
                 $amountRupees = (float)$order['amount'];
 
-                $updateStmt = $pdo->prepare("UPDATE razorpay_orders SET status = 'captured', payment_id = ? WHERE order_id = ?");
-                $updateStmt->execute([$paymentId, $orderId]);
+                $updateStmt = $pdo->prepare("UPDATE razorpay_orders SET status = ?, payment_id = ? WHERE order_id = ?");
+                $updateStmt->execute([$statusParam, $paymentId, $orderId]);
             }
         }
 
-        // Fallback: If amount or order not found, check latest created order for this mobile or fallback
+        // Fallback: If amount not found from orderId, check latest created order for mobile
         if ($amountRupees <= 0) {
             if ($mobile) {
-                $stmt = $pdo->prepare("SELECT amount FROM razorpay_orders WHERE mobile = ? AND status = 'created' ORDER BY created_at DESC LIMIT 1");
+                $stmt = $pdo->prepare("SELECT amount FROM razorpay_orders WHERE mobile = ? ORDER BY created_at DESC LIMIT 1");
                 $stmt->execute([$mobile]);
                 $latest = $stmt->fetch();
                 if ($latest) {
@@ -36,7 +42,7 @@ if ($pdo) {
             }
         }
 
-        // Final fallback default if amount still 0
+        // Final fallback default
         if ($amountRupees <= 0) {
             $amountRupees = 100.00;
         }
@@ -45,19 +51,28 @@ if ($pdo) {
             $mobile = '7200015551';
         }
 
-        // Insert wallet credit transaction
-        $walletStmt = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description) VALUES (?, ?, 'CREDIT', ?)");
+        $desc = "Added money via Razorpay ({$paymentId})";
+        if ($statusParam === 'failed') {
+            $desc = "Razorpay payment failed ({$paymentId})";
+        } else if ($statusParam === 'cancelled') {
+            $desc = "Razorpay payment cancelled ({$paymentId})";
+        }
+
+        // Insert wallet credit/transaction record
+        $walletStmt = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description, status) VALUES (?, ?, 'CREDIT', ?, ?)");
         $walletStmt->execute([
             $mobile,
             $amountRupees,
-            "Added money via Razorpay Test ({$paymentId})"
+            $desc,
+            $statusParam
         ]);
 
         sendJson([
             'status' => 'success',
-            'message' => 'Payment verified and wallet credited successfully',
+            'message' => 'Payment logged successfully',
             'payment_id' => $paymentId,
-            'amount' => $amountRupees
+            'amount' => $amountRupees,
+            'payment_status' => $statusParam
         ]);
         exit;
     } catch (Exception $e) {
@@ -70,3 +85,4 @@ sendJson([
     'status' => 'success',
     'message' => 'Payment verified successfully (mock mode)'
 ]);
+

@@ -1,48 +1,60 @@
-<div *ngFor="let order of subsData | keyvalue" class="order-cont">
-    <!-- <div class="order-details"></div> -->
-    <div *ngFor="let subs of subsData[order.key.toString()]" class="subs-cont">
-        <div class="product-info" style="margin-top: 0;">
-            <div class="clearfix">
-                <div class="contents">
-
-                    <div class="float-start order-id">
-                        <div class="label">
-                            <img [src]="subs['img_url']" class="product_thumb" [alt]="subs['name']">
-                        </div>
-                        <div>{{subs['productID']}}</div>
-                    </div>
-
-                    <div class="float-end">
-                        <div class="order-details">#{{order.key}}</div>
-                        <div class="delivered-status">{{subs.name}}</div>
-                    </div>
-
-                    <div class="clearfix" style="margin-bottom: 18px; border-bottom: 1px solid #eee;"></div>
-                    <div class="float-start order-id">
-                        <div class="past-info">Next Delivery</div>
-                        <div class="next-delivery" [ngClass]="subs['next_delivery'] === 'Paused' ? 'pause' : ''">
-                            {{subs['next_delivery']}}</div>
-                    </div>
-                    <div class="float-end">
-                        <div class="delivered-status">Deliveries completed</div>
-                        <div class="info">{{subs['remaining_count']}} of {{subs['total_count']}}</div>
-                    </div>
-
-                    <div class="clearfix"></div>
-                    <div style="margin-top: 24px;">{{subs.address}}</div>
-                </div>
+<div *ngFor="let order of subsData | keyvalue" class="order-card-wrapper">
+    <div *ngFor="let subs of subsData[order.key.toString()]" class="modern-subs-card">
+        
+        <!-- Header: Order ID & Status (Paused only) -->
+        <div class="subs-header">
+            <div class="order-tag">
+                <span class="tag-label">Order</span>
+                <span class="tag-id">#{{order.key}}</span>
             </div>
-            <div class="flex-box" [style.top]="'24px'">
-                <div class="tnkspt_secondary_btn cancel-btn" (click)="viewAction(subs)">View</div>
-                <button class="tnkspt_secondary_btn view-btn" [disabled]="subs.subsStatus === 'paused'"
-                    (click)="editAction(subs)">Edit</button>
-                <button class="tnkspt_secondary_btn view-btn" (click)="pauseAction(subs)"
-                    [disabled]="subs.subscriptionType == 'multi_day'">
-                    <span *ngIf="subs.subsStatus === 'paused'; else resume">Resume</span>
-                    <ng-template #resume>Pause</ng-template>
-                </button>
+            <div class="status-badge status-paused" *ngIf="subs.subsStatus === 'paused' || subs['next_delivery'] === 'Paused'">
+                <span class="dot"></span>
+                <span>Paused</span>
             </div>
         </div>
+
+        <!-- Body: Product Info & Image -->
+        <div class="subs-body">
+            <div class="product-thumb-cont">
+                <img [src]="subs['img_url'] || 'assets/orders/orders_veg.png'" (error)="onImgError($event)" class="product-thumb" [alt]="subs['name']">
+            </div>
+            <div class="product-details">
+                <div class="product-title">{{subs.name}}</div>
+                <div class="product-meta">
+                    <span *ngIf="subs.weight">{{subs.weight}} &bull; </span>
+                    <span>{{subs.address}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Grid: Next Delivery & Progress -->
+        <div class="subs-info-grid">
+            <div class="info-box">
+                <div class="info-label">📅 Next Delivery</div>
+                <div class="info-value" [class.text-paused]="subs['next_delivery'] === 'Paused'">
+                    {{subs['next_delivery']}}
+                </div>
+            </div>
+            <div class="info-box text-end">
+                <div class="info-label">📦 Progress</div>
+                <div class="info-value">{{subs['remaining_count']}} of {{subs['total_count']}} Delivered</div>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="subs-actions">
+            <button class="tnkspt_secondary_btn action-btn" (click)="viewAction(subs)">
+                View Schedule
+            </button>
+            <button class="tnkspt_secondary_btn action-btn" [disabled]="subs.subsStatus === 'paused'" (click)="editAction(subs)">
+                Edit Items
+            </button>
+            <button class="tnkspt_secondary_btn action-btn" [class.pause-active]="subs.subsStatus === 'paused'" (click)="pauseAction(subs)" [disabled]="subs.subscriptionType == 'multi_day'">
+                <span *ngIf="subs.subsStatus === 'paused'; else resumeLabel">Resume</span>
+                <ng-template #resumeLabel>Pause</ng-template>
+            </button>
+        </div>
+
     </div>
 </div>
 

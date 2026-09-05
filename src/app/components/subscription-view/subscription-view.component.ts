@@ -56,6 +56,12 @@ export class SubscriptionViewComponent implements OnInit {
     });
   }
 
+  onImgError(event: any) {
+    if (event && event.target) {
+      event.target.src = 'assets/orders/orders_veg.png';
+    }
+  }
+
   ngOnInit(): void {
     this.init();
   }
@@ -96,48 +102,62 @@ export class SubscriptionViewComponent implements OnInit {
   }
 
   updateProduct(product, dates, type) {
-    product['total_count'] = dates.length;
-    product['remaining_count'] = 0;
-    product['img_url'] = this.liveProductsData[product.productID].img_url;
-    product['name'] = this.liveProductsData[product.productID].name;
+    let totalQty = 0;
+    let deliveredQty = 0;
 
-    dates.sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
-      return dateA.getTime() - dateB.getTime();
-    });
-
-    if (dates.length === 0) {
-      product['next_delivery'] = this.getnextDelivery(product, dates, 0);
-      product['total_count'] += JSON.parse(product.pausedDates).length;
-    } else {
-      if (product['subscriptionType'] === "range" && product.subsStatus === 'paused') {
-        product['total_count'] = JSON.parse(product.rangeDates).length + JSON.parse(product.pausedDates).length;
-      } else if (product['subscriptionType'] === "range" && product.subsStatus === 'resume') {
-        product['total_count'] = JSON.parse(product.rangeDates).length;
-      }
+    if (this.liveProductsData[product.productID]) {
+      product['img_url'] = this.liveProductsData[product.productID].img_url;
+      product['name'] = product['name'] || this.liveProductsData[product.productID].name;
     }
 
-    dates.map((item, index) => {
-      const date = new DateE(item.date);
-      if (item.status) {
-        if (date.isToday() && item.status === DeliveryStatus.DELIVERED) {
-          product['next_delivery'] = this.getnextDelivery(product, dates, index);
-          product['remaining_count']++;
-        } else if (date.isToday() && item.status !== DeliveryStatus.DELIVERED) {
-          product['next_delivery'] = this.getnextDelivery(product, dates, index);
-          product['remaining_count']++;
-        } else if (DateE.isDatePast(new Date(item.date))) {
-          product['remaining_count']++;
-        }
+    if (Array.isArray(dates)) {
+      dates.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateA.getTime() - dateB.getTime();
+      });
 
-        if (item.status === DeliveryStatus.SHEDULED && index === 0) {
-          product['next_delivery'] = this.getnextDelivery(product, dates, index - 1);
+      dates.forEach((item: any, index: number) => {
+        const cnt = (typeof item === 'object' && item.count) ? Number(item.count) : 1;
+        totalQty += cnt;
+
+        const date = new DateE(item.date);
+        if (item.status) {
+          if (item.status === DeliveryStatus.DELIVERED) {
+            deliveredQty += cnt;
+          }
+          if (date.isToday()) {
+            product['next_delivery'] = this.getnextDelivery(product, dates, index);
+          }
+          if (item.status === DeliveryStatus.SHEDULED && index === 0) {
+            product['next_delivery'] = this.getnextDelivery(product, dates, index - 1);
+          }
+        } else {
+          if (date.isToday()) product['next_delivery'] = this.getnextDelivery(product, dates, index);
         }
-      } else {
-        if (date.isToday()) product['next_delivery'] = this.getnextDelivery(product, dates, index);
-      }
-    });
+      });
+    }
+
+    if (product.pausedDates && product.pausedDates !== '[]') {
+      try {
+        const pausedAry = JSON.parse(product.pausedDates);
+        if (Array.isArray(pausedAry)) {
+          pausedAry.forEach((item: any) => {
+            const cnt = (typeof item === 'object' && item.count) ? Number(item.count) : 1;
+            totalQty += cnt;
+          });
+        }
+      } catch (e) {}
+    }
+
+    if (!product['next_delivery'] && Array.isArray(dates) && dates.length > 0) {
+      product['next_delivery'] = this.datePipe.transform(dates[0].date, 'd - MMM - y');
+    }
+
+    product['total_count'] = totalQty;
+    product['delivered_count'] = deliveredQty;
+    product['remaining_count'] = Math.max(0, totalQty - deliveredQty);
+    product['quantity'] = totalQty;
   }
 
   getnextDelivery(product: any, dates: Array<any>, index: number) {
@@ -182,14 +202,37 @@ export class SubscriptionViewComponent implements OnInit {
     });
   }
 
-  editUpdateAction() {
-    let cloneDatesArray = this.activeSubsData.datesArray.slice(0);
-    let modifiedData = {};
-
-    modifiedData = (this.cartS.editSubsPaymentTrack) ? this.cartS.editSubsPaymentTrack.modifiedData : this.modifiedData;
-    for (let key in modifiedData) {
-      cloneDatesArray[key].count = Number(modifiedData[key].count) + Number(modifiedData[key].diff)
+  getUnitPrice(subs: any): number {
+    if (!subs) return 0;
+    const liveProd = this.liveProductsData[subs.productID];
+    if (liveProd && liveProd.price) {
+      const p = Number(liveProd.price);
+      if (!isNaN(p) && p > 0) return p;
     }
+    if (subs.unit_price) {
+      const p = Number(subs.unit_price);
+      if (!isNaN(p) && p > 0) return p;
+    }
+    const rawPrice = Number(subs.price);
+    if (!isNaN(rawPrice) && rawPrice > 0) {
+      const totalCount = Number(subs.total_count || (subs.datesArray ? subs.datesArray.length : 0));
+      if (totalCount > 1 && rawPrice > 100) {
+        return Math.round((rawPrice / totalCount) * 100) / 100;
+      }
+      return rawPrice;
+    }
+    return 0;
+  }
+
+  editUpdateAction() {
+    let modifiedData = (this.cartS.editSubsPaymentTrack) ? this.cartS.editSubsPaymentTrack.modifiedData : this.modifiedData;
+    let cloneDatesArray = this.activeSubsData.datesArray
+      .map((item: any, key: any) => {
+        const diff = modifiedData[key] ? Number(modifiedData[key].diff) : 0;
+        const newCount = Number(item.count || 1) + diff;
+        return { ...item, count: newCount };
+      })
+      .filter((item: any) => Number(item.count) > 0);
 
     //update subscription
     this.orderService.updateSubscription({
@@ -213,39 +256,50 @@ export class SubscriptionViewComponent implements OnInit {
           for (let key in modifiedData) {
             totalCount += Number(modifiedData[key].diff);
           }
-          this.alert.price = Math.abs(this.activeSubsData.price * totalCount);
+
+          const unitPrice = this.getUnitPrice(this.activeSubsData);
+          const adjAmount = Math.round(unitPrice * Math.abs(totalCount) * 100) / 100;
+
+          this.alert.price = adjAmount;
           this.alert.walletType = (totalCount < 0) ? WalletType.CREDIT : WalletType.DEBIT;
 
-          // let _totalAmt = this.activeSubsData.price * Math.abs(totalCount);
-          const totalAmt = (this.alert.walletType === WalletType.CREDIT) ? (this.user.wallet * 1 + this.alert.price) : (this.user.wallet * 1 - this.alert.price);
+          const currentWallet = Number(this.user.wallet || 0);
+          const totalAmt = (this.alert.walletType === WalletType.CREDIT) ? (currentWallet + adjAmount) : (currentWallet - adjAmount);
+
           if (this.cartS.editSubsPaymentTrack) {
             this.saveChangesAction(modifiedData);
             this.alertFlg = false;
           }
 
-          this.cartS.writeWallet({
-            amount: this.alert.price,
-            description: this.alert.desc,
-            timestamp: new Date().getTime(),
-            total: totalAmt,
-            trxn_id: Date.now().toString(),
-            type: this.alert.walletType,
-            mobile: this.user.mobile,
-            status: "placed",
-            trxn_type: "Account"
-          }).subscribe((res: Wallet) => {
-            this.user.walletHistory.unshift(res);
-            this.user.wallet = res.total;
-            this.loginS.walletUpdateEvent.next([res]);
+          if (adjAmount > 0) {
+            this.cartS.writeWallet({
+              amount: adjAmount,
+              description: this.alert.desc || `Subscription adjusted (${totalCount > 0 ? '+' : ''}${totalCount} item)`,
+              timestamp: new Date().getTime(),
+              total: totalAmt,
+              trxn_id: Date.now().toString(),
+              type: this.alert.walletType,
+              mobile: this.user.mobile,
+              status: "placed",
+              trxn_type: "Account"
+            }).subscribe((res: Wallet) => {
+              this.user.walletHistory.unshift(res);
+              this.user.wallet = res.total;
+              this.loginS.walletUpdateEvent.next([res]);
+              this.modifiedData = {};
+              this.cartS.editSubsPaymentTrack = undefined;
+              this.init();
+            });
+          } else {
             this.modifiedData = {};
             this.cartS.editSubsPaymentTrack = undefined;
-          });
+            this.init();
+          }
         } else {
           // this.activeSubsData.datesArray[this.alert.index].count = this.alert.initCount + "";
         }
       },
       error: (err: Error) => {
-        // this.activeSubsData.datesArray[this.alert.index].count = this.alert.initCount + "";
         alert(err);
       }
     });
@@ -277,31 +331,19 @@ export class SubscriptionViewComponent implements OnInit {
   }
 
   getPastAndFutureDates(subs) {
-    if (subs.subscriptionType === SubscriptionType.RANGE) {
-      //filter future dates
-      this.activeSubsData.datesArray = JSON.parse(this.activeSubsData.rangeDates).filter(((item: any) => {
-        let date = new DateE(item.date);
-        return (!date.isToday() && !DateE.isDatePast(date));
-      }));
+    const rawDatesJson = (subs.subscriptionType === SubscriptionType.MULTI) ? (subs.subscribedDates || '[]') : (subs.rangeDates || '[]');
+    const allDates = JSON.parse(rawDatesJson).filter((item: any) => (typeof item === 'object' && item.count !== undefined) ? Number(item.count) > 0 : true);
 
-      this.activeSubsData.pastDates = JSON.parse(this.activeSubsData.rangeDates).filter(((item: any) => {
-        let date = new DateE(item.date);
-        return (date.isToday() || DateE.isDatePast(date));
-      }));
-    }
+    this.activeSubsData.datesArray = allDates.filter((item: any) => {
+      let date = new DateE(item.date);
+      return (!date.isToday() && !DateE.isDatePast(date));
+    });
 
-    if (subs.subscriptionType === SubscriptionType.MULTI) {
-      //filter future dates
-      this.activeSubsData.datesArray = JSON.parse(this.activeSubsData.subscribedDates).filter((item: any) => {
-        let date = new DateE(item.date);
-        return (!new DateE(date).isToday() && !DateE.isDatePast(date));
-      });
+    this.activeSubsData.pastDates = allDates.filter((item: any) => {
+      let date = new DateE(item.date);
+      return (date.isToday() || DateE.isDatePast(date));
+    });
 
-      this.activeSubsData.pastDates = JSON.parse(this.activeSubsData.subscribedDates).filter(((item: any) => {
-        let date = new DateE(item.date);
-        return (date.isToday() || DateE.isDatePast(date));
-      }));
-    }
     console.log("Copied!");
     this.activeSubsDataCopy.datesArray = this.activeSubsData.datesArray.slice(0);
   }
@@ -483,33 +525,34 @@ export class SubscriptionViewComponent implements OnInit {
 
   saveChangesAction(data: any) {
     let totalCount = 0;
-    const price = this.activeSubsData.price;
+    const unitPrice = this.getUnitPrice(this.activeSubsData);
     for (let key in data) {
       totalCount += Number(data[key].diff);
     }
-    const totalAmt = price * Math.abs(totalCount);
+    const totalAmt = Math.round(unitPrice * Math.abs(totalCount) * 100) / 100;
+    const userWallet = Number(this.user.wallet || 0);
 
     if (totalCount !== 0) {
       if (Math.sign(totalCount) === -1) {
         this.alert.type = "type2";
         this.alert.price = totalAmt;
         this.alert.msg = `<b>₹${totalAmt}</b> will be credited to your wallet.`;
-        this.alert.desc = `${Math.abs(totalCount)}  item(s) removed from your subscription`;
+        this.alert.desc = `${Math.abs(totalCount)} item(s) removed from your subscription`;
         this.alert.walletType = WalletType.CREDIT;
 
-      } else if (Math.sign(totalCount) == 1) {
-        let totalAmt = price * Math.abs(totalCount);
+      } else if (Math.sign(totalCount) === 1) {
         this.alert.desc = `${Math.abs(totalCount)} item(s) added to your subscription`;
         this.alert.price = totalAmt;
         this.alert.walletType = WalletType.DEBIT;
 
-        if (Number(this.user.wallet) >= totalAmt) {
+        if (userWallet >= totalAmt) {
           this.alert.type = "type2";
           this.alert.msg = `<b>₹${totalAmt}</b> will be debited from your wallet.`;
         } else {
           this.alert.type = "type1";
-          this.alert.price = Math.abs(totalAmt - Number(this.user.wallet));
-          this.alert.msg = `Please add <b>₹${this.alert.price}</b> to wallet to procced.`;
+          const neededAmount = Math.round(Math.abs(totalAmt - userWallet) * 100) / 100;
+          this.alert.price = neededAmount;
+          this.alert.msg = `Please add <b>₹${neededAmount}</b> to wallet to procced.`;
         }
       }
       this.alertFlg = true;

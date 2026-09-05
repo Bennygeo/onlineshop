@@ -48,21 +48,71 @@
                 </div>
                 <div class="flex-item second-column">
                     <div>Order #{{item.order_id}}</div>
-                    <div>Placed on{{item.delivery_date | date:'EEEE, MMM d'}}</div>
-
-                    <div>Items :10 &nbsp;&nbsp;&nbsp;&nbsp; Total :₹{{item.order_total}}</div>
-
+                    <div>Placed on {{safeDate(item.created_at) | date:'EEEE, MMM d'}}</div>
+                    <div>Items: {{ item.products?.length || item.itemsList?.length || 1 }} &nbsp;&nbsp;&nbsp;&nbsp; Total: ₹{{item.order_total}}</div>
                 </div>
-                <div class="flex-item last-column" (click)="orderViewAction(item)">
-                    <img [src]="'assets/orders/down_arrow.png'" />
+                <div class="flex-item last-column" (click)="orderViewAction(item)" style="cursor: pointer;">
+                    <img [src]="'assets/orders/down_arrow.png'" [style.transform]="item.expanded ? 'rotate(180deg)' : 'rotate(0deg)'" style="transition: transform 0.2s ease-in-out;" />
                 </div>
             </div>
-            <div *ngIf="item.expanded">
-                <hr />
-                <div style="display: grid; max-height: 100%;">
+            <div *ngIf="item.expanded" style="padding: 12px 16px; background: #fafafa; border-radius: 8px; margin-top: 10px;">
+                <hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;" />
+                <div *ngIf="item.products && item.products.length > 0; else loadingOrRawItems">
+                    <div *ngFor="let pro of item.products" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;" [alt]="pro.name || pro.product_name || 'Product'" />
+                            <div>
+                                <div style="font-weight: 600; font-size: 14px; color: #2d3748; display: flex; align-items: center; gap: 6px;">
+                                    <span>{{pro.name || pro.product_name || 'Product Item'}}</span>
+                                    <span *ngIf="isSubscriptionProduct(pro)" style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600;">Subscription</span>
+                                </div>
+                                <div style="font-size: 12px; color: #718096;">
+                                    Qty: {{ getItemTotalQty(pro) }} {{pro.weight ? '(' + pro.weight + ')' : ''}}
+                                    <span *ngIf="getItemDaysCount(pro) > 1" style="font-weight: 500; color: #4f46e5;"> &bull; {{getItemDaysCount(pro)}} Days</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="font-weight: 600; font-size: 14px; color: #1a202c;">₹{{ getItemTotalPrice(pro) | number }}</div>
+                    </div>
+                </div>
+                <ng-template #loadingOrRawItems>
+                    <div *ngIf="item.itemsList && item.itemsList.length > 0; else loadingItems">
+                        <div *ngFor="let pro of item.itemsList" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)" style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;" [alt]="pro.product_name || 'Product'" />
+                                <div>
+                                    <div style="font-weight: 600; font-size: 14px; color: #2d3748; display: flex; align-items: center; gap: 6px;">
+                                        <span>{{pro.product_name || pro.productID || 'Product Item'}}</span>
+                                        <span *ngIf="isSubscriptionProduct(pro)" style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600;">Subscription</span>
+                                    </div>
+                                    <div style="font-size: 12px; color: #718096;">
+                                        Qty: {{ getItemTotalQty(pro) }} {{pro.weight ? '(' + pro.weight + ')' : ''}}
+                                        <span *ngIf="getItemDaysCount(pro) > 1" style="font-weight: 500; color: #4f46e5;"> &bull; {{getItemDaysCount(pro)}} Days</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="font-weight: 600; font-size: 14px; color: #1a202c;">₹{{ getItemTotalPrice(pro) | number }}</div>
+                        </div>
+                    </div>
+                    <ng-template #loadingItems>
+                        <div style="padding: 12px; color: #718096; font-size: 13px;">Loading order items...</div>
+                    </ng-template>
+                </ng-template>
 
-                    <div *ngFor="let pro of products">{{pro.name}}</div>
-
+                <!-- Delivery Details & Instructions (Below Ordered Items) -->
+                <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 13px; color: #4a5568;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="font-weight: 600; color: #2d3748;">📅 Delivery Date:</span>
+                        <span style="font-weight: 500; color: #1a202c;">{{ safeDate(item.delivery_date) | date:'EEEE, MMM d, y' }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="font-weight: 600; color: #2d3748;">🚚 Mode of Delivery:</span>
+                        <span style="font-weight: 500; color: #1a202c;">{{ getDeliveryModeText(item.delivery_mode) }}</span>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2px;">
+                        <span style="font-weight: 600; color: #2d3748; min-width: 140px;">📝 Special Instructions:</span>
+                        <span style="font-weight: 500; color: #1a202c; text-align: right;">{{ (item.delivery_inst && item.delivery_inst !== 'undefined' && item.delivery_inst !== 'null') ? item.delivery_inst : 'None' }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -80,7 +130,7 @@
                 <div class="clearfix">
                     <div class="contents">
                         <div class="float-start order-id">
-                            <div class="label">{{item.delivered_at| date:'MMM d, h:mm a'}} . {{item.items_count}} Items
+                            <div class="label">{{safeDate(item.delivered_at) | date:'MMM d, h:mm a'}} . {{item.items_count}} Items
                             </div>
                             <div class="past-info">#{{item.order_id}}</div>
                         </div>

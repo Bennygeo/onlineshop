@@ -21,7 +21,7 @@ try {
 
     $cart = [];
     if ($orderId) {
-        $stmtCart = $pdo->prepare("SELECT oi.order_id AS orderID, oi.product_id AS productID, oi.quantity, oi.price, 'CART' AS status FROM order_items oi WHERE oi.order_id = ?");
+        $stmtCart = $pdo->prepare("SELECT oi.order_id AS orderID, oi.product_id AS productID, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, 'CART' AS status FROM order_items oi WHERE oi.order_id = ?");
         $stmtCart->execute([$orderId]);
         $cart = $stmtCart->fetchAll() ?: [];
     }

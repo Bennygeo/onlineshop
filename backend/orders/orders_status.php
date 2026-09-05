@@ -9,16 +9,15 @@ if (!$userID || !$pdo) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT order_id, status, total_amount, created_at FROM orders WHERE mobile = ? ORDER BY created_at DESC LIMIT 5");
+    $stmt = $pdo->prepare("SELECT order_id, status, total_amount, created_at FROM orders WHERE mobile = ? AND status = 'CART' ORDER BY created_at DESC LIMIT 1");
     $stmt->execute([$userID]);
-    $statuses = $stmt->fetchAll();
+    $cartOrder = $stmt->fetch();
 
-    if (empty($statuses)) {
-        sendJson([['order_id' => $defaultOrderId, 'status' => 'NEW', 'total_amount' => 0]]);
+    if ($cartOrder) {
+        sendJson([['order_id' => $cartOrder['order_id'], 'status' => 'CART', 'total_amount' => $cartOrder['total_amount']]]);
     } else {
-        sendJson($statuses);
+        sendJson([['order_id' => $defaultOrderId, 'status' => 'NEW', 'total_amount' => 0]]);
     }
 } catch (Exception $e) {
     sendJson([['order_id' => $defaultOrderId, 'status' => 'NEW', 'total_amount' => 0]]);
 }
-

@@ -12,6 +12,40 @@
     border: none !important;
     font-weight: 500;
     color: $grey-10;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    line-height: 1.1 !important;
+}
+
+.cell-qty-badge {
+    font-size: 9px;
+    font-weight: 700;
+    margin-top: 1px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #222;
+    line-height: 1;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.mat-calendar-body-cell.delivered .cell-qty-badge {
+    background: #ffffff;
+    color: #0f766e;
+}
+
+.mat-calendar-body-cell.selected .cell-qty-badge {
+    background: #ffffff;
+    color: #c2410c;
+}
+
+.mat-calendar-body-cell.missed .cell-qty-badge {
+    background: #ffffff;
+    color: #b91c1c;
 }
 
 @mixin day-status {
@@ -59,7 +93,7 @@
     .legend-child {
         display: inline-block;
 
-        & > span:first-child {
+        & > span:first-child:not(.qty-sample-badge) {
             display: inline-block;
             width: 30px;
             height: 12px;
@@ -73,6 +107,21 @@
             font-weight: 500;
             margin-right: 18px;
             color: $grey-10;
+        }
+
+        &.qty-legend-note {
+            .qty-sample-badge {
+                display: inline-block;
+                padding: 1px 5px;
+                font-size: 9px;
+                font-weight: 700;
+                border-radius: 4px;
+                background: #e2e8f0;
+                color: #334155;
+                margin-right: 6px;
+                position: relative;
+                top: -1px;
+            }
         }
     }
 }

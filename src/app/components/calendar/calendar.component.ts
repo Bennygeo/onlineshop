@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, ViewEncapsulation } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, ViewEncapsulation } from '@angular/core';
 import { CartService } from 'src/app/services/cart.service';
 import { DateE } from 'src/app/utils/custom-classes';
 import { Product, ProductOptions, SubsEntry, SubsOptions } from 'src/app/utils/types';
@@ -12,7 +12,7 @@ import { MatCalendar, MatCalendarCellClassFunction } from '@angular/material/dat
   styleUrl: './calendar.component.scss',
   encapsulation: ViewEncapsulation.None
 })
-export class CalendarComponent implements OnChanges {
+export class CalendarComponent implements OnChanges, AfterViewChecked {
 
   @ViewChild('calendar1', { static: false }) multiSelectCalendar: MatCalendar<Date>;
 
@@ -47,10 +47,47 @@ export class CalendarComponent implements OnChanges {
 
   constructor(
     private cartService: CartService,
-    private utils: Utils
+    private utils: Utils,
+    private el: ElementRef
   ) {
     // this.productsOptions = this.data.productsOptions;
     // this.subs_options = this.data.subsOptions;
+  }
+
+  ngAfterViewChecked(): void {
+    this.attachQuantityBadges();
+  }
+
+  attachQuantityBadges(): void {
+    if (!this.el) return;
+    const cells: NodeListOf<HTMLElement> = this.el.nativeElement.querySelectorAll('.mat-calendar-body-cell');
+    cells.forEach((cell: HTMLElement) => {
+      const match = cell.className.match(/qty-(\d+)/);
+      if (match) {
+        const qty = match[1];
+        const qtyText = `${qty} qty`;
+        const content = cell.querySelector('.mat-calendar-body-cell-content');
+        if (content) {
+          let badge = content.querySelector('.cell-qty-badge') as HTMLElement;
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'cell-qty-badge';
+            content.appendChild(badge);
+          }
+          if (badge.innerText !== qtyText) {
+            badge.innerText = qtyText;
+          }
+        }
+      } else {
+        const content = cell.querySelector('.mat-calendar-body-cell-content');
+        if (content) {
+          const badge = content.querySelector('.cell-qty-badge');
+          if (badge) {
+            badge.remove();
+          }
+        }
+      }
+    });
   }
   ngOnChanges(changes: SimpleChanges): void {
     this.productsOptions = this.data.productsOptions;
@@ -168,16 +205,23 @@ export class CalendarComponent implements OnChanges {
     const date = cellDate.getFullYear() + "-" + ("00" + (cellDate.getMonth() + 1)).slice(-2) + "-" + ("00" + cellDate.getDate()).slice(-2);
     if (this.subs_options.type == "multi_day") {
       let cls = '';
+      const entry = this.subs_options.multiDaySelected?.find(x => x.date == date);
       if (cellDate.getDay() === 0 || cellDate.getDay() === 6) {
-        cls = ((this.subs_options.multiDaySelected.find(x => x.date == date) ? "selected" : null) == null) ? 'week-ends' : 'selected';
+        cls = ((entry ? "selected" : null) == null) ? 'week-ends' : 'selected';
       } else {
-        cls = this.subs_options.multiDaySelected.find(x => x.date == date) ? "selected" : null;
+        cls = entry ? "selected" : null;
+      }
+      if (cls === 'selected' && entry) {
+        const qty = entry.count || this.subs_options.units || 1;
+        cls += ` has-qty qty-${qty}`;
       }
       return cls;
     } else if (this.subs_options.type == "range") {
       let cls = '';
-      this.subs_options.rangeSelected.find((x, index) => {
+      let qty = 0;
+      this.subs_options.rangeSelected?.find((x, index) => {
         if (x.date == date) {
+          qty = x.count || this.subs_options.units || 1;
           if (index == 0) {
             cls = "firstChild";
           } else if (this.subs_options.rangeSelected.length > 1 && index != this.subs_options.rangeSelected.length - 1) {
@@ -187,6 +231,9 @@ export class CalendarComponent implements OnChanges {
           }
         }
       });
+      if (cls && qty > 0) {
+        cls += ` has-qty qty-${qty}`;
+      }
       return cls;
     }
     return null;

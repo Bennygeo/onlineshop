@@ -5,6 +5,7 @@ import { Subject } from 'rxjs';
 import { ApiService } from 'src/app/services/api.service';
 import { CartService } from 'src/app/services/cart.service';
 import { LoginService } from 'src/app/services/login.service';
+import { OrderService } from 'src/app/services/order.service';
 import { ProductService } from 'src/app/services/product.service';
 import { DateE } from 'src/app/utils/custom-classes';
 import { DescriptionOptions, Product } from 'src/app/utils/types';
@@ -42,7 +43,8 @@ export class ProductComponent implements OnInit, OnChanges {
     private _api: ApiService,
     private _productService: ProductService,
     private datePipe: DatePipe,
-    private loginS: LoginService
+    private loginS: LoginService,
+    private orderService: OrderService
   ) {
   }
 
@@ -166,9 +168,21 @@ export class ProductComponent implements OnInit, OnChanges {
 
   viewSubscription(evt: MouseEvent): void {
     if (this.loginS.loginstatus()) {
-      this.product["subscribe"] = true;
-      //will be recieved by product_list component
-      this.valueChanges.emit(this.product);
+      this.orderService.getActiveSubscriptions().subscribe({
+        next: (subs: any) => {
+          const activeForThisProduct = Array.isArray(subs) && subs.some((s: any) => String(s.productID) === String(this.product.id) && s.subsStatus !== 'cancelled');
+          if (activeForThisProduct) {
+            alert("A subscription is already active for " + (this.product.name || "this product") + "! You cannot add a new subscription while one is active.");
+            return;
+          }
+          this.product["subscribe"] = true;
+          this.valueChanges.emit(this.product);
+        },
+        error: () => {
+          this.product["subscribe"] = true;
+          this.valueChanges.emit(this.product);
+        }
+      });
     } else {
       this.loginS.loginPromptEvent.next(true);
     }

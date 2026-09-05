@@ -10,7 +10,7 @@ if (!$pdo) {
 
 try {
     // If order_items table or cart table has cart items
-    $stmt = $pdo->prepare("SELECT oi.order_id AS orderID, oi.product_id AS productID, oi.quantity, oi.price, 'CART' AS status FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.mobile = ? AND o.status = ?");
+    $stmt = $pdo->prepare("SELECT oi.order_id AS orderID, oi.product_id AS productID, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, 'CART' AS status FROM order_items oi JOIN orders o ON oi.order_id = o.order_id WHERE o.mobile = ? AND o.status = ?");
     $stmt->execute([$customerID, $status]);
     $items = $stmt->fetchAll();
 

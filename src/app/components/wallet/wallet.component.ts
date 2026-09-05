@@ -44,7 +44,7 @@ export class WalletComponent implements OnInit, OnDestroy {
 
     constructor(
         private fb: FormBuilder,
-        private user: User,
+        public user: User,
         private loginS: LoginService,
         private cartS: CartService,
         private razorPay: RazorpayService,
@@ -143,6 +143,22 @@ export class WalletComponent implements OnInit, OnDestroy {
         this.walletForm.controls["amount"].setValue(this.rechargeAmt);
     }
 
+    showAllHistory: boolean = false;
+
+    isWithinLast5Days(timestamp: number): boolean {
+        if (!timestamp) return true;
+        const fiveDaysInMillis = 5 * 24 * 60 * 60 * 1000;
+        return (Date.now() - timestamp) <= fiveDaysInMillis;
+    }
+
+    get displayedHistory(): Array<Wallet> {
+        if (this.showAllHistory) {
+            return this.history;
+        }
+        const recent = this.history.filter(item => this.isWithinLast5Days(item.timestamp));
+        return recent.length > 0 ? recent : this.history;
+    }
+
     addMoneyToWallet(evt: MouseEvent) {
         this.razorPay.initiatePaymentModal(this.user, this.rechargeAmt);
     }
@@ -153,28 +169,28 @@ export class WalletComponent implements OnInit, OnDestroy {
 
     readLastTrxn(): void {
         this.apiService.postApi("wallet/read_last.php", { id: this.user.mobile }).subscribe(res => {
-            this.history.unshift(res[0]);
-            this.walletTotal = res[0].total;
-
-            this.loginS.user.wallet = this.walletTotal;
-            this.loginS.user.walletHistory = this.history;
+            if (res && res[0]) {
+                this.history.unshift(res[0]);
+                this.walletTotal = res[0].total;
+                this.loginS.user.wallet = this.walletTotal;
+                this.loginS.user.walletHistory = this.history;
+            }
 
             this.rcWindowFlg = false;
+            this.loginS.readWallet();
 
-            if (this.cartS.payAndCheckoutFlg && (res[0].status == "authorized" || res[0].status == "captured")) {
-                this.cartS.placeOrder((res: Wallet) => {
-                    this.history.unshift(res);
-                    this.walletTotal = res.total;
+            if (res && res[0] && this.cartS.payAndCheckoutFlg && (res[0].status == "authorized" || res[0].status == "captured")) {
+                this.cartS.placeOrder((orderRes: Wallet) => {
+                    this.history.unshift(orderRes);
+                    this.walletTotal = orderRes.total;
                     this.loginS.user.wallet = this.walletTotal;
                     this.loginS.user.walletHistory = this.history;
                     this.cartS.payAndCheckoutFlg = false;
                     this.cartS.router.navigate(["/products/cart"]);
                 });
-            } else {
-                // console.log("Payment failed.");
             }
 
-            if (this.cartS.editSubsPaymentTrack && (res[0].status == "authorized" || res[0].status == "captured")) {
+            if (res && res[0] && this.cartS.editSubsPaymentTrack && (res[0].status == "authorized" || res[0].status == "captured")) {
                 this.cartS.router.navigate(["/home/orders"]);
             }
             this.cdr.detectChanges();
