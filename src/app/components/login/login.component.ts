@@ -384,6 +384,9 @@ export class LoginComponent implements OnInit {
 
     if (!environment.production) {
       this.otpCode = this._utils.generateOTP();
+      console.log(this.otpCode);
+      console.log("--------------------");
+
       // this.api.postApi("com/otp.php", { mobile: this.userID }).subscribe((res) => {
       this.fetchStatus = "routing...";
 

@@ -176,18 +176,38 @@ export class ProductListComponent implements OnInit, OnDestroy {
       loadingEl.remove();
 
     let targetCat = this.cartS.router.url.split("?")[0].split("/")[3];
-    this.menus.activeMenu = targetCat;
+    if (targetCat) {
+      targetCat = decodeURIComponent(targetCat);
+    }
+
+    this.cartS.loadCategories().subscribe({
+      next: (cats: any[]) => {
+        if (cats && cats.length > 0) {
+          const catList = cats.map(c => c.cat || c.name);
+          this.productService.updateCategories(catList);
+          this.menus.list = catList;
+
+          if (!targetCat || !catList.includes(targetCat)) {
+            targetCat = catList[0];
+          }
+          this.menus.activeMenu = targetCat;
+          this.menus.menuClickHandler(this.menus.activeMenu);
+        } else {
+          this.menus.activeMenu = targetCat || this.menus.defaultMenu || "Vegetables";
+          this.menus.menuClickHandler(this.menus.activeMenu);
+        }
+      },
+      error: () => {
+        this.menus.activeMenu = targetCat || this.menus.defaultMenu || "Vegetables";
+        this.menus.menuClickHandler(this.menus.activeMenu);
+      }
+    });
 
     //get the downloaded products from the cart
     this.productsOptions.products = this.cartS.productsList;
 
     if (this.productsOptions.products.length > 0)
       this.productsOptions.loadingFlg = false;
-
-    //setup the defaults when loading the page second time after the products has benn downloaded
-    this.menus.menuClickHandler(this.menus.activeMenu);
-
-
   }
 
   renderProducts(): renderOptions {

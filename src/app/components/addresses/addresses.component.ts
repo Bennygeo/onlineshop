@@ -35,16 +35,13 @@ export class AddressesComponent implements OnInit, OnDestroy {
 
     this.addresses = this.loginS.user.addresses;
     this.selectedAddress = this.loginS.user.address;
+    this.syncActiveAddress();
 
     this.loginS.addressChangeEvent.subscribe({
       next: () => {
         this.addresses = this.loginS.user.addresses;
         this.selectedAddress = this.loginS.user.address;
-        window.setTimeout(() => {
-          for (var i = 0; i < this.addresses.length; i++) {
-            document.querySelector(`#addr_${i}>.flex-box>mat-radio-button>div>.mdc-radio`)['style'].height = (document.querySelector(`#addr_${i}>.flex-box>mat-radio-button>div>.mdc-label`).clientHeight) + "px";
-          }
-        });
+        this.syncActiveAddress();
       },
       error: () => {
         alert("Address change ERROR!");
@@ -76,6 +73,8 @@ export class AddressesComponent implements OnInit, OnDestroy {
     // });
   }
 
+  public selectedIndex: number = 0;
+
   editAddress(address: Address): void {
     this.type = "UPDATE";
     this.selectedAddress = undefined;
@@ -88,47 +87,17 @@ export class AddressesComponent implements OnInit, OnDestroy {
 
   addressChange(evt: MatRadioChange) {
     let index = evt.value * 1;
+    this.selectedIndex = index;
 
-    for (var ind = 0; ind < this.addresses.length; ind++)
-      if (this.addresses[ind].active == 1) this.addresses[ind].active = 0;
-
-    this.addresses[index].active = 1;
-    this.user.address = this.addresses[index];
-    this.user.pincode = this.user.address.pincode;
-
-    this.cartService.getZone(this.user.pincode).subscribe(area => {
-      if (area.length > 0) {
-        if (area[0].zone.toLocaleLowerCase() != this.user.zone) {
-          this.user.zone = area[0].zone.toLocaleLowerCase();
-          this.loginS.addressChangeEvent.next(AddressAction.SWITCH);
-        } else {
-          this.loginS.addressChangeEvent.next(AddressAction.SAME);
-        }
-      } else {
-        if (this.user.zone === "zone2") {
-          this.loginS.addressChangeEvent.next(AddressAction.SAME);
-        } else {
-          this.user.zone = "zone2";
-          this.loginS.addressChangeEvent.next(AddressAction.SWITCH);
-        }
-      }
-      this.cartService.zoneChangeEvent.next(this.user.zone);
-    });
-
-    let address = {
-      id: this.user.address.id,
-      mobile: this.user.address.mobile
+    for (var ind = 0; ind < this.addresses.length; ind++) {
+      this.addresses[ind].active = (ind === index) ? 1 : 0;
     }
-    this._api.postApi("user/set_default_address.php", { "address": JSON.stringify(address) }).subscribe({
-      next: (res: any) => {
 
-      },
-      error: (err: Error) => {
-        alert("Default address write error.");
-      }
-    });
-
+    this.user.address = this.addresses[index];
+    this.selectedAddress = this.addresses[index];
+    this.user.pincode = this.user.address.pincode;
   }
+
   //from address component
   closeEvent() {
     this.editBtnFlg = false;
@@ -153,14 +122,16 @@ export class AddressesComponent implements OnInit, OnDestroy {
         for (let i = 0; i < this.addresses.length; i++) {
           if (this.addresses[i].id == res.id) index = i;
         }
-        this.addresses[index]['active'] = 1;
-        this.addresses[index]['addr_line_1'] = res['addr_line_1'];
-        this.addresses[index]['name'] = res['name'];
-        this.addresses[index]['pincode'] = res['pincode'];
-        this.addresses[index]['title'] = res['title'];
+        if (index !== undefined) {
+          this.addresses[index]['active'] = 1;
+          this.addresses[index]['address'] = res['address'] || res['addr_line_1'];
+          this.addresses[index]['name'] = res['name'];
+          this.addresses[index]['pincode'] = res['pincode'];
+          this.addresses[index]['title'] = res['title'];
 
-        this.user.address = this.addresses[index];
-        this.user.addresses = this.addresses;
+          this.user.address = this.addresses[index];
+          this.user.addresses = this.addresses;
+        }
         this.loginS.addressChangeEvent.next(AddressAction.UPDATE);
         break;
 
@@ -210,6 +181,10 @@ export class AddressesComponent implements OnInit, OnDestroy {
   }
 
   addAddressAction(): void {
+    if (this.addresses && this.addresses.length >= 15) {
+      alert("MAX 15 address allowed!");
+      return;
+    }
     this.type = "INSERT";
     this.selectedAddress = undefined;
     this.editBtnFlg = true;
@@ -218,11 +193,82 @@ export class AddressesComponent implements OnInit, OnDestroy {
 
   defaultAddress(address: Address): void {
     this.selectedAddress = address;
-    this.loginS.addressCloseEvent.next(true);
+    this.user.address = address;
+    this.user.pincode = address.pincode;
+
+    for (let i = 0; i < this.addresses.length; i++) {
+      if (this.addresses[i].id === address.id) {
+        this.addresses[i].active = 1;
+        this.addresses[i].default = 1;
+        this.addresses[i]['is_default'] = 1;
+        this.selectedIndex = i;
+      } else {
+        this.addresses[i].active = 0;
+        this.addresses[i].default = 0;
+        this.addresses[i]['is_default'] = 0;
+      }
+    }
+
+    this.cartService.getZone(this.user.pincode).subscribe(area => {
+      if (area && area.length > 0) {
+        if (area[0].zone.toLocaleLowerCase() != this.user.zone) {
+          this.user.zone = area[0].zone.toLocaleLowerCase();
+        }
+      } else {
+        if (this.user.zone !== "zone2") {
+          this.user.zone = "zone2";
+        }
+      }
+      this.cartService.zoneChangeEvent.next(this.user.zone);
+    });
+
+    let addrParam = {
+      id: address.id,
+      mobile: this.user.mobile
+    };
+
+    this._api.postApi("user/set_default_address.php", { "address": JSON.stringify(addrParam) }).subscribe({
+      next: () => {
+        this.loginS.addressChangeEvent.next(AddressAction.SWITCH);
+        this.loginS.addressCloseEvent.next(true);
+      },
+      error: (err: Error) => {
+        alert("Default address write error.");
+      }
+    });
   }
 
   popupClose() {
     this.loginS.addressCloseEvent.next(true);
+  }
+
+  isDefaultAddress(address: Address): boolean {
+    return !!address && (address.default == 1 || address['is_default'] == 1);
+  }
+
+  syncActiveAddress(): void {
+    if (this.addresses && this.addresses.length > 0) {
+      let activeIdx = -1;
+      for (let i = 0; i < this.addresses.length; i++) {
+        if (this.addresses[i].default == 1 || this.addresses[i]['is_default'] == 1 || this.addresses[i].active == 1) {
+          this.addresses[i].active = 1;
+          if (activeIdx === -1) activeIdx = i;
+        } else {
+          this.addresses[i].active = 0;
+        }
+      }
+      if (activeIdx === -1) {
+        activeIdx = 0;
+        this.addresses[0].active = 1;
+      }
+      this.selectedIndex = activeIdx;
+      this.selectedAddress = this.addresses[activeIdx];
+      this.user.address = this.addresses[activeIdx];
+    }
+  }
+
+  trackByAddressId(index: number, address: Address): any {
+    return address ? address.id || index : index;
   }
 
   ngOnDestroy(): void {

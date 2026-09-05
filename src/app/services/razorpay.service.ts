@@ -24,6 +24,8 @@ export class RazorpayService {
     return _window();
   }
 
+  currentUserMobile: string;
+
   initiatePaymentModal(user: User, amt: any) {
 
     let receiptNumber = `Receipt#${Math.floor(Math.random() * 5123 * 43) + 10}`;
@@ -36,8 +38,9 @@ export class RazorpayService {
       _amt = (amt).slice(1) * 1;
     }
     amt = _amt;
+    this.currentUserMobile = user.mobile || "7200015551";
     // this.changeEvent.next("INIT");
-    this._api.postApi('wallet/razor_pay.php', { amount: amt * 100, currency: "INR", reciept: receiptNumber, payment_capture: 1 }).subscribe({
+    this._api.postApi('wallet/razor_pay.php', { amount: amt * 100, currency: "INR", reciept: receiptNumber, payment_capture: 1, mobile: this.currentUserMobile }).subscribe({
       next: (res: any) => {
         let order = {
           currency: "INR",
@@ -97,7 +100,8 @@ export class RazorpayService {
   }
 
   verify_sign(data) {
-    this._api.postApi('wallet/verify.php', data).subscribe({
+    const payload = { ...data, mobile: this.currentUserMobile };
+    this._api.postApi('wallet/verify.php', payload).subscribe({
       next: (res: any) => {
         this.changeEvent.next(this.payment.PaymentStaus.AUTHORIZED);
       },

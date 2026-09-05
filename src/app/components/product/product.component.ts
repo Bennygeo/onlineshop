@@ -73,6 +73,7 @@ export class ProductComponent implements OnInit, OnChanges {
 
   init() {
     this.product.changeInProduct = new Subject();
+    if (!this.product.units) this.product.units = 0;
 
     this.product.disabled = (String(this.product['disabled']) == 'true') ? true : false;
 
@@ -80,9 +81,21 @@ export class ProductComponent implements OnInit, OnChanges {
 
     if (!this.product['updated_weight']) this.product['updated_weight'] = this.product["weight"];
 
-    this.product['price'] = Math.round(((this.product['stock_price'] * (1 + this.product['profit_percent'] / 100)) * _quantity));
+    if (!this.product['unit_price']) this.product['unit_price'] = Number(this.product['price'] || 0);
 
-    if (!this.product['original_price']) this.product['original_price'] = Math.round((this.product['stock_price'] * (1 + this.product['show_off_percent'] / 100)) * 1);
+    if (this.product['stock_price'] !== undefined && this.product['profit_percent'] !== undefined) {
+      this.product['price'] = Math.round(((this.product['stock_price'] * (1 + this.product['profit_percent'] / 100)) * _quantity));
+    } else {
+      this.product['price'] = Number(this.product['unit_price'] || 0) * _quantity;
+    }
+
+    if (!this.product['original_price']) {
+      if (this.product['stock_price'] !== undefined && this.product['show_off_percent'] !== undefined) {
+        this.product['original_price'] = Math.round((this.product['stock_price'] * (1 + this.product['show_off_percent'] / 100)) * 1);
+      } else {
+        this.product['original_price'] = this.product['price'];
+      }
+    }
 
     if (!this.product['subs_options']) this.product.subs_options = {
       units: this.product.units,
@@ -99,7 +112,13 @@ export class ProductComponent implements OnInit, OnChanges {
 
     if (this.product.delivery_day != -1) this.product.delivery_date = this.cartS.getNextDeliveryDate(this.product);
 
-    (this.product.delivery_day == -1) ? this.product.subscribeFlg = true : this.product.subscribeFlg = false;
+    if (this.product.subscribe_flg !== undefined && this.product.subscribe_flg !== null) {
+      this.product.subscribeFlg = (Number(this.product.subscribe_flg) === 1);
+    } else if (this.product.cat === 'Milk' || this.product.cat === 'Tender' || this.product.delivery_day == -1) {
+      this.product.subscribeFlg = true;
+    } else {
+      this.product.subscribeFlg = false;
+    }
 
     try {
       this.product.delivery_date_enhanced = (DateE.dateDiff(this.cartS.deliveryDate, this.product.delivery_date) == 0) ? "Tomorrow." : this.datePipe.transform(this.product["delivery_date"], 'EEE,MMM d');

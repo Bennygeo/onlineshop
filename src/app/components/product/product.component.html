@@ -34,7 +34,7 @@
                 *ngIf="!(product.subs_options ? ((product.subs_options.rangeSelected.length>0) || (product.subs_options.multiDaySelected.length > 0)) : false)">
             </plus-minus>
 
-            <div *ngIf="(product.subs_options.multiDaySelected && product.subs_options.multiDaySelected.length==0) && (product.subs_options.rangeSelected && product.subs_options.rangeSelected.length==0) && this.product.units == 0"
+            <div *ngIf="(product.subs_options.multiDaySelected && product.subs_options.multiDaySelected.length==0) && (product.subs_options.rangeSelected && product.subs_options.rangeSelected.length==0) && (this.product.units || 0) == 0"
                 (click)="viewSubscription($event)" style="position: relative; float: right; margin-top: 6px;">
                 <img *ngIf="product['subscribeFlg']" class="noselect" src="assets/general/calendar.png" width="28" />
             </div>

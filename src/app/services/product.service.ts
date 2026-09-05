@@ -33,6 +33,13 @@ export class ProductService {
     loadingFlg: true
   };
 
+  updateCategories(cats: string[]): void {
+    if (cats && cats.length > 0) {
+      this.menus.list = cats;
+      this.menus.defaultMenu = cats[0];
+    }
+  }
+
 
   /**
   * Vertical menu position

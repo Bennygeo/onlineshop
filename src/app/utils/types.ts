@@ -44,6 +44,7 @@ export type Product = {
     offer: number;
 
     disabled: boolean;
+    cat?: string;
 
     packing_charges: number;
     delivery_charges: number;
@@ -66,6 +67,7 @@ export type Product = {
 
     subscribe?: boolean;
     subscribeFlg?: boolean;
+    subscribe_flg?: number;
 
     changeInProduct?: Subject<Product>;
 
@@ -301,7 +303,7 @@ export interface WindowSize {
 export interface Address {
     id: number;
     mobile: string;
-    addr_line_1: string;
+    address: string;
     email: string;
     name: string;
     pincode: string;

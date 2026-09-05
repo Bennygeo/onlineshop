@@ -6,10 +6,9 @@ import { Common } from 'src/app/modal/Common';
 import { GeoLocation } from 'src/app/modals/geo-location';
 import { User } from 'src/app/modals/user';
 import { ApiService } from 'src/app/services/api.service';
+import { LocationService } from 'src/app/services/location.service';
 import { LoginService } from 'src/app/services/login.service';
 import { Address } from 'src/app/utils/types';
-
-declare var google: any;
 
 @Component({
   selector: 'app-address',
@@ -71,8 +70,10 @@ export class AddressComponent implements OnInit, OnChanges {
   constructor(
     private formBuilder: FormBuilder,
     private loginS: LoginService,
-    private _api: ApiService, @Inject('Window') private windowRef: Window,
-    private cdr: ChangeDetectorRef
+    private _api: ApiService,
+    @Inject('Window') private windowRef: Window,
+    private cdr: ChangeDetectorRef,
+    private _location: LocationService
   ) {
     this.addressShowFlg = false;
     this.animationDoneFlg = true;
@@ -90,7 +91,7 @@ export class AddressComponent implements OnInit, OnChanges {
       this.addressGroup.patchValue({
         name: this.address.name,
         pincode: this.address.pincode,
-        address: this.address.addr_line_1,
+        address: this.address.address,
         email: this.address.email,
         altMobile: this.address.alt_mobile,
         title: this.address.title
@@ -153,44 +154,34 @@ export class AddressComponent implements OnInit, OnChanges {
 
   detect_my_location(e) {
     this.detect_loc_loader_flg = true;
-    this.user.GPSInfo.getLocation((status) => {
+    this._location.detect_my_location().then((res) => {
       this.detect_loc_loader_flg = false;
 
-      if (this.user.GPSInfo.geoStatus == GeoLocation.ACCESS_GRANTED) {
-
-        if (this.user.GPSInfo.geoLocation.lat == null) {
-          alert("GPS not activated!");
-          return;
+      if (typeof res === 'object' && res.pincode !== undefined) {
+        this.addressGroup.patchValue({
+          pincode: res.pincode,
+          address: res.address || ''
+        });
+      } else {
+        switch (res) {
+          case GeoLocation.GPS_DENIED:
+          case "DENIED":
+            alert("Please enable location on your browser.");
+            break;
+          case GeoLocation.LOCATION_PROMPT:
+            alert("Location prompt");
+            break;
+          case GeoLocation.NOT_STARTED:
+            alert("GPS not activated!");
+            break;
+          default:
+            alert("Please enable location.");
+            break;
         }
-
-        var google_map_pos = new google.maps.LatLng(this.user.GPSInfo.geoLocation.lat, this.user.GPSInfo.geoLocation.lng);
-        var google_maps_geocoder = new google.maps.Geocoder();
-
-        google_maps_geocoder.geocode(
-          { location: google_map_pos },
-          (results, status) => {
-
-            if (status == "OK") {
-              this.user.pincode = results[0].address_components[results[0].address_components.length - 1].long_name as string;
-              this.addressGroup.patchValue({ pincode: this.user.pincode, address: results[0].formatted_address });
-            }
-          }
-        );
-      } else if (this.user.GPSInfo.geoStatus == "DENIED") {
-        if (this.windowRef["Android"]) {
-          //send to Android
-          this.windowRef["Android"].get_gps_location_from_andoid();
-        } else if (this.windowRef['webkit']) {
-          this.windowRef["webkit"].notify_ios_for_location();
-        } else {
-          //if it is webv browser
-          alert("Please enable location on your browser.");
-        }
-      } else if (this.user.GPSInfo.geoStatus == "PROMPT") {
-        alert("Location prompt");
-      } else if (this.user.GPSInfo.geoStatus == "NOT_STARTED" || this.user.GPSInfo.geoStatus == undefined) {
-        alert("Please enable location.");
       }
+      this.cdr.detectChanges();
+    }).catch(() => {
+      this.detect_loc_loader_flg = false;
       this.cdr.detectChanges();
     });
   }
@@ -206,8 +197,11 @@ export class AddressComponent implements OnInit, OnChanges {
         addr.mobile = this.user.mobile;
 
         this._api.postApi('user/write_address.php', { "address": JSON.stringify(addr) }).subscribe({
-          next: (res) => {
-            this.update.emit(res);
+          next: (res: any) => {
+            if (res && res.id) {
+              addr.id = res.id;
+            }
+            this.update.emit(addr);
             this.closeAction();
           },
           error: (err: Error) => {
@@ -223,7 +217,7 @@ export class AddressComponent implements OnInit, OnChanges {
         addr.id = this.address.id;
         this._api.postApi("user/update_address.php", { "address": JSON.stringify(addr) }).subscribe({
           next: (res: any) => {
-            this.update.emit(res);
+            this.update.emit(addr);
             this.closeAction();
           },
           error: (err: Error) => {

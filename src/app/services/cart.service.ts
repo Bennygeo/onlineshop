@@ -28,6 +28,10 @@ export class CartService {
 
   categoryPriorityIndex: Array<string> = ["Vegetables", "Naturalhydrants", "Fruits", "Greenssprouts", "Flowers", "Honeyspices", "Woodpressed", "Dairyeggs", "Naturalsugars", "Lentilspulses", "Breakfast", "Quickmeals", "Traditionalsnacks", "Skinhair"];
 
+  loadCategories(): Observable<any[]> {
+    return this.apiS.getApi('products/get_categories.php');
+  }
+
   //Header might be differs when page changes
   headerChangeEvent: ReplaySubject<string> = new ReplaySubject<string>();
 
@@ -340,8 +344,10 @@ export class CartService {
       this.apiS.postApi('orders/orders_status.php', { userID: this.userID }).subscribe(res => {
         if (typeof res == "string") {
           this.orderID = res;
-        } else {
+        } else if (res && res.length > 0 && res[0]?.order_id) {
           this.orderID = res[0].order_id;
+        } else {
+          this.orderID = 'ORD_' + Date.now();
         }
         this.loginS.user.orderID = this.orderID;
         obs.next(this.orderID);
@@ -395,10 +401,18 @@ export class CartService {
       }
       product['updated_weight'] = weight;
 
-      product["price"] = Math.round(((product['stock_price'] * (1 + product['profit_percent'] / 100)) * _quantity));
-      let show_off_percent_total = Math.round((product['stock_price'] * (1 + product['show_off_percent'] / 100)) * _quantity);
-      product['original_price'] = show_off_percent_total;
-      product['offer_percentage'] = -Math.round(((Number(product['price']) / Number(show_off_percent_total)) * 100) - 100);
+      if (!product['unit_price']) product['unit_price'] = Number(product['price'] || 0);
+
+      if (product['stock_price'] !== undefined && product['profit_percent'] !== undefined) {
+        product["price"] = Math.round(((product['stock_price'] * (1 + product['profit_percent'] / 100)) * _quantity));
+        let show_off_percent_total = Math.round((product['stock_price'] * (1 + product['show_off_percent'] / 100)) * _quantity);
+        product['original_price'] = show_off_percent_total;
+        product['offer_percentage'] = -Math.round(((Number(product['price']) / Number(show_off_percent_total)) * 100) - 100);
+      } else {
+        product["price"] = Number(product['unit_price'] || 0) * _quantity;
+        if (!product['original_price']) product['original_price'] = product['price'];
+        product['offer_percentage'] = 0;
+      }
       product['delivery_date'] = this.getNextDeliveryDate(product);
 
       //write in the cart object
@@ -412,14 +426,16 @@ export class CartService {
         }
       } else {
         if (product.subs_options) {
+          const unitP = Number(product['unit_price'] || product['price'] || 0);
+          const subUnits = Number(product.subs_options.units || 1);
           if (product.subs_options.type == "range") {
             product.subs_options.rangeCnt = product.subs_options.rangeSelected.length;
-            product.subs_options.price = (Number(product["price"]) * product.subs_options.rangeSelected.length).toFixed(2);
+            product.subs_options.price = (unitP * subUnits * product.subs_options.rangeSelected.length).toFixed(2);
           }
 
           if (product.subs_options.type == "multi_day") {
             product.subs_options.multiCnt = product.subs_options.multiDaySelected.length;
-            product.subs_options.price = (Number(product["price"]) * product.subs_options.multiDaySelected.length).toFixed(2);
+            product.subs_options.price = (unitP * subUnits * product.subs_options.multiDaySelected.length).toFixed(2);
           }
         }
       }
@@ -539,16 +555,16 @@ export class CartService {
           "orderId": this.orderID
         }).subscribe({
           next: (cartProducts: any) => {
-            if (cartProducts.live.length > 0) {
+            if (cartProducts?.live && cartProducts.live.length > 0) {
               let result: Array<string> = this.cartBarRestrictedPages.filter((val) => val == this.currentPage);
               if (result.length == 0) this.isCartVisible.next(true);
             }
 
-            cartProducts.live.forEach((_product) => {
+            (cartProducts?.live || []).forEach((_product: any) => {
               this.cartLiveProducts[_product.id] = _product;
             });
 
-            cartProducts?.cart.forEach((_product: any) => {
+            (cartProducts?.cart || []).forEach((_product: any) => {
 
               _product.subscribe = false;
               //extending with cart and live products

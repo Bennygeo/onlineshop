@@ -24,36 +24,24 @@ export class ViewComponent implements OnInit, OnDestroy {
   bannerDownloadFlg: boolean = true;
   cartBarVisibilityFlg: boolean = true;
 
-  categories: Array<any> = [{
-    name: "Vegetables",
-    imgUrl: "assets/categories/Thinkspot_veggiesIcon.png",
-    routerLink: "/products/category/Vegetables"
-  }, {
-    name: "Fruits",
-    imgUrl: "assets/categories/fruitsIcons.png",
-    routerLink: "/products/category/Fruits"
-  }, {
-    name: "Tender Coconut",
-    imgUrl: "assets/categories/Thinkspot_tenderCocoIcon.png",
-    routerLink: "/products/category/Naturalhydrants"
-  }, {
-    name: "Greens",
-    imgUrl: "assets/categories/Thinkspot_greensIcon.png",
-    routerLink: "/products/category/Greenssprouts"
-  }, {
-    name: "Flowers",
-    imgUrl: "assets/categories/Thinkspot_flowers.png",
-    routerLink: "/products/category/Flowers"
-  }, {
-    name: "Woodpressed",
-    imgUrl: "assets/categories/Thinkspot_oilsIcon.png",
-    routerLink: "/products/category/Woodpressed"
-  }];
+  categories: Array<any> = [];
 
   constructor(
     public cartS: CartService,
     private loginS: LoginService) {
     this.cartS.headerChangeEvent.next("type1");
+
+    this.cartS.loadCategories().subscribe({
+      next: (cats: any[]) => {
+        if (cats && cats.length > 0) {
+          this.categories = cats.map(c => ({
+            name: c.name,
+            imgUrl: c.imgUrl || "assets/categories/Thinkspot_veggiesIcon.png",
+            routerLink: "/products/category/" + c.cat
+          }));
+        }
+      }
+    });
 
     this.loginS.loginChangeEvent.subscribe((res: string) => {
       if (res === Common.loginStatus.LOGIN) {

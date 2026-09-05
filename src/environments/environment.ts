@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  url: "https://www.thinkspot.in/php_revamp/",
+  url: "http://localhost:8000/",
 
   //firebase config
   apiKey: "AIzaSyAtKyPbKrEfRlFLGYFJIDktXXQn1qTYjQw",

@@ -2,8 +2,6 @@ import { Inject, Injectable } from '@angular/core';
 import { User } from '../modals/user';
 import { GeoLocation } from '../modals/geo-location';
 
-declare var google: any;
-
 @Injectable({
   providedIn: 'root'
 })
@@ -14,26 +12,39 @@ export class LocationService {
   detect_my_location(): Promise<any> {
     return new Promise<any>((resolve, reject) => {
 
-      this.user.GPSInfo.getLocation((status) => {
+      this.user.GPSInfo.getLocation(async (status) => {
 
         if (this.user.GPSInfo.geoStatus == GeoLocation.ACCESS_GRANTED) {
 
           if (this.user.GPSInfo.geoLocation.lat == null) {
-            resolve(GeoLocation.NOT_STARTED)
+            resolve(GeoLocation.NOT_STARTED);
+            return;
           }
 
-          var google_map_pos = new google.maps.LatLng(this.user.GPSInfo.geoLocation.lat, this.user.GPSInfo.geoLocation.lng);
-          var google_maps_geocoder = new google.maps.Geocoder();
+          const lat = this.user.GPSInfo.geoLocation.lat;
+          const lng = this.user.GPSInfo.geoLocation.lng;
 
-          google_maps_geocoder.geocode(
-            { location: google_map_pos },
-            (results, status) => {
-              if (status == "OK") {
-                this.user.pincode = results[0].address_components[results[0].address_components.length - 1].long_name as string;
-                resolve({ 'pincode': this.user.pincode, 'address': results[0].formatted_address });
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+              {
+                headers: {
+                  'User-Agent': 'ThinkspotApp/1.0'
+                }
               }
+            );
+            const data = await response.json();
+
+            if (data && data.address) {
+              this.user.pincode = data.address.postcode || '';
+              resolve({ 'pincode': this.user.pincode, 'address': data.display_name });
+            } else {
+              resolve(GeoLocation.NOT_STARTED);
             }
-          );
+          } catch (err) {
+            console.error('Nominatim reverse geocoding error:', err);
+            resolve(GeoLocation.FAILED);
+          }
         } else if (this.user.GPSInfo.geoStatus == "DENIED") {
           // this.detect_loc_loader_flg = false;
           if (this.windowRef["Android"]) {
@@ -53,3 +64,4 @@ export class LocationService {
     });
   }
 }
+

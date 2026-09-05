@@ -116,7 +116,7 @@ export class HeaderComponent implements OnInit {
         this.user = this.loginS.user;
 
         if (this.user.addresses.length > 0) {
-          this.addressName = this.user.address?.title;
+          this.addressName = this.user.address?.name;
           this.userName = this.user.address?.name;
         } else {
           this.userName = "Thinkspot user";
@@ -138,7 +138,7 @@ export class HeaderComponent implements OnInit {
         this.user = this.loginS.user;
         if (this.user.addresses.length > 0) {
           this.userName = this.user.address?.name;
-          this.addressName = this.loginS.user.address?.title;
+          this.addressName = this.loginS.user.address?.name;
         } else {
           this.userName = "Thinkspot user";
           this.addressName = "600095";

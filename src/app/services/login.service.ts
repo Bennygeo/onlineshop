@@ -82,7 +82,7 @@ export class LoginService {
         });
 
         this.readUser().subscribe((res: any) => {
-            if (res.length > 0) {
+            if (res && res.length > 0) {
                 this.user.referralId = res[0].referral_id;
             } else {
                 this.logoutEvent.next();
@@ -124,15 +124,24 @@ export class LoginService {
     readAddress() {
         if (this.userStatus === Common.loginStatus.LOGIN) {
             this.apiService.postApi("user/read_address.php", { id: this.user.mobile }).subscribe((res: Array<Address>) => {
-                if (res.length > 0) {
-                    this.user.addresses = res;
-                    // this.addresses = res;
+                if (res && res.length > 0) {
+                    let hasActive = false;
                     res.forEach((item) => {
-                        if (item.active == 1) {
+                        if (item.default == 1 || item['is_default'] == 1 || item.active == 1) {
+                            item.active = 1;
                             this.user.address = item;
                             this.user.pincode = item.pincode;
+                            hasActive = true;
+                        } else {
+                            item.active = 0;
                         }
                     });
+                    if (!hasActive && res.length > 0) {
+                        res[0].active = 1;
+                        this.user.address = res[0];
+                        this.user.pincode = res[0].pincode;
+                    }
+                    this.user.addresses = res;
                     this.addressChangeEvent.next(AddressAction.READ);
                 } else {
                     //For no address user
@@ -145,9 +154,11 @@ export class LoginService {
     readWallet(): void {
         this.apiService.postApi("wallet/read_wallet.php", { id: this.user.mobile }).subscribe({
             next: (res: Array<Wallet>) => {
-                this.user.walletHistory = res.reverse();
-                this.user.wallet = res[0]?.total || 0;
-                this.walletUpdateEvent.next(res);
+                if (res && Array.isArray(res)) {
+                    this.user.walletHistory = res.reverse();
+                    this.user.wallet = res[0]?.total || 0;
+                    this.walletUpdateEvent.next(res);
+                }
             },
             error: (err: Error) => {
                 alert("Read wallet error");

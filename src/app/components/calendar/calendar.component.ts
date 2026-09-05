@@ -78,6 +78,9 @@ export class CalendarComponent implements OnChanges {
 
   productChanges(product: Product) {
     this.productsOptions.product = product;
+    if (!this.productsOptions.product['updated_weight']) {
+      this.productsOptions.product['updated_weight'] = this.productsOptions.product['weight'] || 1;
+    }
 
     //reset the local object
     this.subs_options = {
@@ -216,7 +219,9 @@ export class CalendarComponent implements OnChanges {
 
     //get the count of selected days
     this.subs_options.multiCnt = this.subs_options.multiDaySelected.length;
-    this.subs_options.price = ((Number(this.productsOptions.product.price) * this.productsOptions.product.updated_weight) * this.subs_options.multiCnt).toString();
+    const unitPrice = Number(this.productsOptions.product.price || 0);
+    const qty = Number(this.subs_options.units || 1);
+    this.subs_options.price = (unitPrice * qty * this.subs_options.multiCnt).toString();
 
     //copying to product object
     this.productsOptions.product['subs_options'] = this.subs_options;
@@ -243,7 +248,9 @@ export class CalendarComponent implements OnChanges {
 
     //get the count of selected days
     this.subs_options.multiCnt = this.subs_options.multiDaySelected.length;
-    this.subs_options.price = ((Number(this.productsOptions.product.price) * this.productsOptions.product.updated_weight) * this.subs_options.multiCnt).toString();
+    const unitPrice = Number(this.productsOptions.product.price || 0);
+    const qty = Number(this.subs_options.units || 1);
+    this.subs_options.price = (unitPrice * qty * this.subs_options.multiCnt).toString();
 
     calendar.updateTodaysDate();
 
@@ -302,7 +309,9 @@ export class CalendarComponent implements OnChanges {
       else this.subs_options.rangeSelected.splice(index, 1);
     }
     this.subs_options.rangeCnt = this.subs_options.rangeSelected.length;
-    this.subs_options.price = ((Number(this.productsOptions.product.price) * this.productsOptions.product.updated_weight) * this.subs_options.rangeCnt).toString();
+    const unitPrice = Number(this.productsOptions.product.price || 0);
+    const qty = Number(this.subs_options.units || 1);
+    this.subs_options.price = (unitPrice * qty * this.subs_options.rangeCnt).toString();
 
     calendar.updateTodaysDate();
     this.productsOptions.product['subs_options'] = this.subs_options;

@@ -6,6 +6,10 @@ import { SearchComponent } from '../components/search/search.component';
 
 const routes: Routes = [
   {
+    path: 'category',
+    component: ProductListComponent
+  },
+  {
     path: 'category/:id',
     component: ProductListComponent
   },
