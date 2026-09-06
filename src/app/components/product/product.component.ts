@@ -79,24 +79,40 @@ export class ProductComponent implements OnInit, OnChanges {
 
     this.product.disabled = (String(this.product['disabled']) == 'true') ? true : false;
 
-    let _quantity = (this.product.units * 1) || 1;
+    const _quantity = (this.product.units * 1) || 1;
 
     if (!this.product['updated_weight']) this.product['updated_weight'] = this.product["weight"];
 
-    if (!this.product['unit_price']) this.product['unit_price'] = Number(this.product['price'] || 0);
-
-    if (this.product['stock_price'] !== undefined && this.product['profit_percent'] !== undefined) {
-      this.product['price'] = Math.round(((this.product['stock_price'] * (1 + this.product['profit_percent'] / 100)) * _quantity));
-    } else {
-      this.product['price'] = Number(this.product['unit_price'] || 0) * _quantity;
+    let basePrice = Number(this.product['price']);
+    if (isNaN(basePrice) || basePrice <= 0) {
+      basePrice = Number(this.product['unit_price'] || 0);
+    }
+    if (!this.product['unit_price'] || isNaN(Number(this.product['unit_price']))) {
+      this.product['unit_price'] = basePrice;
     }
 
-    if (!this.product['original_price']) {
-      if (this.product['stock_price'] !== undefined && this.product['show_off_percent'] !== undefined) {
-        this.product['original_price'] = Math.round((this.product['stock_price'] * (1 + this.product['show_off_percent'] / 100)) * 1);
+    const stockPrice = Number(this.product['stock_price']);
+    const profitPercent = Number(this.product['profit_percent']);
+    const showOffPercent = Number(this.product['show_off_percent']);
+
+    if (!isNaN(stockPrice) && stockPrice > 0 && !isNaN(profitPercent) && profitPercent > 0) {
+      this.product['price'] = Math.round(stockPrice * (1 + profitPercent / 100) * _quantity);
+    } else {
+      this.product['price'] = Math.round(basePrice * _quantity);
+    }
+
+    let origPrice = Number(this.product['original_price']);
+    if (isNaN(origPrice) || origPrice <= 0) {
+      if (!isNaN(stockPrice) && stockPrice > 0 && !isNaN(showOffPercent) && showOffPercent > 0) {
+        origPrice = Math.round(stockPrice * (1 + showOffPercent / 100));
       } else {
-        this.product['original_price'] = this.product['price'];
+        origPrice = basePrice;
       }
+    }
+
+    this.product['original_price'] = Math.round(origPrice * _quantity);
+    if (isNaN(Number(this.product['original_price']))) {
+      this.product['original_price'] = this.product['price'];
     }
 
     if (!this.product['subs_options']) this.product.subs_options = {
@@ -117,10 +133,12 @@ export class ProductComponent implements OnInit, OnChanges {
     const subFlgVal = this.product.subscribe_flg !== undefined ? this.product.subscribe_flg : this.product['subscribeFlg'];
     if (subFlgVal !== undefined && subFlgVal !== null) {
       this.product.subscribeFlg = (Number(subFlgVal) === 1);
-    } else if (this.product.cat === 'Milk' || this.product.cat === 'Tender' || this.product.delivery_day == -1) {
-      this.product.subscribeFlg = true;
     } else {
-      this.product.subscribeFlg = false;
+      const cat = String(this.product.cat || '').toLowerCase();
+      const name = String(this.product.name || '').toLowerCase();
+      const isMilk = cat === 'milk' || name.includes('milk 1');
+      const isTenderCoconut = cat === 'tender' || name.includes('tender coconut');
+      this.product.subscribeFlg = isMilk || isTenderCoconut;
     }
 
     try {

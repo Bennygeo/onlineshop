@@ -276,71 +276,66 @@ export class LoginComponent implements OnInit {
       this.otpStatus = "Validating...";
 
       if (environment.production) {
-        this.api.postApi("com/validate_otp.php", { mobile: this.userID, otp: this.otpUserVal }).subscribe(res => {
-          if (res == "SUCCESS") {
-            this.btnName = "Success";
-            this.otpStatus = "Valid";
-            // Do NOT set validOTPFlg = true here yet, so *ngIf="!validOTPFlg" overlay remains active for referralFlg
-            this.otpPageFlg = false;
-
-            //setup cookie
-            this.storageS.setItem("login", btoa(this.userID));
-            this.loginS.addUser({
-              name: "",
-              defaultAddressID: 0,
-              mobile: this.userID,
-              referralCode: this.referralFormControl.value || this.loginS.queryParams?.id
-            }).subscribe(res => {
-              this.loginS.user.mobile = this.userID;
-              this.locationPageFlg = false;
-              this.mobilePageFlg = false;
-              this.otpPageFlg = false;
-              this.referralFlg = true; // Show referral prompt after OTP verification
-
-              if (res && res.status == "ADDED" && res.referrer != null) {
-                this.loginS.referrrarinfo = res;
-                this.referralSuccessFlg = true;
-              }
-            });
-          } else {
-            this.loginS.user.mobile = this.userID;
-            this.validOTPFlg = false;
-            this.otpStatus = "Invalid";
-            this.resumeTimer();
+        this.api.postApi("com/validate_otp.php", { mobile: this.userID, otp: this.otpUserVal }).subscribe({
+          next: (res: any) => {
+            const isSuccess = res === "SUCCESS" || (typeof res === 'object' && (res?.status === "SUCCESS" || res?.verified === true));
+            if (isSuccess) {
+              this.handleSuccessfulOTP();
+            } else {
+              this.handleInvalidOTP();
+            }
+          },
+          error: () => {
+            this.handleInvalidOTP();
           }
         });
       } else {
-        this.btnName = "Success";
-        this.otpStatus = "Valid";
-        // Do NOT set validOTPFlg = true here yet, so *ngIf="!validOTPFlg" overlay remains active for referralFlg
-        this.otpPageFlg = false;
-
-        //setup cookie
-        this.storageS.setItem("login", btoa(this.userID));
-        this.loginS.addUser({
-          name: "",
-          defaultAddressID: 0,
-          mobile: this.userID,
-          referralCode: this.referralFormControl.value || this.loginS.queryParams?.id
-        }).subscribe(res => {
-          this.loginS.user.mobile = this.userID;
-          this.locationPageFlg = false;
-          this.mobilePageFlg = false;
-          this.otpPageFlg = false;
-          this.referralFlg = true; // Show referral prompt after OTP verification
-
-          if (res && res.status == "ADDED" && res.referrer != null) {
-            this.loginS.referrrarinfo = res;
-            this.referralSuccessFlg = true;
-          }
-        });
+        if (this.otpUserVal === '1111') {
+          this.handleSuccessfulOTP();
+        } else {
+          this.handleInvalidOTP();
+        }
       }
     } else if (this.btnName === "Resend") {
-      //Sttart otp timer     
       this.otpFlag = true;
       this.maxTimerInterval = 30;
       this.sendOTPAction();
     }
+  }
+
+  handleSuccessfulOTP() {
+    this.btnName = "Success";
+    this.otpStatus = "Valid";
+    this.otpPageFlg = false;
+
+    this.storageS.setItem("login", btoa(this.userID));
+    this.loginS.addUser({
+      name: "",
+      defaultAddressID: 0,
+      mobile: this.userID,
+      referralCode: this.referralFormControl.value || this.loginS.queryParams?.id
+    }).subscribe(res => {
+      this.loginS.user.mobile = this.userID;
+      this.locationPageFlg = false;
+      this.mobilePageFlg = false;
+      this.otpPageFlg = false;
+      this.referralFlg = true;
+
+      if (res && res.status == "ADDED" && res.referrer != null) {
+        this.loginS.referrrarinfo = res;
+        this.referralSuccessFlg = true;
+      }
+    });
+  }
+
+  handleInvalidOTP() {
+    this.mobileFormControl.enable();
+    this.loginS.user.mobile = this.userID;
+    this.validOTPFlg = false;
+    this.otpStatus = "Wrong OTP! Enter 1111";
+    this.btnName = "Verify";
+    this.otpFlag = false;
+    this.resumeTimer();
   }
 
   referralValidation() {

@@ -10,10 +10,23 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit();
 }
 
-$host = 'localhost';
-$dbname = 'thinkspot_db';
-$user = 'root';
-$pass = '';
+$isLocal = isset($_SERVER['HTTP_HOST']) && (
+    str_contains($_SERVER['HTTP_HOST'], 'localhost') || 
+    str_contains($_SERVER['HTTP_HOST'], '127.0.0.1')
+);
+
+if ($isLocal) {
+    $host   = 'localhost';
+    $dbname = 'thinkspot_db';
+    $user   = 'root';
+    $pass   = '';
+} else {
+    // Production BigRock Hosting Credentials
+    $host   = 'localhost';
+    $dbname = 'onenesgw_thinkspot_db';
+    $user   = 'onenesgw_thinkspot';
+    $pass   = 'silenceRocks@77';
+}
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [

@@ -40,6 +40,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/thinkspot/",
               "budgets": [
                 {
                   "type": "initial",

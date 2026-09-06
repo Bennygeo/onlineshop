@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
 
-  url: "https://www.thinkspot.in/php_revamp/",
+  url: "https://onenewstory.in/thinkspot/backend/",
 
   //firebase config
   apiKey: "AIzaSyAtKyPbKrEfRlFLGYFJIDktXXQn1qTYjQw",

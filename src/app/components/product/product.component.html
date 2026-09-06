@@ -15,9 +15,9 @@
             <div class="product_weight">{{product["updated_weight"]}} {{product["unit_name"]}}</div>
         </div>
 
-        <div class="price" *ngIf="!product['disable']">₹ {{ this.product['price'] | number}}
-            <span style="text-decoration: line-through; color:#aaa; font-weight: 500;" class="font-12">
-                ₹ {{this.product['original_price']}} </span>
+        <div class="price" *ngIf="!product['disable']">₹ {{ this.product['price'] | number:'1.0-0'}}
+            <span *ngIf="product['original_price'] && product['original_price'] > product['price']" style="text-decoration: line-through; color:#aaa; font-weight: 500;" class="font-12">
+                ₹ {{this.product['original_price'] | number:'1.0-0'}} </span>
         </div>
 
         <div *ngIf="!product['disable']">

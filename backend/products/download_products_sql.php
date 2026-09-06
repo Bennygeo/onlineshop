@@ -45,7 +45,7 @@ try {
     if (!$table_name) { $table_name = 'products'; }
 
     try {
-        $sql = "SELECT id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, weight, unit_name, img_url, disabled, index_num AS `index`, offer FROM {$table_name} WHERE 1=1";
+        $sql = "SELECT id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, weight, unit_name, img_url, disabled, subscribe_flg, index_num AS `index`, offer FROM {$table_name} WHERE 1=1";
         $params = [];
         if ($cat && strtolower($cat) !== 'all') {
             $sql .= " AND cat = ?";
@@ -61,7 +61,7 @@ try {
         $products = $stmt->fetchAll();
     } catch (Exception $exTable) {
         // Fallback to 'products' table
-        $sql = "SELECT id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, weight, unit_name, img_url, disabled, index_num AS `index`, offer FROM products WHERE 1=1";
+        $sql = "SELECT id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, weight, unit_name, img_url, disabled, subscribe_flg, index_num AS `index`, offer FROM products WHERE 1=1";
         $params = [];
         if ($cat && strtolower($cat) !== 'all') {
             $sql .= " AND cat = ?";
@@ -85,6 +85,8 @@ try {
         $p['stock_price'] = (isset($p['stock_price']) && floatval($p['stock_price']) > 0) ? floatval($p['stock_price']) : 45;
         $p['profit_percent'] = (isset($p['profit_percent']) && floatval($p['profit_percent']) > 0) ? floatval($p['profit_percent']) : 25;
         $p['disabled'] = (isset($p['disabled']) && (int)$p['disabled'] === 1) ? true : false;
+        $p['subscribe_flg'] = (isset($p['subscribe_flg']) && (int)$p['subscribe_flg'] === 1) ? 1 : 0;
+        $p['subscribeFlg'] = ($p['subscribe_flg'] === 1);
     }
 
     sendJson($products);

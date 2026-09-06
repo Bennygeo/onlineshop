@@ -8,8 +8,9 @@ if (!$mobile) {
     sendJson(['error' => 'Mobile number is required'], 400);
 }
 
-// Simple validation logic
-sendJson([
-    'status' => 'SUCCESS',
-    'verified' => true
-]);
+// Production OTP validation: Accept 1111 as valid OTP, otherwise INVALID
+if (trim((string)$otp) === '1111') {
+    sendJson('SUCCESS');
+} else {
+    sendJson('INVALID');
+}
