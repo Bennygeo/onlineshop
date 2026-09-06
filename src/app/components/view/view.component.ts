@@ -26,6 +26,57 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   categories: Array<any> = [];
 
+  // 4 Featured Slides: Vegetables, Fruits, Milk, Tender Coconut
+  heroSlides = [
+    {
+      id: 'veg',
+      title: 'Farm Fresh Vegetables',
+      desc: '100% Organic & handpicked daily from local farms',
+      badge: 'Farm Fresh',
+      category: 'Vegetables',
+      routerLink: '/products/category/Vegetables',
+      bgGradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+      imgUrl: 'assets/categories/Thinkspot_veggiesIcon.png',
+      btnText: 'Shop Vegetables'
+    },
+    {
+      id: 'fruits',
+      title: 'Juicy & Fresh Fruits',
+      desc: 'Naturally ripened, nutrient-rich seasonal fruits',
+      badge: 'Fresh Harvest',
+      category: 'Fruits',
+      routerLink: '/products/category/Fruits',
+      bgGradient: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+      imgUrl: 'assets/categories/Thinkspot_fruitIcon.png',
+      btnText: 'Shop Fruits'
+    },
+    {
+      id: 'milk',
+      title: 'Pure Farm Fresh Milk',
+      desc: 'Unadulterated, wholesome & fresh daily delivery',
+      badge: 'Pure & Fresh',
+      category: 'Dairyeggs',
+      routerLink: '/products/category/Dairyeggs',
+      bgGradient: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+      imgUrl: 'assets/categories/Thinkspot_greensIcon.png',
+      btnText: 'Shop Milk & Dairy'
+    },
+    {
+      id: 'coconut',
+      title: 'Natural Tender Coconut',
+      desc: 'Cool, refreshing 100% natural electrolyte hydration',
+      badge: 'Natural Hydration',
+      category: 'Naturalhydrants',
+      routerLink: '/products/category/Naturalhydrants',
+      bgGradient: 'linear-gradient(135deg, #15803d 0%, #166534 100%)',
+      imgUrl: 'assets/categories/Thinkspot_greensIcon.png',
+      btnText: 'Shop Tender Coconut'
+    }
+  ];
+
+  activeSlideIndex: number = 0;
+  private autoSlideInterval: any;
+
   constructor(
     public cartS: CartService,
     private loginS: LoginService) {
@@ -57,7 +108,6 @@ export class ViewComponent implements OnInit, OnDestroy {
 
     this.greeting = DateE.getGreeting(new Date()) + "!";
 
-
     //get recommended products
     this.cartS.readBanners("products/download_table_sql.php", { 'table_name': 'banners' }).subscribe((banners: any) => {
       this.bannerDownloadFlg = false;
@@ -68,7 +118,6 @@ export class ViewComponent implements OnInit, OnDestroy {
       });
       this.banners.sort((a: Banner, b: Banner) => { return (a.index - b.index) });
     });
-    ;
 
     this.cartS.zoneChangeEvent.subscribe({
       next: (zone: string) => {
@@ -112,16 +161,49 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.userName = this.loginS.user?.address?.name;
-    //Look for cart service whether recommended and banners are already exist or not.
     this.recommended_products = this.cartS.recommendedProducts;
+    this.startAutoSlide();
+  }
+
+  startAutoSlide() {
+    this.stopAutoSlide();
+    this.autoSlideInterval = setInterval(() => {
+      this.activeSlideIndex = (this.activeSlideIndex + 1) % this.heroSlides.length;
+    }, 4000);
+  }
+
+  stopAutoSlide() {
+    if (this.autoSlideInterval) {
+      clearInterval(this.autoSlideInterval);
+    }
+  }
+
+  goToSlide(index: number) {
+    this.activeSlideIndex = index;
+    this.startAutoSlide();
+  }
+
+  nextSlide(event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeSlideIndex = (this.activeSlideIndex + 1) % this.heroSlides.length;
+    this.startAutoSlide();
+  }
+
+  prevSlide(event?: Event) {
+    if (event) event.stopPropagation();
+    this.activeSlideIndex = (this.activeSlideIndex - 1 + this.heroSlides.length) % this.heroSlides.length;
+    this.startAutoSlide();
+  }
+
+  onBannerClick(slide: any) {
+    this.cartS.router.navigate([slide.routerLink]);
   }
 
   plusMinusValue(val, product: Product) {
-    //Recieved by cart service
     this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: product, unit: val });
   }
 
   ngOnDestroy(): void {
-    // this._cart.notifyCartEvent.complete();
+    this.stopAutoSlide();
   }
 }

@@ -1,0 +1,80 @@
+<div class="orders-admin-page">
+  <div class="page-header">
+    <div>
+      <h2>Order Dispatch & Delivery Assignment</h2>
+      <p>Assign delivery personnel, track order fulfillment, and update order statuses.</p>
+    </div>
+    <button class="refresh-btn" (click)="loadOrders()">
+      <span class="material-icons">refresh</span>
+      <span>Refresh Orders</span>
+    </button>
+  </div>
+
+  <!-- Filter Bar -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter by Status:</span>
+    <div class="status-tabs">
+      <button [class.active]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'">All</button>
+      <button [class.active]="statusFilter === 'PLACED'" (click)="statusFilter = 'PLACED'">Placed</button>
+      <button [class.active]="statusFilter === 'PACKED'" (click)="statusFilter = 'PACKED'">Packed</button>
+      <button [class.active]="statusFilter === 'OUT_FOR_DELIVERY'" (click)="statusFilter = 'OUT_FOR_DELIVERY'">Out for Delivery</button>
+      <button [class.active]="statusFilter === 'DELIVERED'" (click)="statusFilter = 'DELIVERED'">Delivered</button>
+    </div>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="table-card">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Customer Mobile</th>
+          <th>Delivery Address</th>
+          <th>Items Count</th>
+          <th>Total Amount</th>
+          <th>Order Status</th>
+          <th>Assign Delivery Boy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let o of filteredOrders">
+          <td>
+            <div class="order-id-cell">
+              <span class="id-val">#{{ o.order_id || o.id }}</span>
+              <small class="date-val">{{ (o.modified_at || o.createdAt || o.created_at) | date:'short' }}</small>
+            </div>
+          </td>
+          <td><b>{{ o.mobile }}</b></td>
+          <td>
+            <div class="addr-cell">
+              <span>{{ o.address?.address || o.address || 'Standard Address' }}</span>
+              <small *ngIf="o.address?.pincode">Pincode: {{ o.address?.pincode }}</small>
+            </div>
+          </td>
+          <td>{{ o.items_count || (o.items ? o.items.length : 1) }} items</td>
+          <td><span class="amt-val">₹ {{ o.amount || o.orderTotal }}</span></td>
+          <td>
+            <select class="status-select" [value]="o.status" (change)="updateOrderStatus(o, $event)">
+              <option value="PLACED">PLACED</option>
+              <option value="PACKED">PACKED</option>
+              <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+              <option value="DELIVERED">DELIVERED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </td>
+          <td>
+            <select class="delivery-select" [value]="o.assigned_to || o.assignedTo || ''" (change)="assignDeliveryBoy(o, $event)">
+              <option value="">Unassigned</option>
+              <option *ngFor="let db of deliveryBoys" [value]="db.name">
+                {{ db.name }} ({{ db.zone }})
+              </option>
+            </select>
+          </td>
+        </tr>
+        <tr *ngIf="filteredOrders.length === 0">
+          <td colspan="7" class="empty-cell">No orders found matching status {{ statusFilter }}.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

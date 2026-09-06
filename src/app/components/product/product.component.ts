@@ -114,8 +114,9 @@ export class ProductComponent implements OnInit, OnChanges {
 
     if (this.product.delivery_day != -1) this.product.delivery_date = this.cartS.getNextDeliveryDate(this.product);
 
-    if (this.product.subscribe_flg !== undefined && this.product.subscribe_flg !== null) {
-      this.product.subscribeFlg = (Number(this.product.subscribe_flg) === 1);
+    const subFlgVal = this.product.subscribe_flg !== undefined ? this.product.subscribe_flg : this.product['subscribeFlg'];
+    if (subFlgVal !== undefined && subFlgVal !== null) {
+      this.product.subscribeFlg = (Number(subFlgVal) === 1);
     } else if (this.product.cat === 'Milk' || this.product.cat === 'Tender' || this.product.delivery_day == -1) {
       this.product.subscribeFlg = true;
     } else {

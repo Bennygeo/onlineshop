@@ -145,56 +145,49 @@
         </div>
 
 
-        <!-- ----------------Referral------------- -->
+        <!-- ----------------Referral (After OTP Verification)------------- -->
         <div class="popup_cont" *ngIf="referralFlg" [@translateEffect]>
 
-            <div style="margin-top: 69px; font-weight: 400; text-align: center;" class="font-14">Referral Code</div>
+            <div style="margin-top: 48px; font-weight: 700; text-align: center; color: #10b981;" class="font-16">🎁 Have a Referral Code?</div>
             <div class="container-center" *ngIf="!referralSuccessFlg; else successMsg">
 
-                <div style="margin-top: 69px; font-weight: 400; color: #98A1A1; text-align: center;" class="font-12">
-                    Has someone referred us to you? If yes, we want to thank them!
+                <div style="margin-top: 16px; font-weight: 400; color: #6b7280; text-align: center; padding: 0 20px;" class="font-12">
+                    Has a friend referred Thinkspot to you? Enter their code below to get <strong>25% Cashback</strong> on your first order!
                 </div>
 
-                <div style="margin-top: 69px;" class="font-14">Enter your referral code</div>
+                <div style="margin-top: 24px;" class="font-14">Enter your referral code (Optional)</div>
 
-                <form #myForm="ngForm" (ngSubmit)="submitRefferalCode()">
-                    <div style="display: flex; flex-direction: row; top:-3px;">
-
-                        <mat-form-field style="margin-top: 19px; width: 176px;">
+                <form #myForm="ngForm" (ngSubmit)="referralValidation()">
+                    <div style="display: flex; justify-content: center;">
+                        <mat-form-field style="margin-top: 12px; width: 200px;">
                             <input matInput placeholder="Referral Code" [formControl]="referralFormControl"
-                                [errorStateMatcher]="matcher" [maxlength]="6"
-                                style=" font-size:18px; letter-spacing:1.3px; text-align: left; position: relative; text-align: center;">
-
-                            <mat-error *ngIf="referralFormControl.hasError('required')" style="text-align:center;"
-                                class="font-11">
-                                Referral code is <strong>required</strong>
-                            </mat-error>
-
+                                [errorStateMatcher]="matcher" [maxlength]="10"
+                                style="font-size:18px; letter-spacing:1.5px; text-align: center; text-transform: uppercase;">
                         </mat-form-field>
                     </div>
-                    <div *ngIf="referralErrorCodeFlg" style="text-align:center; color: red;" class="font-11">
-                        Invalid or used code.
+                    <div *ngIf="referralErrorCodeFlg" style="text-align:center; color: #ef4444; margin-top: 4px;" class="font-11">
+                        Invalid or expired referral code.
                     </div>
 
-                    <div class="flex-box">
+                    <div class="flex-box" style="margin-top: 36px; display: flex; gap: 12px; justify-content: center;">
                         <div class="tnkspt_secondary_btn cancel-btn" (click)="couponContinue()">Skip</div>
-                        <div class="tnkspt_primary_btn view-btn" (click)="referralValidation()">Continue</div>
+                        <div class="tnkspt_primary_btn view-btn" (click)="referralValidation()">Apply & Continue</div>
                     </div>
                 </form>
             </div>
 
-
             <ng-template #successMsg>
                 <div class="container-center">
-                    <img [src]="'assets/refer/referral_sucess.png'" style="margin-top: 96px; margin-bottom: 53px;">
-                    <p>Yaay!! Its time to thank <b>{{loginS.referrrarinfo.referrer_name}}</b>.
-                        You will get {{loginS.referrrarinfo.coupon_desc}}.</p>
+                    <img [src]="'assets/refer/referral_sucess.png'" style="margin-top: 48px; margin-bottom: 24px; max-width: 120px;">
+                    <p style="text-align: center; color: #111827; font-size: 14px; padding: 0 16px;">
+                        Yaay!! Its time to thank <b>{{loginS.referrrarinfo.referrer_name || 'your friend'}}</b> 🎉<br>
+                        {{loginS.referrrarinfo.coupon_desc || '25% Cashback applied to your account!'}}
+                    </p>
 
-                    <button class="tnkspt_primary_btn" style="width: 180px; margin-top: 90px;"
-                        (click)="couponContinue()">Continue
+                    <button class="tnkspt_primary_btn" style="width: 180px; margin-top: 32px;"
+                        (click)="couponContinue()">Continue to App
                     </button>
                 </div>
-
             </ng-template>
 
         </div>

@@ -1,0 +1,90 @@
+<div class="dashboard-page">
+  <div class="page-title-row">
+    <div>
+      <h2>Sales & Analytics Dashboard</h2>
+      <p>Overview of store revenue, order fulfillment, and active customer metrics.</p>
+    </div>
+    <button class="refresh-btn" (click)="loadDashboardData()">
+      <span class="material-icons">refresh</span>
+      <span>Refresh Stats</span>
+    </button>
+  </div>
+
+  <!-- KPI Metric Cards Grid -->
+  <div class="kpi-grid">
+    <div class="kpi-card revenue">
+      <div class="kpi-icon">
+        <span class="material-icons">payments</span>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">Total Revenue</span>
+        <h3 class="kpi-val">₹ {{ dashboardData.totalRevenue | number:'1.2-2' }}</h3>
+        <span class="kpi-sub">Lifetime earnings</span>
+      </div>
+    </div>
+
+    <div class="kpi-card orders">
+      <div class="kpi-icon">
+        <span class="material-icons">shopping_bag</span>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">Total Orders</span>
+        <h3 class="kpi-val">{{ dashboardData.totalOrders }}</h3>
+        <span class="kpi-sub">Orders recorded</span>
+      </div>
+    </div>
+
+    <div class="kpi-card pending">
+      <div class="kpi-icon">
+        <span class="material-icons">local_shipping</span>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">Active / Pending</span>
+        <h3 class="kpi-val">{{ dashboardData.pendingDeliveries }}</h3>
+        <span class="kpi-sub">Awaiting delivery</span>
+      </div>
+    </div>
+
+    <div class="kpi-card customers">
+      <div class="kpi-icon">
+        <span class="material-icons">groups</span>
+      </div>
+      <div class="kpi-info">
+        <span class="kpi-label">Active Customers</span>
+        <h3 class="kpi-val">{{ dashboardData.activeCustomers }}</h3>
+        <span class="kpi-sub">Registered buyers</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Breakdown Section -->
+  <div class="breakdown-section">
+    <h3>Order Status Breakdown</h3>
+    <div class="status-grid">
+      <div class="status-card placed">
+        <span class="status-title">Placed / New</span>
+        <span class="status-count">{{ dashboardData.statusBreakdown?.PLACED || 0 }}</span>
+      </div>
+
+      <div class="status-card packed">
+        <span class="status-title">Packed</span>
+        <span class="status-count">{{ dashboardData.statusBreakdown?.PACKED || 0 }}</span>
+      </div>
+
+      <div class="status-card out">
+        <span class="status-title">Out for Delivery</span>
+        <span class="status-count">{{ dashboardData.statusBreakdown?.OUT_FOR_DELIVERY || 0 }}</span>
+      </div>
+
+      <div class="status-card delivered">
+        <span class="status-title">Delivered</span>
+        <span class="status-count">{{ dashboardData.statusBreakdown?.DELIVERED || 0 }}</span>
+      </div>
+
+      <div class="status-card cancelled">
+        <span class="status-title">Cancelled</span>
+        <span class="status-count">{{ dashboardData.statusBreakdown?.CANCELLED || 0 }}</span>
+      </div>
+    </div>
+  </div>
+</div>

@@ -8,7 +8,7 @@
 
 
 <div class="main-header-bar"
-    style="z-index: 100; padding: 13px 23px 9px 12px; height: 52px; background-color: #30d2ad; position: sticky; top: 0;"
+    style="z-index: 100; padding: 13px 23px 9px 12px; height: 52px; background-color: #097e63; position: sticky; top: 0;"
     *ngIf="type==='type1'">
     <div>
         <div (click)="homeBtnClick()" class="headerItems">
@@ -79,7 +79,7 @@ font-size: 20px; font-weight: bolder;">
 
 
 <div class="main-header-bar"
-    style="z-index: 1000; padding: 9px 23px 9px 12px; height: 52px; background-color: #30d2ad; position: sticky; top: 0;"
+    style="z-index: 1000; padding: 9px 23px 9px 12px; height: 52px; background-color: #097e63; position: sticky; top: 0;"
     *ngIf="type==='type4'">
     <div>
         <div class="backBtn" (click)="backBtnAction()">
@@ -137,9 +137,11 @@ font-size: 20px; font-weight: bolder;">
 
 
 <div class="main-header-bar"
-    style="z-index: 1000; padding: 13px 23px 9px 12px; height: 54px; background-color: #f5f5f5; position: sticky; top: 0; width: 100%;"
+    style="z-index: 100; padding: 13px 23px 9px 12px; height: 54px; background-color: #f5f5f5; position: sticky; top: 0; width: 100%;"
     *ngIf="type==='type6'">
     <div>
+        <img class="logo_wo" src="assets/home/logo_wo.svg" style="left: 20px; position: absolute; top: 10px;"
+            routerLink="/" />
         <div class="searchBar" style="top:-6px">
             <img class="searchIcon" src="assets/home/search.png" />
             <span>

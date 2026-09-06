@@ -18,8 +18,16 @@
 
                     <div class="cat_title">{{dte.key|ReplaceAll:"_":" "}}</div>
 
-                    <div *ngFor="let product of dte.value; let i=index;">
-                        <cart [product]="product" [index]="ind+'-'+i" id="cart-list-{{ind}}-{{i}}"></cart>
+                    <div *ngFor="let group of groupProductsByCategory(dte.value); let gIndex=index;" class="cat_group">
+                        <div class="sub_cat_title">
+                            <span class="category_name">{{group.categoryName}}</span>
+                            <span class="subcategory_name" *ngIf="group.subCategoryName && group.subCategoryName.toLowerCase() !== 'general' && group.subCategoryName.toLowerCase() !== group.categoryName.toLowerCase()">
+                                • {{group.subCategoryName}}
+                            </span>
+                        </div>
+                        <div *ngFor="let product of group.products; let i=index;">
+                            <cart [product]="product" [index]="ind+'-'+gIndex+'-'+i" id="cart-list-{{ind}}-{{gIndex}}-{{i}}"></cart>
+                        </div>
                     </div>
 
                     <!-- <div style="padding: 6px; color: #2eb9ac; background: #fdfbfb; z-index: 10;"
@@ -51,7 +59,8 @@
 
             <div class="error promo-error" *ngIf="couponS.coupons.couponExistFlg">Coupon already exist!</div>
             <div class="promo-success" *ngIf="couponS.coupons.addedFlg">Coupon added sucessfully!</div>
-            <div class="error promo-error" *ngIf="couponS.coupons.invalidFlg">Invalid coupon code!</div>
+            <div class="error promo-error" *ngIf="couponS.coupons.invalidFlg && !couponS.coupons.errorMsg">Invalid coupon code!</div>
+            <div class="error promo-error" *ngIf="couponS.coupons.invalidFlg && couponS.coupons.errorMsg">{{couponS.coupons.errorMsg}}</div>
 
         </div>
 
@@ -106,9 +115,14 @@
                         <th class="tg-col2">₹ {{orderInformation.subTotal |number}}</th>
                     </tr>
 
-                    <tr *ngIf="orderInformation.selectedCoupon">
+                    <tr *ngIf="orderInformation.selectedCoupon && !orderInformation.couponDiscount">
                         <th class="tg-col1">Cashback</th>
                         <th class="tg-col2">{{orderInformation.selectedCoupon?.offer}}</th>
+                    </tr>
+
+                    <tr *ngIf="orderInformation.couponDiscount > 0">
+                        <th class="tg-col1" style="color: #28a745; font-weight: bold;">Promo Discount (5% Veg)</th>
+                        <th class="tg-col2" style="color: #28a745; font-weight: bold;">- ₹ {{orderInformation.couponDiscount | number:'1.2-2'}}</th>
                     </tr>
 
                     <tr>
@@ -178,11 +192,11 @@
 </div> -->
 
 <div class="popup_parent" *ngIf="payFlg" [@fadeInOut]>
-    <div class="popup_cont" style="padding:24px">
+    <div class="popup_cont">
         <div class="head">Add money to wallet</div>
         <p>Would you like to add money to your wallet to make checkout proceess easier for the future?</p>
         <img [src]="'assets/cart/wallet.png'" />
-        <div class="flex-box" style="position: absolute; bottom:12px; width:88%;">
+        <div class="flex-box">
             <div class="tnkspt_secondary_btn cancel-btn" (click)="addMoneyToWalletAction()">Add Money to wallet</div>
             <div class="tnkspt_primary_btn view-btn" (click)="payWalletAction()">Pay
                 ₹{{this.cartService.remainingToPay}} & Checkout</div>

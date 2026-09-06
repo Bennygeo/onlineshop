@@ -25,6 +25,7 @@ export class AppComponent implements OnInit {
   bottombarClass: string = "";
   popupItem: PopupType;
   isMobile: boolean = false;
+  isAdminPage: boolean = false;
 
 
   constructor(
@@ -55,6 +56,7 @@ export class AppComponent implements OnInit {
       if (res instanceof NavigationEnd) {
 
         const url = this.cartS.router.url.split("?")[0];
+        this.isAdminPage = url.startsWith("/admin");
         if (url === "/home/view") {
           this.bottombarClass = "type1";
         } else if (url.search("/products/category/") != 1) {
@@ -81,12 +83,19 @@ export class AppComponent implements OnInit {
 
   ngOnInit(): void {
     this.cartS.windowSize$.subscribe(res => {
-      if (res.width >= 550 || !this.utils.isMobile) {
-        this.cartS.router.navigate(['/web']);
+      const isLargeScreen = res.width >= 768;
+      const currentUrl = this.cartS.router.url.split("?")[0];
+      const isAdmin = currentUrl.startsWith('/admin');
+
+      if (isLargeScreen && !this.utils.isMobile() && !isAdmin) {
+        if (currentUrl !== '/web') {
+          this.cartS.router.navigate(['/web']);
+        }
         this.isMobile = false;
-      } else if (this.utils.isMobile) {
-        const url = this.cartS.router.url.split("?")[0];
-        if (url == "/web") this.cartS.router.navigate(['/home/view']);
+      } else {
+        if (currentUrl === "/web") {
+          this.cartS.router.navigate(['/home/view']);
+        }
         this.isMobile = true;
       }
     });

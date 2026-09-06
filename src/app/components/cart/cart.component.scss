@@ -33,6 +33,15 @@
     color: #1e1f1f;
 }
 
+.pSubCat {
+    font-size: 11px;
+    color: #0d9488;
+    font-weight: 500;
+    margin-top: 1px;
+    margin-bottom: 2px;
+    font-family: $inter;
+}
+
 .remove_btn_pos {
     position: relative;
     bottom: 24px;
@@ -55,21 +64,11 @@
 }
 
 // For outer circle
-::ng-deep
-    .mat-mdc-radio-button
-    .mdc-radio
-    .mdc-radio__native-control:enabled:checked
-    + .mdc-radio__background
-    .mdc-radio__outer-circle {
-    border-color: #30d2ad !important;
+::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled:checked+.mdc-radio__background .mdc-radio__outer-circle {
+    border-color: $teal-100 !important;
 }
 
 //For inner circle
-::ng-deep
-    .mat-mdc-radio-button
-    .mdc-radio
-    .mdc-radio__native-control:enabled
-    + .mdc-radio__background
-    .mdc-radio__inner-circle {
-    border-color: #30d2ad !important;
+::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled+.mdc-radio__background .mdc-radio__inner-circle {
+    border-color: $teal-100 !important;
 }

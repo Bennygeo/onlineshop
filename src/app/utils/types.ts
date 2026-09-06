@@ -45,6 +45,7 @@ export type Product = {
 
     disabled: boolean;
     cat?: string;
+    sub_cat?: string;
 
     packing_charges: number;
     delivery_charges: number;
@@ -278,6 +279,7 @@ export type OrderInfo = {
     total: number,
     //Total amout of the order excluding other charges
     subTotal: number,
+    couponDiscount?: number,
     //TOtal cart items count
     totalItemsCount: number,
     //total delivery charges

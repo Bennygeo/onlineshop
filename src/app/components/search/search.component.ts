@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { ApiService } from 'src/app/services/api.service';
 import { CartService } from 'src/app/services/cart.service';
+import { LoginService } from 'src/app/services/login.service';
 import { ProductService } from 'src/app/services/product.service';
 import { DateE } from 'src/app/utils/custom-classes';
 import { Product, ProductOptions, SubProductType, SubsOptions, menuOptions } from 'src/app/utils/types';
@@ -61,7 +63,9 @@ export class SearchComponent implements OnInit {
     private cartService: CartService,
     private _utils: Utils,
     public productService: ProductService,
-    private cart: CartService
+    private cart: CartService,
+    private loginService: LoginService,
+    private router: Router
   ) {
     this.cartService.headerChangeEvent.next("type6");
 
@@ -114,9 +118,15 @@ export class SearchComponent implements OnInit {
 
       //re-position the menu
       this.menu_position();
-      // this._cart.read_products("zone1", menu);
-      // this._cdr.detectChanges();
-    }
+      const catSection = document.getElementById('cat_section_' + menu);
+      if (catSection) {
+        catSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        const zone = this.loginService.user?.zone || 'zone1';
+        this.cartService.read_products(zone, menu);
+        this.router.navigate(['/products/category/' + menu]);
+      }
+    };
 
     this.cartService.isCart$.subscribe((res: boolean) => {
       console.log("search page :: " + res);

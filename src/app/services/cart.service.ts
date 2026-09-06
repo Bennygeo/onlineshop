@@ -97,7 +97,7 @@ export class CartService {
   orderID: string = undefined;
 
   //Restricted page names for hide the visibility of cart bottom bar
-  cartBarRestrictedPages: Array<string> = ["cart", "checkout", "address", "profile", "wallet", "support", "referral", "orders", "policy"];
+  cartBarRestrictedPages: Array<string> = ["cart", "checkout", "address", "profile", "wallet", "support", "referral", "orders", "policy", "admin"];
 
   //home
   recommendedProducts: Array<Product> = [];
@@ -667,6 +667,33 @@ export class CartService {
     }
 
 
+    let couponDiscount = 0;
+    if (this.couponS.selectedCoupon) {
+      const selected = this.couponS.selectedCoupon;
+      const code = String(selected.code).toUpperCase();
+
+      if (code === 'VEG5') {
+        let vegTotal = 0;
+        for (let id in this.cartProducts) {
+          const prod = this.cartProducts[id];
+          const catName = String(prod.cat || prod.main_category || (prod as any).category || '').toLowerCase();
+          if (catName === 'vegetables' || catName === 'veg' || catName.includes('vegetable')) {
+            let itemPrice = Number(prod.price || 0);
+            if (prod.subscribe && prod.subs_options && prod.subs_options['price']) {
+              itemPrice = Number(prod.subs_options['price']);
+            }
+            vegTotal += itemPrice;
+          }
+        }
+        couponDiscount = vegTotal * 0.05;
+      } else if (selected.discount_percent || selected.offer) {
+        const pct = Number(selected.discount_percent || parseFloat(selected.offer) || 10);
+        couponDiscount = (this.cartDetails.total * (pct / 100));
+      } else {
+        couponDiscount = 50;
+      }
+    }
+
     let deliveryChargeTotal = STD_DELIVERY_CHARGES;
     if (this.cartDetails.total >= 200) {
       deliveryChargeTotal = 0;
@@ -674,19 +701,21 @@ export class CartService {
     //Check the number of days delivery available
     deliveryChargeTotal = Object.keys(this.cartProductsDateWise).length * deliveryChargeTotal;
 
-    const total = this.cartDetails.total + deliveryChargeTotal + STD_TAX_FEE;
+    const subTotalAfterDiscount = Math.max(0, this.cartDetails.total - couponDiscount);
+    const total = subTotalAfterDiscount + deliveryChargeTotal + STD_TAX_FEE;
 
     this.remainingToPay = this.loginS.user.wallet - total;
     this.remainingToPay = (Math.sign(this.remainingToPay) === -1) ? Math.abs(this.remainingToPay) : 0;
 
     return {
-      total: total,
+      total: Math.round(total * 100) / 100,
       subTotal: this.cartDetails.total,
+      couponDiscount: Math.round(couponDiscount * 100) / 100,
       cart: this.cartProducts,
       totalItemsCount: Object.keys(this.cartProducts).length,
       totalDeliveryCharges: deliveryChargeTotal,
       taxAndFees: STD_TAX_FEE,
-      remainingToPay: this.remainingToPay,
+      remainingToPay: Math.round(this.remainingToPay * 100) / 100,
       cartProductDateWise: this.cartProductsDateWise,
       subscribedItems: [],
       selectedCoupon: this.couponS.selectedCoupon
@@ -694,6 +723,14 @@ export class CartService {
   }
 
   placeOrder(callback) {
+    const userWallet = Number(this.loginS.user?.wallet || 0);
+    const orderAmt = Number(this.orderInformation?.total || 0);
+    if (userWallet < (orderAmt - 0.01)) {
+      alert("CRITICAL SECURITY GUARD: Insufficient wallet balance! Available: ₹" + userWallet + ", Order Total: ₹" + orderAmt + ". Order blocked.");
+      this.payAndCheckoutFlg = false;
+      return;
+    }
+
     this.ensureOrderID();
     const itemsList = Object.values(this.cartProducts || {}).map((p: any) => {
       const unitP = Number(p.unit_price || p.price || 0);
@@ -753,45 +790,105 @@ export class CartService {
         "items": itemsList
       })
     }).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.orderPlacedFlag = true;
+        if (res && res.order_id) {
+          this.orderID = res.order_id;
+        }
         if (this.orderInformation.selectedCoupon)
           this.updateUserCoupon(this.orderInformation.selectedCoupon);
         this.clearCart();
-        this.orderID = undefined;
         if (this.loginS.user) {
           this.loginS.user.orderID = undefined;
         }
         callback(res);
       },
-      error: (err: Error) => {
-        alert("Error in placing the order.");
+      error: (err: any) => {
+        const errorMsg = err?.error?.error || "Order blocked: Insufficient wallet balance or unauthorized attempt.";
+        alert(errorMsg);
+        this.payAndCheckoutFlg = false;
+        alert("Session restarted for security.");
+        this.loginS.logoutEvent.next();
       }
     });
   }
 
   updateUserCoupon(data: UserCoupon) {
+    if (!data || !this.loginS?.user?.mobile) return;
+    const mobileNum = this.loginS.user.mobile;
+    const couponCode = data.code;
+
+    // Optimistically increment local used count
+    data.used_count = (Number(data.used_count) || 0) + 1;
+
     this.couponS.updateUserCoupon({
-      code: data.code,
+      mobile: mobileNum,
+      code: couponCode,
       count: data.count
-    }).subscribe(res => {
-      if (res == "SUCCESS") {
-
-      } else {
-
+    }).subscribe({
+      next: (res) => {
+        this.couponS.getUserCoupons({ mobile: mobileNum }).subscribe((userCoupons: any) => {
+          if (Array.isArray(userCoupons)) {
+            const uniqueCoupons: UserCoupon[] = [];
+            const seenCodes = new Set<string>();
+            userCoupons.forEach(element => {
+              const cCode = String(element.code || element.coupon_code || '').toUpperCase();
+              if (cCode && !seenCodes.has(cCode)) {
+                seenCodes.add(cCode);
+                uniqueCoupons.push(element);
+              }
+            });
+            this.couponS.coupons.users = uniqueCoupons;
+          }
+        });
+      },
+      error: (err) => {
+        console.error("Error updating user coupon count:", err);
       }
     });
   }
 
   //Emtrying the cart after place the order
   clearCart() {
+    const resetProd = (p: any) => {
+      if (!p) return;
+      p.units = 0;
+      p.subscribe = false;
+      if (p.subs_options) {
+        p.subs_options.units = 0;
+        p.subs_options.multiDaySelected = [];
+        p.subs_options.rangeSelected = [];
+        p.subs_options.startDate = undefined;
+        p.subs_options.endDate = undefined;
+      }
+    };
+
+    if (this.productsList && this.productsList.length > 0) {
+      this.productsList.forEach(resetProd);
+    }
+    if (this.cartProducts) {
+      Object.keys(this.cartProducts).forEach(id => resetProd(this.cartProducts[id]));
+    }
+    if (this.cartLiveProducts) {
+      Object.keys(this.cartLiveProducts).forEach(id => resetProd(this.cartLiveProducts[id]));
+    }
+
+    this.productsList = [];
     this.cartProducts = {};
     this.cartLiveProducts = {};
     this.deliveryInst = "";
+    this.couponS.selectedCoupon = undefined;
+    if (this.couponS.coupons) {
+      this.couponS.coupons.addedFlg = false;
+      this.couponS.coupons.couponExistFlg = false;
+      this.couponS.coupons.invalidFlg = false;
+      this.couponS.coupons.errorMsg = "";
+    }
     this.storageS.removeItem("tnkspt_inst");
     this.storageS.removeItem("tnkspt_delivery_mode");
     this.storageS.removeItem("tnkspt_cart_products");
     this.calculateCart(this.cartProducts);
+    this.cartUpdateEvent.next({ cart: this.cartProducts, product: undefined, unit: 0 });
   }
 
   /*
@@ -958,6 +1055,30 @@ export class CartService {
 
   getZone(pincode: string): Observable<any> {
     return this.apiS.postApi("com/read_zone.php", { pincode: pincode });
+  }
+
+  navigateBack(): void {
+    const currentUrl = (this.router.url || '').split('?')[0];
+
+    if (currentUrl.includes('/products/cart') || currentUrl.includes('/products/search')) {
+      this.router.navigate(['/products/category/Vegetables']);
+    } else if (currentUrl.includes('/products/category/')) {
+      this.router.navigate(['/home/view']);
+    } else if (
+      currentUrl.includes('/home/orders') ||
+      currentUrl.includes('/home/wallet') ||
+      currentUrl.includes('/home/profile') ||
+      currentUrl.includes('/home/address') ||
+      currentUrl.includes('/home/support') ||
+      currentUrl.includes('/home/referral') ||
+      currentUrl.includes('/home/policy')
+    ) {
+      this.router.navigate(['/home/view']);
+    } else if (currentUrl.includes('/home/view')) {
+      this.router.navigate(['/products/category/Vegetables']);
+    } else {
+      this.router.navigate(['/home/view']);
+    }
   }
 
 }

@@ -183,7 +183,7 @@ export class RazorpayService {
       },
 
       "theme": {
-        "color": "#30d2ad"
+        "color": "#097e63"
       },
 
       "modal": {

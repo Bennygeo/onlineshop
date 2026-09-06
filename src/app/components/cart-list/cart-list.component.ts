@@ -7,7 +7,7 @@ import { CartService } from 'src/app/services/cart.service';
 import { CouponService, UserCoupon } from 'src/app/services/coupon.service';
 import { LoginService } from 'src/app/services/login.service';
 import { StorageService } from 'src/app/services/storage.service';
-import { AddressAction, CartDateWise, CartType, OrderInfo, Wallet } from 'src/app/utils/types';
+import { AddressAction, CartDateWise, CartType, OrderInfo, Product, Wallet } from 'src/app/utils/types';
 
 @Component({
   selector: 'app-cart-list',
@@ -87,17 +87,25 @@ export class CartListComponent implements OnInit, OnDestroy {
     */
     this.couponS.getUserCoupons({ mobile: this.loginS.user.mobile }).pipe(
       map((res) => {
-        res.forEach(element => {
-          if (element.reciever) {
-            if (element.reciever == this.loginS.user.mobile) {
-              element['used_count'] = element.rec_used_cnt;
-            } else if (element.referrer == this.loginS.user.mobile) {
-              element['used_count'] = element.ref_used_cnt;
-            } else {
-              throw new Error("Unknown or Invalid number found in coupons!");
+        if (Array.isArray(res)) {
+          const uniqueCoupons: UserCoupon[] = [];
+          const seenCodes = new Set<string>();
+          res.forEach(element => {
+            if (element.reciever) {
+              if (element.reciever == this.loginS.user.mobile) {
+                element['used_count'] = element.rec_used_cnt;
+              } else if (element.referrer == this.loginS.user.mobile) {
+                element['used_count'] = element.ref_used_cnt;
+              }
             }
-          }
-        });
+            const cCode = String(element.code || element.coupon_code || '').toUpperCase();
+            if (cCode && !seenCodes.has(cCode)) {
+              seenCodes.add(cCode);
+              uniqueCoupons.push(element);
+            }
+          });
+          return uniqueCoupons;
+        }
         return res;
       })
     ).subscribe((res: any) => {
@@ -128,54 +136,103 @@ export class CartListComponent implements OnInit, OnDestroy {
 
   couponApplyBtn() {
     if (this.couponForm.valid) {
-      const codeVal = this.couponForm.value.coupon;
+      const codeVal = String(this.couponForm.value.coupon).trim().toUpperCase();
+      this.couponS.coupons.addedFlg = false;
+      this.couponS.coupons.couponExistFlg = false;
+      this.couponS.coupons.invalidFlg = false;
+      this.couponS.coupons.errorMsg = "";
 
-      const userlevel = this.couponS.coupons.users.filter(val =>
-        String(codeVal).toUpperCase() == String(val.code).toUpperCase()
+      const masterCheck = this.couponS.coupons.master.filter(val =>
+        codeVal === String(val.code).toUpperCase()
       );
 
-      if (userlevel.length > 0) {
-        this.couponS.coupons.couponExistFlg = true;
+      const userCheck = this.couponS.coupons.users.filter(val =>
+        codeVal === String(val.code).toUpperCase()
+      );
+
+      const targetCoupon: any = (masterCheck.length > 0) ? masterCheck[0] : (userCheck.length > 0 ? userCheck[0] : null);
+
+      if (!targetCoupon) {
+        this.couponS.coupons.invalidFlg = true;
+        this.couponS.coupons.errorMsg = "Invalid promo code!";
         return;
       }
 
-      const masterCheck = this.couponS.coupons.master.filter(val =>
-        String(codeVal).toUpperCase() == String(val.code).toUpperCase()
-      );
+      // Check usage limit (e.g. 5 times limit)
+      const existingUserCoupon = userCheck.length > 0 ? userCheck[0] : null;
+      const maxCount = targetCoupon.count || 5;
+      if (existingUserCoupon && existingUserCoupon.used_count >= maxCount) {
+        this.couponS.coupons.invalidFlg = true;
+        this.couponS.coupons.errorMsg = `You have reached the maximum ${maxCount} uses limit for promo code ${codeVal}!`;
+        return;
+      }
 
-      if (masterCheck.length > 0) {
+      // 1. Min cart subtotal validation (> 300 for VEG5 or per coupon settings)
+      const minAmt = Number(targetCoupon.min_order_amount || (codeVal === 'VEG5' ? 300 : 0));
+      const currentSubTotal = Number(this.orderInformation?.subTotal || 0);
 
-        //write the master coupon to user coupon tables
+      if (minAmt > 0 && currentSubTotal <= minAmt) {
+        this.couponS.coupons.invalidFlg = true;
+        this.couponS.coupons.errorMsg = `Minimum cart subtotal must be greater than ₹${minAmt} to use promo code ${codeVal}! (Current cart: ₹${currentSubTotal})`;
+        return;
+      }
+
+      // 2. Category validation (Vegetables category for VEG5)
+      if (codeVal === 'VEG5' || (targetCoupon.categories && targetCoupon.categories.toLowerCase() !== 'all')) {
+        const reqCategories = (targetCoupon.categories || 'Vegetables,Veg').toLowerCase().split(',').map(c => c.trim());
+        const cartItems = Object.values(this.orderInformation?.cart || {});
+
+        const hasTargetCat = cartItems.some((prod: any) => {
+          const pCat = String(prod.cat || prod.main_category || '').toLowerCase();
+          return reqCategories.includes(pCat);
+        });
+
+        if (!hasTargetCat) {
+          this.couponS.coupons.invalidFlg = true;
+          this.couponS.coupons.errorMsg = `Promo code ${codeVal} is valid only for products in the Vegetables category!`;
+          return;
+        }
+      }
+
+      if (existingUserCoupon) {
+        this.couponS.coupons.addedFlg = true;
+        this.couponS.selectedCoupon = existingUserCoupon;
+        this.orderInformation = this.cartService.orderInformation;
+        this.cartService.remainingToPay = this.orderInformation.remainingToPay;
+      } else {
         const userCoupon: UserCoupon = {
           mobile: this.loginS.user.mobile,
-          code: masterCheck[0].code,
-          count: masterCheck[0].count,
+          code: targetCoupon.code,
+          count: targetCoupon.count || 5,
           used_count: 0,
           history: '',
-          expiry_date: masterCheck[0].expiry_date,
+          expiry_date: targetCoupon.expiry_date || new Date(),
           last_used: new Date(),
-          description: masterCheck[0].description,
-          created_at: masterCheck[0].created_at,
-          offer: masterCheck[0].offer
-        }
+          description: targetCoupon.description || '5% OFF on Vegetables (Min cart > ₹300, 5 uses max)',
+          created_at: new Date(),
+          offer: targetCoupon.offer || '5% OFF on Veg',
+          min_order_amount: targetCoupon.min_order_amount || 300,
+          discount_percent: targetCoupon.discount_percent || 5,
+          categories: targetCoupon.categories || 'Vegetables,Veg'
+        };
 
-        this.couponS.writeUserCoupon(userCoupon).subscribe(res => {
-          if (res == "SUCCESS") {
-            this.couponS.coupons.addedFlg = true;
+        this.couponS.writeUserCoupon(userCoupon).subscribe(() => {
+          this.couponS.coupons.addedFlg = true;
+          if (!this.couponS.coupons.users.some(u => String(u.code).toUpperCase() === String(userCoupon.code).toUpperCase())) {
             this.couponS.coupons.users.push(userCoupon);
-          } else {
-            this.couponS.coupons.addedFlg = false;
           }
+          this.couponS.selectedCoupon = userCoupon;
+          this.orderInformation = this.cartService.orderInformation;
+          this.cartService.remainingToPay = this.orderInformation.remainingToPay;
         });
-      } else if (masterCheck.length == 0) {
-        this.couponS.coupons.invalidFlg = true;
       }
     }
   }
 
   onCouponChange(evt: any) {
-    this.orderInformation.selectedCoupon = evt.value;
     this.couponS.selectedCoupon = evt.value;
+    this.orderInformation = this.cartService.orderInformation;
+    this.cartService.remainingToPay = this.orderInformation.remainingToPay;
   }
 
   //If the cart is empty select the action to do
@@ -192,7 +249,7 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   backToShopping(): void {
-
+    this.cartService.navigateBack();
   }
 
   proceed(): void {
@@ -205,7 +262,8 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   addMoneyToWalletAction() {
-    this.cartService.router.navigate(["/home/wallet"]);
+    this.cartService.payAndCheckoutFlg = true;
+    this.cartService.router.navigate(["/home/wallet"], { queryParams: { pay: this.cartService.remainingToPay } });
   }
 
   payAction() {
@@ -241,6 +299,34 @@ export class CartListComponent implements OnInit, OnDestroy {
     if (evt.classList[0] == "popup_parent") {
       this.payFlg = false;
     }
+  }
+
+  groupProductsByCategory(products: Product[]): Array<{ categoryName: string, subCategoryName: string, displayName: string, products: Product[] }> {
+    if (!products || products.length === 0) return [];
+
+    const groupsMap = new Map<string, { categoryName: string, subCategoryName: string, displayName: string, products: Product[] }>();
+
+    for (const product of products) {
+      const cat = product.cat || product.main_category || 'General';
+      const subCat = product.sub_cat || product.sub_category || '';
+
+      let displayName = cat;
+      if (subCat && subCat.toLowerCase() !== 'general' && subCat.toLowerCase() !== cat.toLowerCase()) {
+        displayName = `${cat} - ${subCat}`;
+      }
+
+      if (!groupsMap.has(displayName)) {
+        groupsMap.set(displayName, {
+          categoryName: cat,
+          subCategoryName: subCat,
+          displayName: displayName,
+          products: []
+        });
+      }
+      groupsMap.get(displayName).products.push(product);
+    }
+
+    return Array.from(groupsMap.values());
   }
 
   ngOnDestroy(): void {

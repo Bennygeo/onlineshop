@@ -39,7 +39,7 @@
     <div class="products-cont">
         <div class="container">
             <div class="row" style="padding-left: 12px;" *ngFor="let sub_cat of priorityIndexedCategories">
-                <div style="margin: 3px; padding: 6px; background-color: #f5f5f5; margin-top: 36px;">
+                <div [id]="'cat_section_' + sub_cat" style="margin: 3px; padding: 6px; background-color: #f5f5f5; margin-top: 36px;">
                     <b style="font-weight: 600; color: #333;">{{sub_cat | uppercase}}</b>
                 </div>
                 <div class="col-6 col-md-3 col-lg-2 products"

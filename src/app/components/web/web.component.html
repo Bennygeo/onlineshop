@@ -1,1 +1,224 @@
-<p>Web users content goes here</p>
+<div class="mobile-only-wrapper">
+  <!-- Dynamic Ambient Background Effects -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Top Header Brand Navigation -->
+  <header class="mobile-notice-header">
+    <div class="header-brand">
+      <img src="assets/home/banners/ThinkSpot_logo.png" alt="ThinkSpot Logo" class="brand-logo" />
+      <div class="brand-info">
+        <span class="brand-title">ThinkSpot</span>
+        <span class="brand-tag">Farm Fresh Direct</span>
+      </div>
+    </div>
+
+    <div class="mobile-badge-chip">
+      <span class="pulse-dot"></span>
+      <span class="material-icons phone-ico">smartphone</span>
+      <span>Mobile View Only</span>
+    </div>
+  </header>
+
+  <!-- Main Hero Card Container -->
+  <main class="mobile-notice-container">
+    <div class="mobile-notice-card">
+      
+      <!-- LEFT SECTION: Messaging, QR Code & Actions -->
+      <div class="notice-content">
+        <div class="category-pill">
+          <span class="material-icons">phonelink_setup</span>
+          <span>Optimized Experience</span>
+        </div>
+
+        <h1 class="notice-heading">
+          This Website is Designed for <span class="gradient-text">Mobile View</span>
+        </h1>
+
+        <p class="notice-description">
+          ThinkSpot is crafted exclusively to offer a seamless, lightning-fast fresh produce ordering experience on mobile devices. Please open this site on your mobile browser or switch to mobile mode.
+        </p>
+
+        <!-- Primary Actions & QR Code Card -->
+        <div class="qr-action-card">
+          <div class="qr-code-box">
+            <img [src]="qrCodeUrl" alt="Scan QR Code to open on mobile" class="qr-code-img" />
+            <span class="qr-caption">Scan with Phone Camera</span>
+          </div>
+
+          <div class="qr-instructions">
+            <h3>How to use on your phone:</h3>
+            <ol class="step-list">
+              <li>
+                <span class="step-num">1</span>
+                <span>Open your smartphone camera or QR scanner.</span>
+              </li>
+              <li>
+                <span class="step-num">2</span>
+                <span>Point at the QR code on the left to scan.</span>
+              </li>
+              <li>
+                <span class="step-num">3</span>
+                <span>Tap the link to enjoy fresh organic veggies & fruits!</span>
+              </li>
+            </ol>
+
+            <div class="action-buttons">
+              <button class="btn-primary-mobile" (click)="copyLink()">
+                <span class="material-icons">content_copy</span>
+                <span>Copy Mobile Link</span>
+              </button>
+
+              <button class="btn-secondary-mobile" (click)="toggleDevToolsTip()">
+                <span class="material-icons">devices</span>
+                <span>Desktop Inspector Tip</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toast Feedback -->
+        <div class="toast-notice" *ngIf="copiedToast">
+          <span class="material-icons">check_circle</span>
+          <span>Mobile link copied to clipboard!</span>
+        </div>
+
+        <!-- Desktop Inspector Tip Collapsible Card -->
+        <div class="devtools-card" *ngIf="showDevToolsTip">
+          <div class="devtools-header">
+            <span class="material-icons">developer_mode</span>
+            <h4>Testing on Desktop? Use Mobile Device Emulation:</h4>
+          </div>
+          <p>You can instantly view the mobile layout on this desktop browser:</p>
+          <div class="devtools-steps">
+            <div class="step-item">
+              <kbd>F12</kbd> or <kbd>Right Click -> Inspect</kbd>
+            </div>
+            <div class="step-item">
+              Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd> (or <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd> on Mac)
+            </div>
+            <div class="step-item">
+              Select <strong>iPhone / Pixel / Mobile</strong> device size or shrink browser window below 768px.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT SECTION: Interactive 3D Phone Mockup Preview -->
+      <div class="notice-visual">
+        <div class="phone-mockup-wrapper">
+          <div class="phone-frame">
+            <div class="phone-notch">
+              <div class="speaker"></div>
+              <div class="camera"></div>
+            </div>
+
+            <!-- Simulated Mobile Content Preview Inside Phone Screen -->
+            <div class="phone-screen-content">
+              <!-- Top App Bar -->
+              <div class="sim-header">
+                <div class="sim-brand">
+                  <img src="assets/home/banners/ThinkSpot_logo.png" alt="Logo" class="sim-logo" />
+                  <span class="sim-name">ThinkSpot</span>
+                </div>
+                <div class="sim-pin">
+                  <span class="material-icons pin-icon">location_on</span>
+                  <span>Coimbatore</span>
+                </div>
+              </div>
+
+              <!-- Search Bar -->
+              <div class="sim-search">
+                <span class="material-icons">search</span>
+                <span>Search fresh vegetables...</span>
+              </div>
+
+              <!-- Category Pills -->
+              <div class="sim-categories">
+                <div class="sim-cat active">🥦 Veggies</div>
+                <div class="sim-cat">🍎 Fruits</div>
+                <div class="sim-cat">🥥 Coconut</div>
+              </div>
+
+              <!-- Promo Banner -->
+              <div class="sim-banner">
+                <div class="sim-banner-tag">Farm Fresh 50% OFF</div>
+                <h4>Organic Farm Produce</h4>
+                <p>Directly from local farmers to your home</p>
+              </div>
+
+              <!-- Simulated Product Grid -->
+              <div class="sim-products">
+                <div class="sim-prod-card">
+                  <div class="sim-prod-img bg-green">🥦</div>
+                  <div class="sim-prod-title">Fresh Broccoli</div>
+                  <div class="sim-prod-price">₹ 45 / 500g</div>
+                  <div class="sim-add-btn">+ ADD</div>
+                </div>
+
+                <div class="sim-prod-card">
+                  <div class="sim-prod-img bg-red">🍎</div>
+                  <div class="sim-prod-title">Shimla Apples</div>
+                  <div class="sim-prod-price">₹ 120 / 1kg</div>
+                  <div class="sim-add-btn">+ ADD</div>
+                </div>
+
+                <div class="sim-prod-card">
+                  <div class="sim-prod-img bg-orange">🥕</div>
+                  <div class="sim-prod-title">Ooty Carrots</div>
+                  <div class="sim-prod-price">₹ 38 / 500g</div>
+                  <div class="sim-add-btn">+ ADD</div>
+                </div>
+
+                <div class="sim-prod-card">
+                  <div class="sim-prod-img bg-yellow">🍋</div>
+                  <div class="sim-prod-title">Country Lemons</div>
+                  <div class="sim-prod-price">₹ 20 / 250g</div>
+                  <div class="sim-add-btn">+ ADD</div>
+                </div>
+              </div>
+
+              <!-- Bottom Bar Floating Cart -->
+              <div class="sim-cart-bar">
+                <div class="sim-cart-info">
+                  <span class="material-icons">shopping_bag</span>
+                  <span>3 Items | ₹ 203</span>
+                </div>
+                <div class="sim-checkout-btn">
+                  View Cart <span class="material-icons">arrow_forward</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="phone-home-indicator"></div>
+          </div>
+
+          <!-- Decorative Floating Element Cards around Phone -->
+          <div class="floating-badge badge-1">
+            <span class="material-icons">eco</span>
+            <div>
+              <strong>100% Organic</strong>
+              <small>Fresh Harvest</small>
+            </div>
+          </div>
+
+          <div class="floating-badge badge-2">
+            <span class="material-icons">local_shipping</span>
+            <div>
+              <strong>Fast Delivery</strong>
+              <small>Doorstep Drop</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer Info -->
+  <footer class="mobile-notice-footer">
+    <p>© ThinkSpot Farm Fresh Direct — Site optimized for mobile screen resolution.</p>
+  </footer>
+</div>

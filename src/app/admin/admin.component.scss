@@ -1,0 +1,146 @@
+.admin-wrapper {
+  min-height: 100vh;
+  background-color: #f1f5f9;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.admin-header-container {
+  max-width: 1920px;
+  margin: 0 auto;
+  padding: 12px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .logo {
+    height: 40px;
+    width: auto;
+  }
+
+  .brand-title {
+    display: flex;
+    flex-direction: column;
+
+    .main {
+      font-size: 18px;
+      font-weight: 800;
+      color: #2eb9ac;
+      line-height: 1.1;
+    }
+    .sub {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 600;
+    }
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  .customer-site-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #e6f7f5;
+    color: #2eb9ac;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: #2eb9ac;
+      color: #ffffff;
+    }
+  }
+
+  .admin-profile-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+  }
+}
+
+.admin-main-container {
+  display: flex;
+  flex: 1;
+  max-width: 1920px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.admin-sidebar {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  padding: 24px 16px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-radius: 14px;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+
+    .material-icons {
+      font-size: 22px;
+    }
+
+    &:hover {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+
+    &.active {
+      background: #2eb9ac;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(46, 185, 172, 0.3);
+    }
+  }
+}
+
+.admin-content-area {
+  flex: 1;
+  padding: 32px;
+  overflow-y: auto;
+}

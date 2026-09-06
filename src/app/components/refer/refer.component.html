@@ -1,49 +1,104 @@
-<div class="referCont">
-    <div class="label">
-        Refer your friends and earn money
+<div class="referral-page">
+
+  <!-- Floating Toast Notifications -->
+  <div class="toast-badge" *ngIf="copiedCodeToast">
+    <span class="icon">✓</span> Referral Code Copied!
+  </div>
+  <div class="toast-badge" *ngIf="copiedLinkToast">
+    <span class="icon">✓</span> Referral Link Copied!
+  </div>
+
+  <!-- Hero Banner Header -->
+  <div class="hero-section">
+    <div class="hero-badge">🎁 Thinkspot Growth & Rewards</div>
+    <h1 class="hero-title">Refer Friends & Earn Cash</h1>
+    <p class="hero-subtitle">Share the goodness of 100% natural, farm-fresh foods with your friends and family!</p>
+
+    <div class="reward-pill-container">
+      <div class="reward-pill">
+        <span class="pill-label">YOUR FRIEND GETS</span>
+        <span class="pill-value">25% Cashback</span>
+      </div>
+      <div class="reward-divider">+</div>
+      <div class="reward-pill highlight">
+        <span class="pill-label">YOU GET</span>
+        <span class="pill-value">₹100 Wallet Cash</span>
+      </div>
     </div>
+  </div>
 
-    <div class="imgCont">
-        <img src="assets/refer/refer.png" alt="Refer and Support Image">
-    </div>
-
-    <div class="innerCont">
-        <div class="row">
-
-            <div class="myowap">
-                <ul class="myoin" style="padding-left: 0;">
-                    <li>
-                        <span class="myonumb"><a class="first_li" href="">1</a></span>
-                    </li>
-
-                    <li>
-                        <span class="myonumb"><a href="">2</a></span>
-                    </li>
-                    <li style="padding-right: 0px;">
-                        <span class="myonumb"><a href="">3</a></span>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="col-lg-8 col-md-8 col-sm-8 col-xs-12" style="margin:0 auto;">
-                <div class="row">
-                    <div class="col-4 lables">
-                        Refer your friend to Thinkspot
-                    </div>
-                    <div class="col-4 lables">Your friend will get 25% CASHBACK on their purchase
-                    </div>
-                    <div class="col-4 lables">You will get 25% CASHBACK for referring your friend</div>
-                </div>
-            </div>
+  <!-- Main Referral Card -->
+  <div class="referral-card-container">
+    <div class="referral-card">
+      
+      <!-- Referral Code Showcase -->
+      <div class="code-box-wrapper">
+        <span class="code-label">YOUR UNIQUE REFERRAL CODE</span>
+        <div class="code-display-row">
+          <div class="code-value">{{ referralId || 'LOADING...' }}</div>
+          <button class="btn-copy" (click)="copyCode()" title="Copy Code">
+            <span class="copy-icon">📋</span> Copy Code
+          </button>
         </div>
+      </div>
 
-        <div class="ref-code">YOUR REFERRAL CODE</div>
+      <!-- Quick Action Buttons -->
+      <div class="actions-grid">
+        <button class="btn-action btn-whatsapp" (click)="shareWhatsApp()">
+          <span class="btn-icon">💬</span> Share on WhatsApp
+        </button>
+        <button class="btn-action btn-share" (click)="shareNative()">
+          <span class="btn-icon">🔗</span> Share Link
+        </button>
+      </div>
 
-        <div class="referalCode">{{referralId}}</div>
+      <div class="copy-link-text" (click)="copyLink()">
+        <span>Or click here to copy full invitation link</span>
+      </div>
 
-        <div class="tnkspt_primary_btn ref-btn" (click)="shareAction()" *ngIf="!shareFlg">
-            Refer now</div>
     </div>
+  </div>
 
-    <iframe *ngIf="shareFlg" [src]="urlSafe"></iframe>
+  <!-- How It Works Section -->
+  <div class="how-it-works-section">
+    <h2 class="section-title">How It Works</h2>
+    
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-badge">1</div>
+        <div class="step-icon">📲</div>
+        <h3 class="step-heading">Invite Friends</h3>
+        <p class="step-desc">Share your referral code or direct link via WhatsApp, SMS, or social media.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-badge">2</div>
+        <div class="step-icon">🛒</div>
+        <h3 class="step-heading">Friend Places Order</h3>
+        <p class="step-desc">Your friend gets <strong>25% Cashback</strong> on their first fresh food purchase.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-badge">3</div>
+        <div class="step-icon">🎉</div>
+        <h3 class="step-heading">You Get Rewarded</h3>
+        <p class="step-desc">Receive <strong>₹100 Cash</strong> straight into your Thinkspot Wallet instantly!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Milestone & Promo Banner -->
+  <div class="promo-banner">
+    <div class="promo-content">
+      <div class="promo-badge">🔥 MONTHLY REFERRAL CHALLENGE</div>
+      <h3 class="promo-title">Refer 5 Friends this Month!</h3>
+      <p class="promo-text">Unlock <strong>₹500 Extra Wallet Bonus</strong> + <strong>30 Days FREE Delivery</strong> on all farm-fresh orders!</p>
+    </div>
+  </div>
+
+  <!-- Dynamic Iframe integration if shareFlg is active -->
+  <div class="iframe-container" *ngIf="shareFlg">
+    <iframe [src]="urlSafe"></iframe>
+  </div>
+
 </div>

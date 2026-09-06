@@ -1,4 +1,5 @@
 @import "../../../assets/styles/global-constants.scss";
+
 #view-cont {
     margin-top: 60px;
     overflow-x: hidden;
@@ -12,12 +13,14 @@
 
     .item-cont {
         @include center-column;
+
         img {
             width: 50%;
             margin-left: -28px;
             text-align: center;
             margin-bottom: 18px;
         }
+
         p {
             text-align: center;
             margin-bottom: 0px;
@@ -35,11 +38,13 @@
     width: 80%;
     margin: 0 auto;
     text-align: center;
+
     img {
         width: 50%;
         text-align: center;
         margin-bottom: 18px;
     }
+
     p {
         text-align: center;
         margin-bottom: 0px;
@@ -75,6 +80,30 @@
         margin-top: 18px;
         color: #111719;
         margin-bottom: 18px;
+    }
+
+    .sub_cat_title {
+        font-size: 14px;
+        padding: 6px 14px;
+        background-color: #f0fdfa;
+        font-weight: 600;
+        border-radius: 8px;
+        margin: 10px 0 8px 12px;
+        color: #0d9488;
+        display: inline-flex;
+        align-items: center;
+        border-left: 3px solid #0d9488;
+
+        .category_name {
+            font-weight: 600;
+        }
+
+        .subcategory_name {
+            font-weight: 500;
+            margin-left: 6px;
+            color: #14b8a6;
+            font-size: 13px;
+        }
     }
 }
 
@@ -204,6 +233,7 @@
         color: #aaa;
     }
 }
+
 .radioBtnTxt {
     margin-bottom: 20px;
 }
@@ -235,6 +265,7 @@
         margin-top: 40px;
         margin-bottom: 18px;
     }
+
     .row {
         .col-4 {
             .box {
@@ -248,6 +279,7 @@
                     display: block;
                     height: 24px;
                 }
+
                 p {
                     font-size: $font-s;
                     margin-top: 12px;
@@ -255,6 +287,7 @@
                     line-height: 14px;
                 }
             }
+
             .box-active {
                 border: 1px solid $teal-100;
                 color: $teal-100;
@@ -283,29 +316,79 @@
 }
 
 .popup_parent {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+
     .popup_cont {
-        overflow-y: scroll;
-        overflow-x: hidden;
-        top: calc(100% - 460px);
-        min-height: 460px;
-        margin: 24px;
-        padding: 48px 12px 48px 12px;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        width: 100vw;
+        height: 50vh !important;
+        max-height: 50vh !important;
+        background-color: #ffffff;
+        border-radius: 24px 24px 0 0;
+        padding: 20px 20px 20px 20px !important;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-sizing: border-box;
+        overflow: hidden;
 
         .head {
-            font-size: $font-l;
-            margin: 18px 0 18px 0;
-            font-weight: 500;
+            font-size: 18px;
+            margin: 0 0 6px 0;
+            font-weight: 600;
+            color: #1e293b;
         }
 
         p {
-            font-size: $font-m;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #475569;
+            line-height: 1.4;
         }
 
         img {
-            display: flex;
-            margin: 0 auto;
-            margin-top: 50px;
-            margin-bottom: 24px;
+            display: block;
+            margin: 4px auto 10px auto;
+            max-width: 110px;
+            max-height: 75px;
+            object-fit: contain;
+        }
+
+        .flex-box {
+            position: relative !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            margin-top: auto !important;
+            margin-bottom: 4px !important;
+            display: flex !important;
+            gap: 10px !important;
+            z-index: 10;
+
+            .cancel-btn,
+            .view-btn {
+                flex: 1;
+                font-size: 13px;
+                height: 40px;
+                line-height: 38px;
+                white-space: nowrap;
+            }
         }
     }
 }
@@ -322,6 +405,7 @@
     color: $grey-40;
     font-weight: normal;
 }
+
 .coupon-txt {
     color: $grey-10;
     font-weight: normal;

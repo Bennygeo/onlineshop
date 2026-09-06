@@ -1,0 +1,188 @@
+<div class="products-admin-page">
+  <div class="page-header">
+    <div>
+      <h2>Product Catalog Admin</h2>
+      <p>Add new products, update prices, manage inventory and stock availability.</p>
+    </div>
+    <button class="add-btn" (click)="openAddModal()">
+      <span class="material-icons">add</span>
+      <span>Add New Product</span>
+    </button>
+  </div>
+
+  <!-- Filter Controls -->
+  <div class="controls-bar">
+    <div class="search-input-box">
+      <span class="material-icons">search</span>
+      <input type="text" placeholder="Search product name..." [(ngModel)]="searchQuery" (input)="filterProducts()" />
+    </div>
+
+    <div class="category-filter">
+      <label>Category:</label>
+      <select [(ngModel)]="selectedCategory" (change)="filterProducts()">
+        <option *ngFor="let c of categories" [value]="c">{{ c }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Products Table -->
+  <div class="table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Weight</th>
+          <th>Selling Price</th>
+          <th>Original Price</th>
+          <th>Stock Price</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of filteredProducts">
+          <td>
+            <div class="product-cell">
+              <img [src]="p.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ p.name }}" class="prod-thumb" />
+              <div class="prod-text">
+                <span class="prod-name">{{ p.name }}</span>
+                <span class="prod-tamil" *ngIf="p.tamil_name">{{ p.tamil_name }}</span>
+                <small class="prod-id">ID: {{ p.id }}</small>
+              </div>
+            </div>
+          </td>
+          <td><span class="cat-badge">{{ p.cat || p.main_category }}</span></td>
+          <td>{{ p.weight }} {{ p.unit_name || 'g' }}</td>
+          <td><span class="price-val">₹ {{ p.price }}</span></td>
+          <td><span class="orig-price-val">₹ {{ p.original_price }}</span></td>
+          <td>₹ {{ p.stock_price || '-' }}</td>
+          <td>
+            <button class="status-toggle-btn" [class.in-stock]="!p.disabled" [class.out-of-stock]="p.disabled" (click)="toggleStockStatus(p)">
+              {{ p.disabled ? 'Disabled' : 'Active' }}
+            </button>
+          </td>
+          <td>
+            <button class="edit-btn" (click)="openEditModal(p)">
+              <span class="material-icons">edit</span> Edit
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Add Product Modal -->
+  <div class="modal-overlay" *ngIf="isAddModalOpen" (click)="closeAddModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Add New Product</h3>
+        <button class="close-btn" (click)="closeAddModal()">✕</button>
+      </div>
+
+      <div class="modal-body form-grid">
+        <div class="form-group">
+          <label>Product Name *</label>
+          <input type="text" [(ngModel)]="newProduct.name" placeholder="e.g. Fresh Organic Tomatoes" />
+        </div>
+
+        <div class="form-group">
+          <label>Tamil Name</label>
+          <input type="text" [(ngModel)]="newProduct.tamil_name" placeholder="e.g. தக்காளி" />
+        </div>
+
+        <div class="form-group">
+          <label>Category *</label>
+          <select [(ngModel)]="newProduct.cat">
+            <option value="Vegetables">Vegetables</option>
+            <option value="Fruits">Fruits</option>
+            <option value="Naturalhydrants">Natural Hydrants</option>
+            <option value="Greenssprouts">Greens & Sprouts</option>
+            <option value="Woodpressed">Woodpressed Oils</option>
+            <option value="Honeyspices">Honey & Spices</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Selling Price (₹) *</label>
+          <input type="number" [(ngModel)]="newProduct.price" />
+        </div>
+
+        <div class="form-group">
+          <label>Original MRP (₹)</label>
+          <input type="number" [(ngModel)]="newProduct.original_price" />
+        </div>
+
+        <div class="form-group">
+          <label>Stock Cost Price (₹)</label>
+          <input type="number" [(ngModel)]="newProduct.stock_price" />
+        </div>
+
+        <div class="form-group">
+          <label>Unit Weight</label>
+          <input type="number" [(ngModel)]="newProduct.weight" placeholder="500" />
+        </div>
+
+        <div class="form-group">
+          <label>Unit Name</label>
+          <input type="text" [(ngModel)]="newProduct.unit_name" placeholder="grams / kg / ml" />
+        </div>
+
+        <div class="form-group full-width">
+          <label>Image URL</label>
+          <input type="text" [(ngModel)]="newProduct.img_url" placeholder="assets/categories/..." />
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeAddModal()">Cancel</button>
+        <button class="btn-primary" (click)="submitAddProduct()">Save & Add Product</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div class="modal-overlay" *ngIf="isEditModalOpen" (click)="closeEditModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Edit Product - {{ editingProduct?.name }}</h3>
+        <button class="close-btn" (click)="closeEditModal()">✕</button>
+      </div>
+
+      <div class="modal-body form-grid" *ngIf="editingProduct">
+        <div class="form-group">
+          <label>Product Name</label>
+          <input type="text" [(ngModel)]="editingProduct.name" />
+        </div>
+
+        <div class="form-group">
+          <label>Selling Price (₹)</label>
+          <input type="number" [(ngModel)]="editingProduct.price" />
+        </div>
+
+        <div class="form-group">
+          <label>Original MRP (₹)</label>
+          <input type="number" [(ngModel)]="editingProduct.original_price" />
+        </div>
+
+        <div class="form-group">
+          <label>Stock Price (₹)</label>
+          <input type="number" [(ngModel)]="editingProduct.stock_price" />
+        </div>
+
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="editingProduct.disabled">
+            <option [value]="0">Active (In Stock)</option>
+            <option [value]="1">Disabled (Out of Stock)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeEditModal()">Cancel</button>
+        <button class="btn-primary" (click)="submitUpdateProduct()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>

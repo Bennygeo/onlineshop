@@ -29,33 +29,43 @@
 
         <div class="seeAll" (click)="sellAllAction()" [routerLink]="['/products/category/Vegetables']">See All</div>
 
-        <div class="tnkspt-because-title" *ngIf="!bannerDownloadFlg">
-            Thinkspot because...
-        </div>
-
-        <div class="container recent-group">
-            <div class="row" *ngIf="bannerDownloadFlg">
-                <div class="col-10">
-                    <div class="categoryItems_1">
-                        <div class="lines shine" style="width: 70%; height: 30px;"></div>
-                        <div class="lines shine" style="width: 50%; height: 12px;"></div>
-                        <div class="lines shine" style="width: 84%; height: 12px;"></div>
+        <!-- Beautiful 4-Slide Banner Carousel (Vegetables, Fruits, Milk, Tender Coconut) -->
+        <div class="hero-banner-container">
+            <div class="banner-carousel" [style.transform]="'translateX(-' + (activeSlideIndex * 100) + '%)'">
+                <div class="banner-slide" 
+                     *ngFor="let slide of heroSlides; let i = index" 
+                     [style.background]="slide.bgGradient"
+                     (click)="onBannerClick(slide)">
+                    <div class="slide-content">
+                        <span class="slide-badge">{{ slide.badge }}</span>
+                        <h2 class="slide-title">{{ slide.title }}</h2>
+                        <p class="slide-desc">{{ slide.desc }}</p>
+                        <div class="slide-cta">
+                            <span>{{ slide.btnText }}</span>
+                            <span class="material-icons">arrow_forward</span>
+                        </div>
+                    </div>
+                    <div class="slide-visual">
+                        <img [src]="slide.imgUrl" [alt]="slide.title" class="slide-img" />
                     </div>
                 </div>
             </div>
 
-            <div class="row text-center" style="margin: 0px;">
-                <div class="col-10" *ngFor="let banner of banners; let i=index;">
-                    <div class="categoryItems_1" [style.background]=banner.bgClr>
-                        <div [style]="{'text-wrap':'wrap', 'padding':'0 12px 0 12px'}">
-                            <h3>#{{banner.title}}</h3>
-                            <p>{{banner.desc}}</p>
-                        </div>
-                        <div class="card-body">
-                            <!-- <h5 class="card-title">{{banner.name}}</h5> -->
-                        </div>
-                    </div>
-                </div>
+            <!-- Left & Right Arrow Controls -->
+            <button class="carousel-arrow prev" (click)="prevSlide($event)" aria-label="Previous Slide">
+                <span class="material-icons">chevron_left</span>
+            </button>
+            <button class="carousel-arrow next" (click)="nextSlide($event)" aria-label="Next Slide">
+                <span class="material-icons">chevron_right</span>
+            </button>
+
+            <!-- Slide Indicator Dots -->
+            <div class="carousel-dots">
+                <span *ngFor="let slide of heroSlides; let i = index" 
+                      class="dot" 
+                      [class.active]="i === activeSlideIndex"
+                      (click)="goToSlide(i); $event.stopPropagation()">
+                </span>
             </div>
         </div>
 

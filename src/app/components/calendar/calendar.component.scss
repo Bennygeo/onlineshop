@@ -5,6 +5,7 @@
     max-height: 43%;
     overflow-y: scroll;
     width: 100vw;
+
     .flex-box {
         // @include center-row;
         align-items: flex-end;
@@ -39,6 +40,7 @@
 
 .days-select-options {
     @include center;
+
     .days-select-option {
         margin-right: 6px;
     }
@@ -109,6 +111,8 @@
     overflow-x: hidden;
     overflow-y: scroll;
     padding: 12px 0 12px 0;
+    margin-top: 48px;
+
     .row {
         .col-8 {
             .pName {

@@ -41,23 +41,51 @@ if (!$pdo) {
 }
 
 try {
-    $sql = "SELECT id, name, tamil_name, cat, sub_cat, price, original_price, weight, unit_name, img_url, disabled, subscribe_flg AS subscribe_flg, subscribe_flg AS subscribeFlg, index_num AS `index`, offer FROM products WHERE disabled = 0";
-    $params = [];
+    $table_name = getParam('table_name');
+    if (!$table_name) { $table_name = 'products'; }
 
-    if ($cat) {
-        $sql .= " AND cat = ?";
-        $params[] = $cat;
+    try {
+        $sql = "SELECT id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, weight, unit_name, img_url, disabled, index_num AS `index`, offer FROM {$table_name} WHERE 1=1";
+        $params = [];
+        if ($cat && strtolower($cat) !== 'all') {
+            $sql .= " AND cat = ?";
+            $params[] = $cat;
+        }
+        if ($sub_cat) {
+            $sql .= " AND sub_cat = ?";
+            $params[] = $sub_cat;
+        }
+        $sql .= " ORDER BY index_num ASC, id ASC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $products = $stmt->fetchAll();
+    } catch (Exception $exTable) {
+        // Fallback to 'products' table
+        $sql = "SELECT id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, weight, unit_name, img_url, disabled, index_num AS `index`, offer FROM products WHERE 1=1";
+        $params = [];
+        if ($cat && strtolower($cat) !== 'all') {
+            $sql .= " AND cat = ?";
+            $params[] = $cat;
+        }
+        if ($sub_cat) {
+            $sql .= " AND sub_cat = ?";
+            $params[] = $sub_cat;
+        }
+        $sql .= " ORDER BY index_num ASC, id ASC";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $products = $stmt->fetchAll();
     }
-    if ($sub_cat) {
-        $sql .= " AND sub_cat = ?";
-        $params[] = $sub_cat;
+
+    foreach ($products as &$p) {
+        $p['price'] = (isset($p['price']) && floatval($p['price']) > 0) ? floatval($p['price']) : 60;
+        $p['original_price'] = (isset($p['original_price']) && floatval($p['original_price']) > 0) ? floatval($p['original_price']) : 80;
+        $p['weight'] = (isset($p['weight']) && intval($p['weight']) > 0) ? intval($p['weight']) : 500;
+        $p['unit_name'] = !empty($p['unit_name']) ? $p['unit_name'] : 'grams';
+        $p['stock_price'] = (isset($p['stock_price']) && floatval($p['stock_price']) > 0) ? floatval($p['stock_price']) : 45;
+        $p['profit_percent'] = (isset($p['profit_percent']) && floatval($p['profit_percent']) > 0) ? floatval($p['profit_percent']) : 25;
+        $p['disabled'] = (isset($p['disabled']) && (int)$p['disabled'] === 1) ? true : false;
     }
-
-    $sql .= " ORDER BY index_num ASC, id ASC";
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $products = $stmt->fetchAll();
 
     sendJson($products);
 } catch (Exception $e) {

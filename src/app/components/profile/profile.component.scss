@@ -12,7 +12,7 @@
     margin-left: 10px;
     margin-top: 36px;
 
-    & > input {
+    &>input {
         width: 100%;
         outline: none;
         border-radius: 10px;
@@ -21,14 +21,15 @@
         border: 1px solid #eeeeee;
 
         &:focus {
-            border: 1px solid #30d2ad;
+            border: 1px solid $teal-100;
         }
 
         &.error {
             border: 1px solid #f00;
         }
+
         &.valid {
-            border: 1px solid #30d2ad;
+            border: 1px solid $teal-100;
         }
     }
 
@@ -42,7 +43,7 @@
         font-weight: 500;
     }
 
-    & > label {
+    &>label {
         position: relative;
         left: 6px;
         top: -9px;

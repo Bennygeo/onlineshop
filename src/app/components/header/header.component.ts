@@ -218,7 +218,7 @@ export class HeaderComponent implements OnInit {
   }
 
   backBtnAction() {
-    this.location.back();
+    this.cartS.navigateBack();
   }
 
   onSuccessfulLogin() {
@@ -253,7 +253,7 @@ export class HeaderComponent implements OnInit {
   closeNav() {
     let nodeList = document.querySelectorAll("meta");
     nodeList.forEach(node => {
-      if (node.name == 'theme-color') node.setAttribute("content", "#30d2ad");
+      if (node.name == 'theme-color') node.setAttribute("content", "#097e63");
     });
 
     // document.getElementById("mySidenav").style.width = "0";

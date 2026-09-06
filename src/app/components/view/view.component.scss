@@ -222,3 +222,170 @@
 ::ng-deep .address-cont {
     height: calc(100% - 48px) !important;
 }
+
+// Hero 4-Slide Banner Carousel Styling
+.hero-banner-container {
+    position: relative;
+    width: 92%;
+    margin: 16px auto 24px;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+
+    .banner-carousel {
+        display: flex;
+        width: 100%;
+        transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1);
+
+        .banner-slide {
+            min-width: 100%;
+            padding: 22px 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            position: relative;
+            box-sizing: border-box;
+            user-select: none;
+
+            .slide-content {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                max-width: 68%;
+                z-index: 2;
+
+                .slide-badge {
+                    display: inline-block;
+                    padding: 4px 12px;
+                    background: rgba(255, 255, 255, 0.22);
+                    border: 1px solid rgba(255, 255, 255, 0.35);
+                    border-radius: 20px;
+                    color: #ffffff;
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 8px;
+                    backdrop-filter: blur(4px);
+                }
+
+                .slide-title {
+                    font-family: $inter;
+                    font-size: 20px;
+                    font-weight: 800;
+                    color: #ffffff;
+                    margin: 0 0 6px;
+                    line-height: 1.2;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+                }
+
+                .slide-desc {
+                    font-size: 12px;
+                    color: rgba(255, 255, 255, 0.92);
+                    margin: 0 0 14px;
+                    line-height: 1.35;
+                }
+
+                .slide-cta {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 8px 16px;
+                    background: #ffffff;
+                    color: #0f172a;
+                    border-radius: 24px;
+                    font-size: 12px;
+                    font-weight: 700;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+                    .material-icons {
+                        font-size: 14px;
+                    }
+
+                    &:hover {
+                        transform: translateY(-1px);
+                        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+                    }
+                }
+            }
+
+            .slide-visual {
+                z-index: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                .slide-img {
+                    width: 72px;
+                    height: 72px;
+                    object-fit: contain;
+                    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
+                    animation: floatImg 4s ease-in-out infinite alternate;
+                }
+            }
+        }
+    }
+
+    .carousel-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.25);
+        border: none;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        backdrop-filter: blur(4px);
+        transition: background 0.2s ease;
+
+        &:hover {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        &.prev { left: 8px; }
+        &.next { right: 8px; }
+
+        .material-icons {
+            font-size: 18px;
+        }
+    }
+
+    .carousel-dots {
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 6px;
+        z-index: 10;
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.45);
+            cursor: pointer;
+            transition: all 0.3s ease;
+
+            &.active {
+                width: 20px;
+                border-radius: 10px;
+                background: #ffffff;
+                box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+            }
+        }
+    }
+}
+
+@keyframes floatImg {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-6px); }
+}

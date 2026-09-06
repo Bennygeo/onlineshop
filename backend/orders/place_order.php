@@ -39,6 +39,65 @@ try {
     $pdo->exec("ALTER TABLE order_items ADD COLUMN endDate VARCHAR(50) DEFAULT ''");
 } catch (Exception $e) {}
 
+// Calculate total order amount for balance verification
+$finalTotal = $total_amount;
+if (!empty($items) && is_array($items)) {
+    $calcTotal = 0;
+    foreach ($items as $item) {
+        $qty = isset($item['qty']) ? (int)$item['qty'] : (isset($item['quantity']) ? (int)$item['quantity'] : (isset($item['units']) ? (int)$item['units'] : 1));
+        $price = isset($item['price']) ? (float)$item['price'] : 0;
+        $rangeDates = isset($item['rangeDates']) ? (is_string($item['rangeDates']) ? $item['rangeDates'] : json_encode($item['rangeDates'])) : '[]';
+        $subsDates = isset($item['subscribedDates']) ? (is_string($item['subscribedDates']) ? $item['subscribedDates'] : json_encode($item['subscribedDates'])) : '[]';
+        $daysCount = 1;
+        if ($rangeDates && $rangeDates !== '[]') {
+            $r = json_decode($rangeDates, true);
+            if (is_array($r) && count($r) > 0) $daysCount = count($r);
+        } elseif ($subsDates && $subsDates !== '[]') {
+            $s = json_decode($subsDates, true);
+            if (is_array($s) && count($s) > 0) $daysCount = count($s);
+        }
+        if (isset($item['unit_price']) && (float)$item['unit_price'] > 0 && $price == (float)$item['unit_price']) {
+            $price = (float)$item['unit_price'] * $qty * $daysCount;
+        }
+        $calcTotal += $price;
+    }
+    if ($calcTotal > 0) {
+        $finalTotal = $calcTotal;
+    }
+}
+
+// Verify available wallet balance
+if ($mobile) {
+    $stmtBal = $pdo->prepare("SELECT amount, type, status FROM wallets WHERE mobile = ?");
+    $stmtBal->execute([$mobile]);
+    $walletRows = $stmtBal->fetchAll();
+
+    $availableWalletBalance = 0;
+    foreach ($walletRows as $wRow) {
+        $wAmt = (float)$wRow['amount'];
+        $wType = strtoupper($wRow['type']);
+        $wStatus = strtolower($wRow['status'] ?: 'authorized');
+
+        if ($wStatus === 'authorized' || $wStatus === 'captured' || $wStatus === 'placed' || $wStatus === 'success') {
+            if ($wType === 'DEBIT') {
+                $availableWalletBalance -= $wAmt;
+            } else {
+                $availableWalletBalance += $wAmt;
+            }
+        }
+    }
+
+    if ($availableWalletBalance < ($finalTotal - 0.01)) {
+        sendJson([
+            'error' => 'Insufficient wallet balance. Available: ₹' . number_format($availableWalletBalance, 2) . ', Required: ₹' . number_format($finalTotal, 2),
+            'code' => 'INSUFFICIENT_WALLET_BALANCE',
+            'available_balance' => $availableWalletBalance,
+            'required_amount' => $finalTotal
+        ], 400);
+        exit;
+    }
+}
+
 try {
     $pdo->beginTransaction();
 

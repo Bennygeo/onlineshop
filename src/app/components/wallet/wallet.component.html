@@ -7,7 +7,8 @@
         <div class="detailBox">
             <div class="box box1">
                 <div class="label">Available Balance</div>
-                <div class="balanceLedger">₹{{ (walletTotal - user.ledger) > 0 ? (walletTotal - user.ledger) : 0 }}</div>
+                <div class="balanceLedger">₹{{ (walletTotal - user.ledger) > 0 ? (walletTotal - user.ledger) : 0 }}
+                </div>
                 <p>Your balance minus your ledger balance</p>
             </div>
             <div class="box box2">
@@ -22,8 +23,10 @@
 
     <div class="history">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-weight: 600; font-size: 16px;">Past activities {{ showAllHistory ? '(All)' : '(Last 5 Days)' }}</span>
-            <span *ngIf="history.length > displayedHistory.length && !showAllHistory" (click)="showAllHistory = true" style="cursor: pointer; color: #30d2ad; font-size: 13px; font-weight: 500;">Show All History</span>
+            <span style="font-weight: 600; font-size: 16px;">Past activities {{ showAllHistory ? '(All)' : '(Last 5
+                Days)' }}</span>
+            <span *ngIf="history.length > displayedHistory.length && !showAllHistory" (click)="showAllHistory = true"
+                style="cursor: pointer; color: #097e63; font-size: 13px; font-weight: 500;">Show All History</span>
         </div>
 
         <div class="historyCont" *ngIf="displayedHistory.length > 0; else no_history">

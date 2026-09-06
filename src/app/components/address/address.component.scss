@@ -1,4 +1,5 @@
 @import "../../../assets/styles/global-constants.scss";
+
 .referralCont {
     margin-bottom: 6px;
     margin-top: 12px;
@@ -51,8 +52,8 @@ mat-form-field {
         width: calc(100vw - 50px);
         margin-bottom: 36px;
 
-        & > input,
-        & > textarea {
+        &>input,
+        &>textarea {
             width: 100%;
             outline: none;
             border-radius: 5px;
@@ -61,7 +62,7 @@ mat-form-field {
             border: 1px solid #eeeeee;
 
             &:focus {
-                border: 1px solid #30d2ad;
+                border: 1px solid $teal-100;
             }
 
             &.error {
@@ -69,7 +70,7 @@ mat-form-field {
             }
 
             &.valid {
-                border: 1px solid #30d2ad;
+                border: 1px solid $teal-100;
             }
         }
 
@@ -83,7 +84,7 @@ mat-form-field {
             font-weight: 500;
         }
 
-        & > label {
+        &>label {
             position: relative;
             left: 3px;
             top: -6px;

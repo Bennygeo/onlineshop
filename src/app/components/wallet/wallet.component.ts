@@ -123,13 +123,14 @@ export class WalletComponent implements OnInit, OnDestroy {
         if (loadingEl)
             loadingEl.remove();
 
+        this.loginS.readWallet();
+
         this.activatedRoute.queryParams.subscribe((params: any) => {
             if (params['pay']) {
                 this.rcWindowFlg = true;
                 this.rcOptionClickAction(params['pay']);
             }
         });
-
     }
 
     rcOptionClickAction(amt: string): void {
@@ -179,18 +180,28 @@ export class WalletComponent implements OnInit, OnDestroy {
             this.rcWindowFlg = false;
             this.loginS.readWallet();
 
-            if (res && res[0] && this.cartS.payAndCheckoutFlg && (res[0].status == "authorized" || res[0].status == "captured")) {
-                this.cartS.placeOrder((orderRes: Wallet) => {
-                    this.history.unshift(orderRes);
-                    this.walletTotal = orderRes.total;
-                    this.loginS.user.wallet = this.walletTotal;
-                    this.loginS.user.walletHistory = this.history;
+            const lastStatus = (res && res[0] && res[0].status) ? res[0].status.toLowerCase() : '';
+            const isSuccessTx = res && res[0] && 
+                (lastStatus === 'authorized' || lastStatus === 'captured' || lastStatus === 'success') &&
+                (res[0].type === 'Credit' || res[0].type === 'CREDIT');
+
+            if (res && res[0] && this.cartS.payAndCheckoutFlg) {
+                if (isSuccessTx) {
+                    this.cartS.placeOrder((orderRes: Wallet) => {
+                        this.history.unshift(orderRes);
+                        this.walletTotal = orderRes.total;
+                        this.loginS.user.wallet = this.walletTotal;
+                        this.loginS.user.walletHistory = this.history;
+                        this.cartS.payAndCheckoutFlg = false;
+                        this.cartS.router.navigate(["/products/cart"]);
+                    });
+                } else {
                     this.cartS.payAndCheckoutFlg = false;
-                    this.cartS.router.navigate(["/products/cart"]);
-                });
+                    alert("Payment was not completed or was cancelled. Order could not be placed.");
+                }
             }
 
-            if (res && res[0] && this.cartS.editSubsPaymentTrack && (res[0].status == "authorized" || res[0].status == "captured")) {
+            if (res && res[0] && this.cartS.editSubsPaymentTrack && isSuccessTx) {
                 this.cartS.router.navigate(["/home/orders"]);
             }
             this.cdr.detectChanges();

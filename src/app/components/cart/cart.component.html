@@ -41,6 +41,9 @@
         <div class="col-7">
             <h4 class="pName">{{product.name}} <span *ngIf="product.subs_options">{{product.subs_options.type}}</span>
             </h4>
+            <div *ngIf="product.sub_cat || product.cat" class="pSubCat">
+                {{(product.sub_cat && product.sub_cat.toLowerCase() !== 'general') ? product.sub_cat : product.cat}}
+            </div>
             <div>
                 <span class="productWeight"></span>
             </div>

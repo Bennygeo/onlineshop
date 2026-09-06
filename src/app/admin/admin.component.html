@@ -1,0 +1,51 @@
+<div class="admin-wrapper">
+  <!-- Top Admin Navigation Bar -->
+  <header class="admin-header">
+    <div class="admin-header-container">
+      <div class="brand-box">
+        <img src="assets/home/banners/ThinkSpot_logo.png" alt="ThinkSpot Admin" class="logo" />
+        <div class="brand-title">
+          <span class="main">ThinkSpot Admin</span>
+          <span class="sub">Store Control Center</span>
+        </div>
+      </div>
+
+      <div class="header-right">
+        <a routerLink="/web" class="customer-site-btn">
+          <span class="material-icons">open_in_new</span>
+          <span>View Storefront (Web)</span>
+        </a>
+        <div class="admin-profile-chip">
+          <span class="material-icons">admin_panel_settings</span>
+          <span>Store Manager</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sidebar + Router Workspace -->
+  <div class="admin-main-container">
+    <aside class="admin-sidebar">
+      <nav class="sidebar-nav">
+        <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+          <span class="material-icons">dashboard</span>
+          <span>Sales Dashboard</span>
+        </a>
+
+        <a routerLink="/admin/products" routerLinkActive="active" class="nav-item">
+          <span class="material-icons">inventory_2</span>
+          <span>Products Catalog</span>
+        </a>
+
+        <a routerLink="/admin/orders" routerLinkActive="active" class="nav-item">
+          <span class="material-icons">local_shipping</span>
+          <span>Orders & Dispatch</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="admin-content-area">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

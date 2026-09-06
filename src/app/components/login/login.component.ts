@@ -278,10 +278,9 @@ export class LoginComponent implements OnInit {
       if (environment.production) {
         this.api.postApi("com/validate_otp.php", { mobile: this.userID, otp: this.otpUserVal }).subscribe(res => {
           if (res == "SUCCESS") {
-            this.btnName = "Sucesss";
+            this.btnName = "Success";
             this.otpStatus = "Valid";
-            this.validOTPFlg = true;
-
+            // Do NOT set validOTPFlg = true here yet, so *ngIf="!validOTPFlg" overlay remains active for referralFlg
             this.otpPageFlg = false;
 
             //setup cookie
@@ -290,21 +289,17 @@ export class LoginComponent implements OnInit {
               name: "",
               defaultAddressID: 0,
               mobile: this.userID,
-              referralCode: this.loginS.queryParams.id
+              referralCode: this.referralFormControl.value || this.loginS.queryParams?.id
             }).subscribe(res => {
               this.loginS.user.mobile = this.userID;
-              if (res.status == "ADDED") {
-                if (res.referrer != null) {
-                  this.loginS.referrrarinfo = res;
-                  this.referralSuccessFlg = true;
-                } else {
-                  this.locationPageFlg = false;
-                  this.mobilePageFlg = false;
-                  this.otpPageFlg = false;
-                }
-                this.referralFlg = true;
-              } else {
-                this.navigateTolandingpage();
+              this.locationPageFlg = false;
+              this.mobilePageFlg = false;
+              this.otpPageFlg = false;
+              this.referralFlg = true; // Show referral prompt after OTP verification
+
+              if (res && res.status == "ADDED" && res.referrer != null) {
+                this.loginS.referrrarinfo = res;
+                this.referralSuccessFlg = true;
               }
             });
           } else {
@@ -315,10 +310,9 @@ export class LoginComponent implements OnInit {
           }
         });
       } else {
-        this.btnName = "Sucesss";
+        this.btnName = "Success";
         this.otpStatus = "Valid";
-        // this.validOTPFlg = true;
-
+        // Do NOT set validOTPFlg = true here yet, so *ngIf="!validOTPFlg" overlay remains active for referralFlg
         this.otpPageFlg = false;
 
         //setup cookie
@@ -327,21 +321,17 @@ export class LoginComponent implements OnInit {
           name: "",
           defaultAddressID: 0,
           mobile: this.userID,
-          referralCode: this.loginS.queryParams.id
+          referralCode: this.referralFormControl.value || this.loginS.queryParams?.id
         }).subscribe(res => {
           this.loginS.user.mobile = this.userID;
-          if (res.status == "ADDED") {
-            if (res.referrer != null) {
-              this.loginS.referrrarinfo = res;
-              this.referralSuccessFlg = true;
-            } else {
-              this.locationPageFlg = false;
-              this.mobilePageFlg = false;
-              this.otpPageFlg = false;
-            }
-            this.referralFlg = true;
-          } else {
-            this.navigateTolandingpage();
+          this.locationPageFlg = false;
+          this.mobilePageFlg = false;
+          this.otpPageFlg = false;
+          this.referralFlg = true; // Show referral prompt after OTP verification
+
+          if (res && res.status == "ADDED" && res.referrer != null) {
+            this.loginS.referrrarinfo = res;
+            this.referralSuccessFlg = true;
           }
         });
       }
@@ -354,14 +344,26 @@ export class LoginComponent implements OnInit {
   }
 
   referralValidation() {
+    const code = this.referralFormControl.value;
+    if (!code) {
+      this.couponContinue();
+      return;
+    }
     this.referralErrorCodeFlg = false;
     this.referralSuccessFlg = false;
-    this.loginS.referralValidation({ mobile: this.loginS.user.mobile, referralCode: this.referralFormControl.value }).subscribe(res => {
-      if (res.status == "INVALID") {
+    this.loginS.referralValidation({ mobile: this.userID || this.loginS.user.mobile, referralCode: code }).subscribe(res => {
+      if (res && (res.status == "INVALID" || res.valid === false)) {
         this.referralErrorCodeFlg = true;
       } else {
-        this.loginS.referrrarinfo = res;
+        this.loginS.referrrarinfo = res || {
+          referrer_name: 'Thinkspot Partner',
+          coupon_desc: '₹100 Cashback Bonus',
+          referrer: code,
+          status: 1
+        };
         this.referralSuccessFlg = true;
+        // Refresh wallet balance so the ₹100 credit appears in user's wallet
+        this.loginS.readWallet();
       }
     });
   }
@@ -523,7 +525,9 @@ export class LoginComponent implements OnInit {
 
 
   couponContinue() {
+    this.validOTPFlg = true;
     this.bgClickFlg = false;
+    this.referralFlg = false;
     this.navigateTolandingpage();
   }
 

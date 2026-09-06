@@ -51,7 +51,7 @@ $disabled-style-2: #ccc;
 $white-clr: #fff;
 $sub-color: #9796a1;
 
-$teal-100: #30d2ad;
+$teal-100: #097e63;
 $teel-90: #0ba082;
 
 $item-active: rgba(27, 188, 157, 0.4);
@@ -81,6 +81,7 @@ $credit-color: #24a731;
     justify-content: center;
     flex-direction: column;
 }
+
 @mixin center-row {
     display: flex;
     align-items: center;

@@ -4,9 +4,10 @@
     margin-top: 40px;
     color: white;
     letter-spacing: 1px;
+
     .row {
         margin: 9px;
-        background-color: #30d2ad;
+        background-color: $teal-100;
         border-radius: 16px;
 
         .balanceBox {
@@ -47,7 +48,7 @@
                     font-weight: 700;
                 }
 
-                & > p {
+                &>p {
                     font-size: 9px;
                     font-weight: 400;
                     line-height: normal;
@@ -113,7 +114,7 @@
     left: 0;
     width: 100vw;
     height: 100%;
-    z-index: 100;
+    z-index: 1100;
 
     .bg {
         background-color: #00000066;
@@ -159,6 +160,7 @@
             &.error {
                 border: none;
             }
+
             &.valid {
                 border: none;
             }
@@ -180,8 +182,8 @@
         }
 
         .active {
-            border: 1px solid #30d2ad;
-            color: #30d2ad;
+            border: 1px solid $teal-100;
+            color: $teal-100;
         }
     }
 }

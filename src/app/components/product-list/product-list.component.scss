@@ -24,6 +24,7 @@
             top: 3px;
             height: calc(100% - 3px);
             padding: 12px;
+
             .desc-close-btn {
                 position: absolute;
                 right: 12px;
@@ -121,7 +122,7 @@
         margin: 0;
         padding: 0;
         width: 100vw;
-        margin-top: 48px;
+        // margin-top: 48px;
         width: calc(100vw - 67px);
         overflow-y: scroll;
         position: relative;

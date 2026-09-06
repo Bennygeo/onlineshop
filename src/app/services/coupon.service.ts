@@ -60,22 +60,25 @@ type Coupon = {
 
 export type MasterCouponType = {
   code: string;
-  categories: string;
-  count: number;
-  description: string;
-  offer: string;
-  offer_desc: string;
-  expiry_date: Date;
+  categories?: string;
+  count?: number;
+  description?: string;
+  offer?: string;
+  offer_desc?: string;
+  expiry_date?: Date;
   created_at?: Date;
+  min_order_amount?: number;
+  discount_percent?: number;
 }
 
 export type Coupons = {
   master: Array<MasterCouponType>;
-  users: Array<UserCoupon>,
-  msg: string,
+  users: Array<UserCoupon>;
+  msg: string;
   couponExistFlg?: boolean;
   addedFlg?: boolean;
   invalidFlg?: boolean;
+  errorMsg?: string;
 }
 
 export type UserCoupon = {
@@ -83,12 +86,16 @@ export type UserCoupon = {
   code: string;
   count: number;
   used_count: number;
-  history: string;
-  expiry_date: Date;
-  created_at: Date;
-  last_used: Date;
-  description: string;
-  offer: string;
+  history?: string;
+  expiry_date?: Date;
+  created_at?: Date;
+  last_used?: Date;
+  description?: string;
+  offer?: string;
+  categories?: string;
+  min_order_amount?: number;
+  discount_percent?: number;
 }
+
 
 
