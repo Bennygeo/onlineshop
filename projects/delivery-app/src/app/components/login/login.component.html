@@ -1,0 +1,92 @@
+<div class="login-page">
+  <div class="login-container">
+    <!-- Brand Header -->
+    <div class="brand-header">
+      <div class="logo-badge">
+        <span class="material-icons-round">local_shipping</span>
+      </div>
+      <h1 class="brand-title">Thinkspot Delivery</h1>
+      <p class="brand-subtitle">Partner Dispatch & Delivery Portal</p>
+    </div>
+
+    <!-- Login Form Card -->
+    <div class="login-card">
+      <h2 class="card-title">Delivery Partner Login</h2>
+      <p class="card-desc">Sign in with your assigned partner account to view and fulfill orders.</p>
+
+      <div *ngIf="errorMessage" class="error-banner">
+        <span class="material-icons-round error-icon">error_outline</span>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <form (ngSubmit)="onSubmit()" #loginForm="ngForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round field-icon">person</span>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              [(ngModel)]="username"
+              placeholder="e.g. delivery1"
+              required
+              autocomplete="username"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <span class="material-icons-round field-icon">lock</span>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              [(ngModel)]="password"
+              placeholder="Enter password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="submit-btn"
+          [disabled]="loading || !username || !password"
+        >
+          <span *ngIf="!loading">Sign In</span>
+          <span *ngIf="loading" class="spinner-inline">
+            <span class="spinner"></span> Signing In...
+          </span>
+          <span *ngIf="!loading" class="material-icons-round btn-arrow">arrow_forward</span>
+        </button>
+      </form>
+
+      <!-- Quick Demo Account Switcher -->
+      <div class="demo-section">
+        <div class="demo-title">
+          <span>Quick Select Partner (Default password: partner123)</span>
+        </div>
+        <div class="demo-chips">
+          <button
+            type="button"
+            *ngFor="let p of demoPartners"
+            class="demo-chip"
+            [class.active]="username === p.username"
+            (click)="fillDemo(p.username)"
+          >
+            <span class="chip-name">{{ p.name }}</span>
+            <span class="chip-id">({{ p.username }})</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="login-footer">
+      <span>Thinkspot Delivery Operations &bull; Secure Partner Access</span>
+    </div>
+  </div>
+</div>

@@ -21,10 +21,14 @@ export const STD_TAX_FEE: number = 0;
 })
 export class CartService {
   /*
-  mobile number
-  Will be updated from app component
-  */
-  private userID: string = undefined;
+   * mobile number
+   * Will be updated from app component
+   */
+  public userID: string = undefined;
+
+  get currentUserID(): string {
+    return this.loginS?.user?.mobile || this.userID || this.storageS?.getItem("tnkspt_user")?.mobile || '';
+  }
 
   categoryPriorityIndex: Array<string> = ["Vegetables", "Naturalhydrants", "Fruits", "Greenssprouts", "Flowers", "Honeyspices", "Woodpressed", "Dairyeggs", "Naturalsugars", "Lentilspulses", "Breakfast", "Quickmeals", "Traditionalsnacks", "Skinhair"];
 
@@ -215,7 +219,7 @@ export class CartService {
             packedBy: "undefined",
             status: "CART",
             deliveredAt: Date.now(),
-            mobile: this.userID,
+            mobile: this.currentUserID,
             orderTotal: this.cartDetails.total,
             procuredTotal: 0,
             paymentID: "undefined",
@@ -359,7 +363,7 @@ export class CartService {
     // let isLogged:boolean =false;
     if (!this.orderID) {
       //if user exist and orderID not created then it will create a one and return it
-      this.apiS.postApi('orders/orders_status.php', { userID: this.userID }).subscribe(res => {
+      this.apiS.postApi('orders/orders_status.php', { userID: this.currentUserID }).subscribe(res => {
         if (typeof res == "string") {
           this.orderID = res;
         } else if (res && res.length > 0 && res[0]?.order_id) {
@@ -704,8 +708,11 @@ export class CartService {
     const subTotalAfterDiscount = Math.max(0, this.cartDetails.total - couponDiscount);
     const total = subTotalAfterDiscount + deliveryChargeTotal + STD_TAX_FEE;
 
-    this.remainingToPay = this.loginS.user.wallet - total;
-    this.remainingToPay = (Math.sign(this.remainingToPay) === -1) ? Math.abs(this.remainingToPay) : 0;
+    const userWallet = Number(this.loginS.user?.wallet || 0);
+    const walletDeduction = Math.min(userWallet, total);
+    const remainingToPay = Math.max(0, total - userWallet);
+
+    this.remainingToPay = remainingToPay;
 
     return {
       total: Math.round(total * 100) / 100,
@@ -715,7 +722,8 @@ export class CartService {
       totalItemsCount: Object.keys(this.cartProducts).length,
       totalDeliveryCharges: deliveryChargeTotal,
       taxAndFees: STD_TAX_FEE,
-      remainingToPay: Math.round(this.remainingToPay * 100) / 100,
+      walletDeduction: Math.round(walletDeduction * 100) / 100,
+      remainingToPay: Math.round(remainingToPay * 100) / 100,
       cartProductDateWise: this.cartProductsDateWise,
       subscribedItems: [],
       selectedCoupon: this.couponS.selectedCoupon
@@ -725,9 +733,17 @@ export class CartService {
   placeOrder(callback) {
     const userWallet = Number(this.loginS.user?.wallet || 0);
     const orderAmt = Number(this.orderInformation?.total || 0);
-    if (userWallet < (orderAmt - 0.01)) {
+    const remainingToPay = Number(this.orderInformation?.remainingToPay ?? Math.max(0, orderAmt - userWallet));
+
+    if (remainingToPay > 0.01 && userWallet < (orderAmt - 0.01)) {
       alert("CRITICAL SECURITY GUARD: Insufficient wallet balance! Available: ₹" + userWallet + ", Order Total: ₹" + orderAmt + ". Order blocked.");
       this.payAndCheckoutFlg = false;
+      return;
+    }
+
+    const activeUserMobile = this.currentUserID;
+    if (!activeUserMobile) {
+      this.loginS.loginPromptEvent.next(true);
       return;
     }
 
@@ -767,9 +783,11 @@ export class CartService {
       };
     });
 
+    const activeAddress = this.loginS.user?.address || (this.loginS.user?.addresses && this.loginS.user.addresses[0]) || {};
+
     this.apiS.postApi("orders/place_order.php", {
       "ordersDetails": JSON.stringify({
-        "mobile": this.userID,
+        "mobile": activeUserMobile,
         "order_id": this.orderID,
         "type": "Debit",
         "trxn_type": "Account",
@@ -782,7 +800,7 @@ export class CartService {
         "wallet_total": (this.loginS.user?.wallet || 0) - this.orderInformation.total,
         "description": "Purchase",
         "status": "placed",
-        "address": JSON.stringify(this.loginS.user?.address || {}),
+        "address": JSON.stringify(activeAddress),
         "items_count": this.cartDetails.totalItems,
         "delivery_date": this.deliveryDate ? `${this.deliveryDate.getFullYear()}-${String(this.deliveryDate.getMonth() + 1).padStart(2, '0')}-${String(this.deliveryDate.getDate()).padStart(2, '0')}` : '',
         "coupon": this.orderInformation.selectedCoupon?.code || "",
@@ -792,23 +810,26 @@ export class CartService {
     }).subscribe({
       next: (res: any) => {
         this.orderPlacedFlag = true;
-        if (res && res.order_id) {
-          this.orderID = res.order_id;
-        }
+        const placedOrderId = res?.order_id || this.orderID;
+        this.orderID = undefined;
         if (this.orderInformation.selectedCoupon)
           this.updateUserCoupon(this.orderInformation.selectedCoupon);
         this.clearCart();
-        if (this.loginS.user) {
+        if (this.loginS?.user) {
           this.loginS.user.orderID = undefined;
+          if (res && res.total !== undefined) {
+            this.loginS.user.wallet = res.total;
+          }
         }
-        callback(res);
+        this.loginS.readWallet();
+        if (callback) {
+          callback({ ...res, order_id: placedOrderId });
+        }
       },
       error: (err: any) => {
-        const errorMsg = err?.error?.error || "Order blocked: Insufficient wallet balance or unauthorized attempt.";
+        const errorMsg = err?.error?.error || "Unable to place order. Please check your wallet balance and try again.";
         alert(errorMsg);
         this.payAndCheckoutFlg = false;
-        alert("Session restarted for security.");
-        this.loginS.logoutEvent.next();
       }
     });
   }
@@ -850,6 +871,10 @@ export class CartService {
 
   //Emtrying the cart after place the order
   clearCart() {
+    this.orderID = undefined;
+    if (this.loginS?.user) {
+      this.loginS.user.orderID = undefined;
+    }
     const resetProd = (p: any) => {
       if (!p) return;
       p.units = 0;

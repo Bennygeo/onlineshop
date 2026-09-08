@@ -10,56 +10,217 @@
     </button>
   </div>
 
-  <!-- KPI Metric Cards Grid -->
-  <div class="kpi-grid">
-    <div class="kpi-card revenue">
-      <div class="kpi-icon">
-        <span class="material-icons">payments</span>
+  <!-- TODAY'S SNAPSHOT -->
+  <div class="section-block">
+    <div class="section-header">
+      <h3><span class="material-icons">today</span> Today's Snapshot</h3>
+      <span class="date-tag">{{ dashboardData.today?.date || ('' | date:'mediumDate') }}</span>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card revenue">
+        <div class="kpi-icon">
+          <span class="material-icons">payments</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Revenue</span>
+          <h3 class="kpi-val">₹ {{ dashboardData.today?.revenue | number:'1.2-2' }}</h3>
+          <span class="kpi-sub">Today's earnings</span>
+        </div>
       </div>
-      <div class="kpi-info">
-        <span class="kpi-label">Total Revenue</span>
-        <h3 class="kpi-val">₹ {{ dashboardData.totalRevenue | number:'1.2-2' }}</h3>
-        <span class="kpi-sub">Lifetime earnings</span>
+
+      <div class="kpi-card orders">
+        <div class="kpi-icon">
+          <span class="material-icons">shopping_bag</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Orders</span>
+          <h3 class="kpi-val">{{ dashboardData.today?.orders }}</h3>
+          <span class="kpi-sub">Orders today</span>
+        </div>
+      </div>
+
+      <div class="kpi-card pending">
+        <div class="kpi-icon">
+          <span class="material-icons">local_shipping</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active / Pending</span>
+          <h3 class="kpi-val">{{ dashboardData.today?.pending }}</h3>
+          <span class="kpi-sub">Awaiting delivery</span>
+        </div>
+      </div>
+
+      <div class="kpi-card customers">
+        <div class="kpi-icon">
+          <span class="material-icons">groups</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active Customers</span>
+          <h3 class="kpi-val">{{ dashboardData.today?.customers }}</h3>
+          <span class="kpi-sub">Unique buyers today</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODAY'S EXPENSES -->
+  <div class="section-block">
+    <div class="section-header">
+      <h3><span class="material-icons">receipt_long</span> Today's Expenses</h3>
+      <div class="expense-summary-tags">
+        <span class="total-expense-tag expense-tag">Total: ₹ {{ todayTotalExpenses | number:'1.2-2' }}</span>
+        <span class="profit-tag" [class.positive]="todayProfit >= 0" [class.negative]="todayProfit < 0">
+          {{ todayProfit >= 0 ? 'Profit' : 'Loss' }}: ₹ {{ (todayProfit < 0 ? -todayProfit : todayProfit) | number:'1.2-2' }}
+        </span>
       </div>
     </div>
 
-    <div class="kpi-card orders">
-      <div class="kpi-icon">
-        <span class="material-icons">shopping_bag</span>
+    <div class="expense-grid">
+      <!-- Procurement -->
+      <div class="expense-card procurement">
+        <div class="expense-icon">
+          <span class="material-icons">inventory_2</span>
+        </div>
+        <div class="expense-body">
+          <span class="expense-label">Procurement</span>
+          <div class="expense-val-row" *ngIf="editingExpense !== 'procurement'">
+            <span class="expense-val">₹ {{ dashboardData.expenses?.procurement | number:'1.2-2' }}</span>
+            <button class="edit-expense-btn" (click)="startEditExpense('procurement')">
+              <span class="material-icons">edit</span>
+            </button>
+          </div>
+          <div class="expense-edit-row" *ngIf="editingExpense === 'procurement'">
+            <input type="number" [(ngModel)]="expenseInputs.procurement" class="expense-input" />
+            <button class="save-btn" (click)="saveExpense('procurement')"><span class="material-icons">check</span></button>
+            <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+          </div>
+        </div>
       </div>
-      <div class="kpi-info">
-        <span class="kpi-label">Total Orders</span>
-        <h3 class="kpi-val">{{ dashboardData.totalOrders }}</h3>
-        <span class="kpi-sub">Orders recorded</span>
+
+      <!-- Rent -->
+      <div class="expense-card rent">
+        <div class="expense-icon">
+          <span class="material-icons">home_work</span>
+        </div>
+        <div class="expense-body">
+          <span class="expense-label">Rent</span>
+          <div class="expense-val-row" *ngIf="editingExpense !== 'rent'">
+            <span class="expense-val">₹ {{ dashboardData.expenses?.rent | number:'1.2-2' }}</span>
+            <button class="edit-expense-btn" (click)="startEditExpense('rent')">
+              <span class="material-icons">edit</span>
+            </button>
+          </div>
+          <div class="expense-edit-row" *ngIf="editingExpense === 'rent'">
+            <input type="number" [(ngModel)]="expenseInputs.rent" class="expense-input" />
+            <button class="save-btn" (click)="saveExpense('rent')"><span class="material-icons">check</span></button>
+            <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delivery Charges -->
+      <div class="expense-card delivery-exp">
+        <div class="expense-icon">
+          <span class="material-icons">two_wheeler</span>
+        </div>
+        <div class="expense-body">
+          <span class="expense-label">Delivery Charges</span>
+          <div class="expense-val-row" *ngIf="editingExpense !== 'delivery'">
+            <span class="expense-val">₹ {{ dashboardData.expenses?.delivery | number:'1.2-2' }}</span>
+            <button class="edit-expense-btn" (click)="startEditExpense('delivery')">
+              <span class="material-icons">edit</span>
+            </button>
+          </div>
+          <div class="expense-edit-row" *ngIf="editingExpense === 'delivery'">
+            <input type="number" [(ngModel)]="expenseInputs.delivery" class="expense-input" />
+            <button class="save-btn" (click)="saveExpense('delivery')"><span class="material-icons">check</span></button>
+            <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other Expenses -->
+      <div class="expense-card other-exp">
+        <div class="expense-icon">
+          <span class="material-icons">more_horiz</span>
+        </div>
+        <div class="expense-body">
+          <span class="expense-label">Other Expenses</span>
+          <div class="expense-val-row" *ngIf="editingExpense !== 'other'">
+            <span class="expense-val">₹ {{ dashboardData.expenses?.other | number:'1.2-2' }}</span>
+            <button class="edit-expense-btn" (click)="startEditExpense('other')">
+              <span class="material-icons">edit</span>
+            </button>
+          </div>
+          <div class="expense-edit-row" *ngIf="editingExpense === 'other'">
+            <input type="number" [(ngModel)]="expenseInputs.other" class="expense-input" />
+            <button class="save-btn" (click)="saveExpense('other')"><span class="material-icons">check</span></button>
+            <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
 
-    <div class="kpi-card pending">
-      <div class="kpi-icon">
-        <span class="material-icons">local_shipping</span>
-      </div>
-      <div class="kpi-info">
-        <span class="kpi-label">Active / Pending</span>
-        <h3 class="kpi-val">{{ dashboardData.pendingDeliveries }}</h3>
-        <span class="kpi-sub">Awaiting delivery</span>
-      </div>
+  <!-- LIFETIME STATS -->
+  <div class="section-block">
+    <div class="section-header">
+      <h3><span class="material-icons">bar_chart</span> Lifetime Overview</h3>
     </div>
 
-    <div class="kpi-card customers">
-      <div class="kpi-icon">
-        <span class="material-icons">groups</span>
+    <div class="kpi-grid">
+      <div class="kpi-card revenue">
+        <div class="kpi-icon">
+          <span class="material-icons">payments</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Revenue</span>
+          <h3 class="kpi-val">₹ {{ dashboardData.totalRevenue | number:'1.2-2' }}</h3>
+          <span class="kpi-sub">Lifetime earnings</span>
+        </div>
       </div>
-      <div class="kpi-info">
-        <span class="kpi-label">Active Customers</span>
-        <h3 class="kpi-val">{{ dashboardData.activeCustomers }}</h3>
-        <span class="kpi-sub">Registered buyers</span>
+
+      <div class="kpi-card orders">
+        <div class="kpi-icon">
+          <span class="material-icons">shopping_bag</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Orders</span>
+          <h3 class="kpi-val">{{ dashboardData.totalOrders }}</h3>
+          <span class="kpi-sub">Orders recorded</span>
+        </div>
+      </div>
+
+      <div class="kpi-card pending">
+        <div class="kpi-icon">
+          <span class="material-icons">local_shipping</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active / Pending</span>
+          <h3 class="kpi-val">{{ dashboardData.pendingDeliveries }}</h3>
+          <span class="kpi-sub">Awaiting delivery</span>
+        </div>
+      </div>
+
+      <div class="kpi-card customers">
+        <div class="kpi-icon">
+          <span class="material-icons">groups</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Active Customers</span>
+          <h3 class="kpi-val">{{ dashboardData.activeCustomers }}</h3>
+          <span class="kpi-sub">Registered buyers</span>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Status Breakdown Section -->
-  <div class="breakdown-section">
-    <h3>Order Status Breakdown</h3>
+  <div class="section-block">
+    <div class="section-header">
+      <h3><span class="material-icons">donut_small</span> Order Status Breakdown</h3>
+    </div>
     <div class="status-grid">
       <div class="status-card placed">
         <span class="status-title">Placed / New</span>

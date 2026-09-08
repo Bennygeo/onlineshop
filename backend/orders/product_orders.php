@@ -21,6 +21,15 @@ try {
     $pausedDates = isset($data['pausedDates']) ? (is_string($data['pausedDates']) ? $data['pausedDates'] : json_encode($data['pausedDates'])) : '[]';
 
     if ($orderID && $productID) {
+        // Check order status before modifying items
+        $stmtStatus = $pdo->prepare("SELECT status FROM orders WHERE order_id = ?");
+        $stmtStatus->execute([$orderID]);
+        $order = $stmtStatus->fetch();
+
+        if ($order && strtoupper($order['status']) !== 'CART') {
+            sendJson(['status' => 'BLOCKED_ORDER_ALREADY_PLACED']);
+        }
+
         $stmtDel = $pdo->prepare("DELETE FROM order_items WHERE order_id = ? AND product_id = ?");
         $stmtDel->execute([$orderID, $productID]);
 

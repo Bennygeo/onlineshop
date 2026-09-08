@@ -10,12 +10,15 @@ if (!$data || !isset($data['id'])) {
 
 $id = trim($data['id']);
 $name = isset($data['name']) ? trim($data['name']) : null;
+$tamil_name = isset($data['tamil_name']) ? trim($data['tamil_name']) : null;
 $price = isset($data['price']) ? floatval($data['price']) : null;
 $original_price = isset($data['original_price']) ? floatval($data['original_price']) : null;
 $stock_price = isset($data['stock_price']) ? floatval($data['stock_price']) : null;
 $profit_percent = isset($data['profit_percent']) ? floatval($data['profit_percent']) : null;
 $cat = isset($data['cat']) ? trim($data['cat']) : null;
 $sub_cat = isset($data['sub_cat']) ? trim($data['sub_cat']) : null;
+$weight = isset($data['weight']) ? intval($data['weight']) : null;
+$unit_name = isset($data['unit_name']) ? trim($data['unit_name']) : null;
 $disabled = isset($data['disabled']) ? intval($data['disabled']) : null;
 $img_url = isset($data['img_url']) ? trim($data['img_url']) : null;
 
@@ -31,12 +34,21 @@ foreach ($tables as $table) {
         $params = [];
 
         if ($name !== null) { $updates[] = "name = ?"; $params[] = $name; }
+        if ($tamil_name !== null) { $updates[] = "tamil_name = ?"; $params[] = $tamil_name; }
         if ($price !== null) { $updates[] = "price = ?"; $params[] = $price; }
         if ($original_price !== null) { $updates[] = "original_price = ?"; $params[] = $original_price; }
         if ($stock_price !== null) { $updates[] = "stock_price = ?"; $params[] = $stock_price; }
         if ($profit_percent !== null) { $updates[] = "profit_percent = ?"; $params[] = $profit_percent; }
         if ($cat !== null) { $updates[] = "cat = ?"; $params[] = $cat; }
         if ($sub_cat !== null) { $updates[] = "sub_cat = ?"; $params[] = $sub_cat; }
+        if ($weight !== null) { 
+            $updates[] = "weight = ?"; $params[] = $weight; 
+            $updates[] = "original_weight = ?"; $params[] = $weight;
+        }
+        if ($unit_name !== null) { 
+            $updates[] = "unit_name = ?"; $params[] = $unit_name; 
+            $updates[] = "original_unit_name = ?"; $params[] = $unit_name;
+        }
         if ($disabled !== null) { $updates[] = "disabled = ?"; $params[] = $disabled; }
         if ($img_url !== null) { $updates[] = "img_url = ?"; $params[] = $img_url; }
 

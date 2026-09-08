@@ -54,9 +54,10 @@ export class AppComponent implements OnInit {
 
     this.cartS.router.events.subscribe((res) => {
       if (res instanceof NavigationEnd) {
-
         const url = this.cartS.router.url.split("?")[0];
-        this.isAdminPage = url.startsWith("/admin");
+        const hash = window.location.hash || "";
+        this.isAdminPage = url.startsWith("/admin") || hash.includes("admin") || window.location.pathname.includes("admin");
+
         if (url === "/home/view") {
           this.bottombarClass = "type1";
         } else if (url.search("/products/category/") != 1) {
@@ -67,7 +68,6 @@ export class AppComponent implements OnInit {
           this.cartS.router.navigate(["home/view"], this.loginS.queryParams);
       }
     });
-
 
     window.addEventListener("load", function () {
       setTimeout(function () {
@@ -85,10 +85,19 @@ export class AppComponent implements OnInit {
     this.cartS.windowSize$.subscribe(res => {
       const isLargeScreen = res.width >= 768;
       const currentUrl = this.cartS.router.url.split("?")[0];
-      const isAdmin = currentUrl.startsWith('/admin');
+      const hash = window.location.hash || "";
+      const path = window.location.pathname || "";
+      const isAdmin = currentUrl.startsWith('/admin') || hash.includes('/admin') || path.includes('/admin');
 
-      if (isLargeScreen && !this.utils.isMobile() && !isAdmin) {
-        if (currentUrl !== '/web') {
+      if (isAdmin) {
+        this.isAdminPage = true;
+        this.isMobile = false;
+        return; // Preserve route on admin pages when refreshing
+      }
+
+      if (isLargeScreen && !this.utils.isMobile()) {
+        // Only redirect root or mobile home to /web on large screen
+        if (currentUrl === '/' || currentUrl === '' || currentUrl === '/home/view') {
           this.cartS.router.navigate(['/web']);
         }
         this.isMobile = false;

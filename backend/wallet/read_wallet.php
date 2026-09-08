@@ -25,18 +25,22 @@ try {
 
         $todayStr = date('Y-m-d');
         foreach ($subItems as $subItem) {
-            $price = (float)$subItem['price'];
+            $rawPrice = (float)$subItem['price'];
             $datesJson = ($subItem['subscriptionType'] === 'range') ? $subItem['rangeDates'] : $subItem['subscribedDates'];
             $dates = json_decode($datesJson, true);
-            if (is_array($dates)) {
+            if (is_array($dates) && count($dates) > 0) {
+                $totalDays = count($dates);
+                $qty = max(1, (int)$subItem['quantity']);
+                $dailyUnitPrice = ($totalDays > 0 && $rawPrice > 0) ? ($rawPrice / ($totalDays * $qty)) : $rawPrice;
+
                 foreach ($dates as $d) {
                     $dStr = is_array($d) ? (isset($d['date']) ? $d['date'] : '') : (string)$d;
-                    $dStatus = is_array($d) ? (isset($d['status']) ? $d['status'] : '') : '';
-                    $dCount = is_array($d) ? (isset($d['count']) ? (int)$d['count'] : (int)$subItem['quantity']) : (int)$subItem['quantity'];
+                    $dStatus = is_array($d) ? (isset($d['status']) ? strtolower($d['status']) : '') : '';
+                    $dCount = is_array($d) ? (isset($d['count']) ? (int)$d['count'] : $qty) : $qty;
 
-                    if ($dStatus !== 'delivered' && $dStatus !== 'cancelled') {
+                    if ($dStatus !== 'delivered' && $dStatus !== 'cancelled' && $dStatus !== 'refunded') {
                         if (!$dStr || strtotime($dStr) >= strtotime($todayStr)) {
-                            $ledgerBalance += ($dCount * $price);
+                            $ledgerBalance += ($dCount * $dailyUnitPrice);
                         }
                     }
                 }

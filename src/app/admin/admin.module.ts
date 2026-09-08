@@ -6,6 +6,7 @@ import { AdminComponent } from './admin.component';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
 import { AdminProductsComponent } from './admin-products/admin-products.component';
 import { AdminOrdersComponent } from './admin-orders/admin-orders.component';
+import { AdminDeliveryComponent } from './admin-delivery/admin-delivery.component';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
@@ -13,7 +14,8 @@ import { SharedModule } from '../shared/shared.module';
     AdminComponent,
     AdminDashboardComponent,
     AdminProductsComponent,
-    AdminOrdersComponent
+    AdminOrdersComponent,
+    AdminDeliveryComponent
   ],
   imports: [
     CommonModule,

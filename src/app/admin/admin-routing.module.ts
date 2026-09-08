@@ -4,6 +4,7 @@ import { AdminComponent } from './admin.component';
 import { AdminDashboardComponent } from './admin-dashboard/admin-dashboard.component';
 import { AdminProductsComponent } from './admin-products/admin-products.component';
 import { AdminOrdersComponent } from './admin-orders/admin-orders.component';
+import { AdminDeliveryComponent } from './admin-delivery/admin-delivery.component';
 
 const routes: Routes = [
   {
@@ -13,7 +14,8 @@ const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: AdminDashboardComponent },
       { path: 'products', component: AdminProductsComponent },
-      { path: 'orders', component: AdminOrdersComponent }
+      { path: 'orders', component: AdminOrdersComponent },
+      { path: 'delivery', component: AdminDeliveryComponent }
     ]
   }
 ];

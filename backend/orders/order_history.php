@@ -17,8 +17,16 @@ try {
         $pdo->exec("ALTER TABLE orders ADD COLUMN delivery_mode VARCHAR(100) DEFAULT ''");
     } catch (Exception $e) {}
 
+    try {
+        $pdo->exec("ALTER TABLE orders ADD COLUMN delivered_at DATETIME NULL");
+        $pdo->exec("ALTER TABLE orders ADD COLUMN undelivered_reason VARCHAR(255) DEFAULT NULL");
+        $pdo->exec("ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00");
+        $pdo->exec("ALTER TABLE orders ADD COLUMN refund_notes TEXT DEFAULT NULL");
+        $pdo->exec("ALTER TABLE orders ADD COLUMN assigned_to VARCHAR(100) DEFAULT ''");
+    } catch (Exception $e) {}
+
     $stmt = $pdo->prepare("
-        SELECT o.order_id, o.mobile, o.address_json, o.total_amount, o.payment_type, o.status, o.delivery_date, o.delivery_inst, o.delivery_mode, o.created_at,
+        SELECT o.order_id, o.mobile, o.address_json, o.total_amount, o.payment_type, o.status, o.delivery_date, o.delivery_inst, o.delivery_mode, o.created_at, o.delivered_at, o.undelivered_reason, o.refund_amount, o.refund_notes, o.assigned_to,
                EXISTS (
                    SELECT 1 FROM order_items oi 
                    WHERE oi.order_id = o.order_id 

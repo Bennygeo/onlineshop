@@ -11,8 +11,6 @@ if (!$data || !isset($data['order_id'])) {
 $order_id = trim($data['order_id']);
 $assignedTo = isset($data['assignedTo']) ? trim($data['assignedTo']) : null;
 $status = isset($data['status']) ? trim($data['status']) : null;
-$packedBy = isset($data['packedBy']) ? trim($data['packedBy']) : null;
-$deliveredBy = isset($data['deliveredBy']) ? trim($data['deliveredBy']) : null;
 
 if (!$pdo) {
     sendJson(['status' => 'SUCCESS']);
@@ -22,14 +20,17 @@ try {
     $updates = [];
     $params = [];
 
-    if ($assignedTo !== null) { $updates[] = "assigned_to = ?"; $params[] = $assignedTo; }
-    if ($status !== null) { $updates[] = "status = ?"; $params[] = $status; }
-    if ($packedBy !== null) { $updates[] = "packed_by = ?"; $params[] = $packedBy; }
-    if ($deliveredBy !== null) { $updates[] = "delivered_by = ?"; $params[] = $deliveredBy; }
+    if ($assignedTo !== null) { 
+        $updates[] = "assigned_to = ?"; 
+        $params[] = $assignedTo; 
+    }
+    if ($status !== null) { 
+        $updates[] = "status = ?"; 
+        $params[] = $status; 
+    }
 
     if (!empty($updates)) {
-        $sql = "UPDATE orders SET " . implode(", ", $updates) . " WHERE order_id = ? OR id = ?";
-        $params[] = $order_id;
+        $sql = "UPDATE orders SET " . implode(", ", $updates) . " WHERE order_id = ?";
         $params[] = $order_id;
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);

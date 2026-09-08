@@ -1,4 +1,7 @@
 <?php
+error_reporting(0);
+ini_set('display_errors', '0');
+
 // Set CORS headers for frontend integration
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
@@ -10,7 +13,7 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit();
 }
 
-$isLocal = isset($_SERVER['HTTP_HOST']) && (
+$isLocal = !isset($_SERVER['HTTP_HOST']) || php_sapi_name() === 'cli' || (
     str_contains($_SERVER['HTTP_HOST'], 'localhost') || 
     str_contains($_SERVER['HTTP_HOST'], '127.0.0.1')
 );
@@ -41,6 +44,9 @@ try {
  * Get request parameter from $_POST or raw JSON input
  */
 function getParam($key, $default = null) {
+    if (isset($_GET[$key])) {
+        return $_GET[$key];
+    }
     if (isset($_POST[$key])) {
         return $_POST[$key];
     }

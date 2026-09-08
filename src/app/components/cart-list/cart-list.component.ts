@@ -267,20 +267,32 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   payAction() {
-    this.addressFlg = (this.loginS.user.addresses.length === 0) ? false : true;
-    if (this.addressFlg) {
-      if (this.cartService.remainingToPay > 0) {
-        this.payFlg = true;
-      } else {
-        this.cartService.placeOrder((res: Wallet) => {
-          this.loginS.user.walletHistory.unshift(res);
-          this.loginS.user.wallet = res.total;
-          this.loginS.walletUpdateEvent.next([res]);
-        });
-      }
+    const userAddresses = this.loginS.user?.addresses || [];
+    const activeAddress = this.loginS.user?.address || (userAddresses.length > 0 ? userAddresses[0] : null);
+
+    if (!activeAddress && userAddresses.length === 0) {
+      alert("Please add or select a delivery address to place your order.");
+      this.loginS.noAddressEvent.next(true);
+      return;
+    }
+
+    if (this.loginS.user && !this.loginS.user.address && activeAddress) {
+      this.loginS.user.address = activeAddress;
+    }
+
+    if (this.cartService.remainingToPay > 0) {
+      this.payFlg = true;
     } else {
-      //force user to add address
-      this.loginS.addressChangeEvent.next(AddressAction.READ);
+      this.cartService.placeOrder((res: any) => {
+        if (res && res.total !== undefined) {
+          this.loginS.user.wallet = res.total;
+        }
+        if (this.loginS.user?.walletHistory && Array.isArray(this.loginS.user.walletHistory)) {
+          this.loginS.user.walletHistory.unshift(res);
+        }
+        this.loginS.readWallet();
+        this.loginS.walletUpdateEvent.next([res]);
+      });
     }
   }
 

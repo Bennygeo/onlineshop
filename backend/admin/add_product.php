@@ -40,12 +40,12 @@ foreach ($tables as $table) {
     try {
         $stmt = $pdo->prepare("
             INSERT INTO {$table} 
-            (id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, show_off_percent, weight, unit_name, original_unit_name, img_url, disabled) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            (id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, show_off_percent, weight, original_weight, unit_name, original_unit_name, img_url, disabled) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
         ");
         $stmt->execute([
             $id, $name, $tamil_name, $cat, $sub_cat, $price, $original_price,
-            $stock_price, $profit_percent, $show_off_percent, $weight,
+            $stock_price, $profit_percent, $show_off_percent, $weight, $weight,
             $unit_name, $original_unit_name, $img_url
         ]);
         $successCnt++;

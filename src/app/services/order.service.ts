@@ -42,43 +42,67 @@ export class OrderService {
   }
 
   orderAgain(details) {
+    if (!details || !details.order_id) return;
     this.apiS.postApi("orders/read_individual_order.php", { details: JSON.stringify({ order_id: details.order_id, status: details.status }) }).subscribe({
       next: (res: any) => {
-        if (res !== "NOT_FOUND") {
-          let products_id = res.map((product) => { return product.productID });
+        const items = Array.isArray(res) ? res : (res && Array.isArray(res.items) ? res.items : []);
+        if (items && items.length > 0) {
+          let products_id = items.map((product) => { return product.productID || product.product_id; });
 
-          let products = {};
-          for (let product of res) {
-            products[product.productID] = {
-              quantity: product.quantity,
+          let productsMap = {};
+          for (let product of items) {
+            const pid = product.productID || product.product_id;
+            productsMap[pid] = {
+              quantity: product.quantity || 1,
               price: product.price,
               weight: product.weight,
-            }
+            };
           }
 
-          this.apiS.postApi("orders/download_order_products.php", {
+          this.apiS.postApi("products/download_multiple_products.php", {
             "data": JSON.stringify(products_id)
           }).subscribe({
-            next: (res: any) => {
-              res.live.map((product) => {
-                //update action type - action required
-                this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: product, unit: products[product.id].quantity });
-              });
+            next: (prodRes: any) => {
+              const liveList = prodRes && Array.isArray(prodRes.live) ? prodRes.live : (Array.isArray(prodRes) ? prodRes : []);
+              if (liveList.length > 0) {
+                liveList.forEach((product) => {
+                  const qty = productsMap[product.id] ? productsMap[product.id].quantity : 1;
+                  this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: product, unit: qty });
+                });
+              } else {
+                items.forEach((item) => {
+                  const productObj: any = {
+                    id: item.productID || item.product_id,
+                    name: item.product_name || 'Product Item',
+                    price: item.price,
+                    weight: item.weight,
+                    img_url: item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'
+                  };
+                  this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: productObj, unit: item.quantity || 1 });
+                });
+              }
               this.cartS.router.navigate(["products/cart"]);
             },
-            error: (err: Error) => {
-              alert("Read product error!");
+            error: () => {
+              items.forEach((item) => {
+                const productObj: any = {
+                  id: item.productID || item.product_id,
+                  name: item.product_name || 'Product Item',
+                  price: item.price,
+                  weight: item.weight,
+                  img_url: item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'
+                };
+                this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: productObj, unit: item.quantity || 1 });
+              });
+              this.cartS.router.navigate(["products/cart"]);
             }
           });
-
-        } else {
-          // alert(res);
         }
       },
       error: (err: Error) => {
-        alert("Order history read error!");
+        alert("Unable to fetch order details to reorder.");
       }
-    })
+    });
   }
 
   getIndividualOrder(details): Observable<any> {

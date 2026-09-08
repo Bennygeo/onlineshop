@@ -42,32 +42,79 @@
   }
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-}
-
-.kpi-card {
+// Section blocks
+.section-block {
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid #e2e8f0;
-  padding: 24px;
+  padding: 28px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+}
+
+.section-header {
   display: flex;
   align-items: center;
-  gap: 20px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+  justify-content: space-between;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  h3 {
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .material-icons {
+      font-size: 22px;
+      color: #2eb9ac;
+    }
+  }
+
+  .date-tag {
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 5px 14px;
+    border-radius: 20px;
+  }
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.kpi-card {
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  }
 
   .kpi-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: 16px;
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 
     .material-icons {
-      font-size: 28px;
+      font-size: 26px;
     }
   }
 
@@ -81,40 +128,204 @@
     flex-direction: column;
 
     .kpi-label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       color: #64748b;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .kpi-val {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 800;
       color: #0f172a;
-      margin: 4px 0 2px 0;
+      margin: 3px 0 2px 0;
     }
     .kpi-sub {
-      font-size: 12px;
+      font-size: 11px;
       color: #94a3b8;
     }
   }
 }
 
-.breakdown-section {
-  background: #ffffff;
-  border-radius: 20px;
-  border: 1px solid #e2e8f0;
-  padding: 28px;
+// Expense section
+.expense-summary-tags {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
-  h3 {
-    font-size: 18px;
-    font-weight: 800;
-    margin: 0 0 20px 0;
+.expense-tag {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.profit-tag {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 20px;
+
+  &.positive {
+    background: #dcfce7;
+    color: #16a34a;
+  }
+  &.negative {
+    background: #fee2e2;
+    color: #b91c1c;
   }
 }
 
+.expense-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+.expense-card {
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .expense-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .material-icons {
+      font-size: 24px;
+    }
+  }
+
+  &.procurement .expense-icon { background: #fef3c7; color: #d97706; }
+  &.rent .expense-icon { background: #e0e7ff; color: #4f46e5; }
+  &.delivery-exp .expense-icon { background: #ccfbf1; color: #0d9488; }
+  &.other-exp .expense-icon { background: #f1f5f9; color: #64748b; }
+
+  .expense-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+
+    .expense-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+  }
+}
+
+.expense-val-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .expense-val {
+    font-size: 22px;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .edit-expense-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 8px;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: #2eb9ac;
+      background: #f0fdfa;
+    }
+
+    .material-icons {
+      font-size: 18px;
+    }
+  }
+}
+
+.expense-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .expense-input {
+    width: 100px;
+    padding: 6px 10px;
+    border: 2px solid #2eb9ac;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+    outline: none;
+    background: #ffffff;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(46, 185, 172, 0.15);
+    }
+  }
+
+  .save-btn, .cancel-btn {
+    border: none;
+    padding: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+
+    .material-icons {
+      font-size: 18px;
+    }
+  }
+
+  .save-btn {
+    background: #dcfce7;
+    color: #16a34a;
+
+    &:hover {
+      background: #bbf7d0;
+    }
+  }
+
+  .cancel-btn {
+    background: #fee2e2;
+    color: #b91c1c;
+
+    &:hover {
+      background: #fecaca;
+    }
+  }
+}
+
+// Status breakdown
 .status-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
 }
 
@@ -124,11 +335,17 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
 
   .status-title {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
   .status-count {
     font-size: 28px;

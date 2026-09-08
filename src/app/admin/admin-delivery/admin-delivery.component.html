@@ -1,0 +1,395 @@
+<div class="delivery-container">
+
+  <!-- Top Header Controls -->
+  <div class="delivery-header-card">
+    <div class="header-main-row">
+      <div class="title-group">
+        <div class="icon-bubble">
+          <span class="material-icons">two_wheeler</span>
+        </div>
+        <div>
+          <h2>Delivery Partner Console</h2>
+          <p class="subtitle">Dispatch, item verification checklist, and instant refund processing</p>
+        </div>
+      </div>
+
+      <div class="partner-selector-group">
+        <label for="partnerSelect"><span class="material-icons">person_pin</span> Partner:</label>
+        <select id="partnerSelect" class="custom-select" [(ngModel)]="selectedPartner" (change)="onPartnerChange()">
+          <option value="ALL">All Partners</option>
+          <option *ngFor="let p of deliveryPartners" [value]="p.name">{{ p.name }} ({{ p.zone || 'General' }})</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Date Bar & Search -->
+    <div class="controls-sub-row">
+      <div class="date-navigator">
+        <button class="nav-arrow-btn" (click)="shiftDate(-1)" title="Previous Day">
+          <span class="material-icons">chevron_left</span>
+        </button>
+        <div class="date-input-wrap">
+          <input type="date" class="date-input" [value]="selectedDate" (change)="onDateChange($event)" />
+          <span class="today-badge" *ngIf="isToday()">Today</span>
+        </div>
+        <button class="nav-arrow-btn" (click)="shiftDate(1)" title="Next Day">
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </div>
+
+      <div class="search-input-wrap">
+        <span class="material-icons search-icon">search</span>
+        <input type="text" class="search-input" placeholder="Search order ID, customer name, phone, address..." [(ngModel)]="searchQuery" />
+        <button *ngIf="searchQuery" class="clear-search-btn" (click)="searchQuery = ''">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <button class="refresh-btn" (click)="loadOrders()" [disabled]="loading" title="Refresh list">
+        <span class="material-icons" [class.spin]="loading">refresh</span>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3 Tab Navigation Bar -->
+  <div class="tabs-header-bar">
+    <button class="tab-btn" [class.active]="activeTab === 'packed'" (click)="switchTab('packed')">
+      <span class="material-icons">inventory_2</span>
+      <span class="tab-label">Packed / To Deliver</span>
+      <span class="tab-count count-packed">{{ stats.packed }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab === 'delivered'" (click)="switchTab('delivered')">
+      <span class="material-icons">task_alt</span>
+      <span class="tab-label">Delivered</span>
+      <span class="tab-count count-delivered">{{ stats.delivered }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab === 'undelivered'" (click)="switchTab('undelivered')">
+      <span class="material-icons">cancel</span>
+      <span class="tab-label">Undelivered</span>
+      <span class="tab-count count-undelivered">{{ stats.undelivered }}</span>
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading delivery assignments...</p>
+  </div>
+
+  <!-- Content Orders Section -->
+  <div class="orders-feed" *ngIf="!loading">
+    <!-- Empty State -->
+    <div class="empty-state-card" *ngIf="filteredOrders.length === 0">
+      <span class="material-icons empty-icon">
+        {{ activeTab === 'packed' ? 'all_inbox' : (activeTab === 'delivered' ? 'done_all' : 'assignment_late') }}
+      </span>
+      <h3>No {{ activeTab }} orders found</h3>
+      <p>There are currently no orders in this category for {{ selectedDate }}.</p>
+    </div>
+
+    <!-- Order Cards -->
+    <div class="order-delivery-card" *ngFor="let order of filteredOrders" [class.delivered-card]="order.delivery_category === 'delivered'" [class.undelivered-card]="order.delivery_category === 'undelivered'">
+      
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="order-meta">
+          <span class="order-id-tag">#{{ order.order_id }}</span>
+          <span class="order-type-chip" [class.subscription]="order.order_type === 'subscription'">
+            {{ order.order_type === 'subscription' ? '🔄 Subscription' : '📦 Regular Order' }}
+          </span>
+          <span class="payment-chip" [class.cod]="order.payment_type === 'COD'">
+            {{ order.payment_type }}
+          </span>
+        </div>
+
+        <div class="partner-assign-info">
+          <span class="material-icons">delivery_dining</span>
+          <span>{{ order.assigned_to ? order.assigned_to : 'Unassigned' }}</span>
+        </div>
+      </div>
+
+      <!-- Customer Details & Quick Actions -->
+      <div class="customer-info-box">
+        <div class="customer-main">
+          <div class="customer-name-row">
+            <span class="name">{{ order.customer_name }}</span>
+            <a [href]="'tel:' + order.phone" class="phone-call-btn" title="Call customer">
+              <span class="material-icons">call</span>
+              <span>{{ order.phone }}</span>
+            </a>
+          </div>
+
+          <div class="address-row">
+            <span class="material-icons map-icon">place</span>
+            <span class="address-text">{{ order.address_text || 'Address not provided' }}</span>
+            <a [href]="getGoogleMapsUrl(order.address_text)" target="_blank" rel="noopener" class="maps-link-btn" title="Open in Google Maps">
+              <span class="material-icons">directions</span>
+              <span>Map</span>
+            </a>
+          </div>
+
+          <!-- Delivery Mode & Instructions -->
+          <div class="delivery-instructions-row" *ngIf="order.delivery_mode || order.delivery_inst">
+            <span class="instruction-pill" *ngIf="order.delivery_mode">
+              <span class="material-icons">doorbell</span>
+              <span>{{ order.delivery_mode }}</span>
+            </span>
+            <span class="instructions-text" *ngIf="order.delivery_inst">
+              <strong>Note:</strong> {{ order.delivery_inst }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Item Packing Checklist Section -->
+      <div class="items-checklist-container">
+        <div class="checklist-header">
+          <div class="checklist-title">
+            <span class="material-icons">checklist</span>
+            <span>Items Checklist ({{ order.items.length }} Items)</span>
+          </div>
+          <span class="checklist-hint" *ngIf="order.delivery_category === 'packed'">
+            Verify each item is packed in bag
+          </span>
+        </div>
+
+        <div class="items-list">
+          <div class="item-checklist-row" *ngFor="let item of order.items" [class.item-missing]="item.is_missing" [class.item-checked]="item.is_packed && !item.is_missing">
+            
+            <!-- Checkbox for Packing Verification -->
+            <label class="item-checkbox-wrap" *ngIf="order.delivery_category === 'packed' && !item.is_missing">
+              <input type="checkbox" [checked]="item.is_packed" (change)="toggleItemPacked(order, item, $event)" />
+              <span class="custom-checkmark"></span>
+            </label>
+
+            <!-- Missing Icon if item is refunded/missing -->
+            <div class="missing-status-indicator" *ngIf="item.is_missing">
+              <span class="material-icons">report_problem</span>
+            </div>
+
+            <!-- Item Image -->
+            <img [src]="item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" class="item-thumb" [alt]="item.name" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+
+            <!-- Item Details -->
+            <div class="item-info">
+              <div class="item-name">
+                <span>{{ item.name }}</span>
+                <span class="item-sub-tag" *ngIf="item.is_subscription">Daily Subs</span>
+              </div>
+              <div class="item-specs">
+                <span>Qty: <strong>{{ item.quantity }}</strong></span>
+                <span class="spec-dot">&bull;</span>
+                <span>{{ item.weight }} {{ item.unit_name }}</span>
+                <span class="spec-dot">&bull;</span>
+                <span class="item-price">₹{{ item.price | number }}</span>
+              </div>
+            </div>
+
+            <!-- Missing / Refund Tag or Action Button -->
+            <div class="item-action-col">
+              <div class="missing-badge" *ngIf="item.is_missing">
+                <span>Missing ({{ item.missing_qty }}x)</span>
+                <span class="refund-val">₹{{ item.refund_amount | number }} Refunded</span>
+              </div>
+
+              <button *ngIf="order.delivery_category === 'packed' && !item.is_missing" class="report-missing-btn" (click)="openRefundModal(order, item, $event)" title="Report item missing / damaged and refund customer">
+                <span class="material-icons">remove_shopping_cart</span>
+                <span>Missing?</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Refund Alert Banner (if order had missing items) -->
+      <div class="order-refund-banner" *ngIf="order.refund_amount > 0">
+        <span class="material-icons">account_balance_wallet</span>
+        <div class="refund-banner-text">
+          <strong>₹{{ order.refund_amount | number }} Refunded to Customer Wallet</strong>
+          <span *ngIf="order.refund_notes" class="refund-notes-text">({{ order.refund_notes }})</span>
+        </div>
+      </div>
+
+      <!-- Delivered / Undelivered Details (for past tabs) -->
+      <div class="delivery-timestamp-banner" *ngIf="order.delivery_category === 'delivered' && order.delivered_at">
+        <span class="material-icons">check_circle</span>
+        <span>Delivered on {{ order.delivered_at | date:'medium' }}</span>
+      </div>
+
+      <div class="undelivered-reason-banner" *ngIf="order.delivery_category === 'undelivered'">
+        <span class="material-icons">error_outline</span>
+        <span><strong>Reason:</strong> {{ order.undelivered_reason || 'Customer unavailable' }}</span>
+      </div>
+
+      <!-- Card Footer Actions -->
+      <div class="card-footer" *ngIf="order.delivery_category === 'packed'">
+        <div class="order-total-block">
+          <span class="total-label">Order Total</span>
+          <span class="total-val">₹{{ order.total_amount | number }}</span>
+        </div>
+
+        <div class="action-buttons-group">
+          <button class="undelivered-action-btn" (click)="openUndeliveredModal(order)">
+            <span class="material-icons">close</span>
+            <span>Undelivered</span>
+          </button>
+
+          <button class="delivered-action-btn" (click)="markOrderDelivered(order)">
+            <span class="material-icons">check_circle</span>
+            <span>Mark Delivered</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================== -->
+<!-- Missing Item & Refund Modal Dialog             -->
+<!-- ============================================== -->
+<div class="modal-backdrop" *ngIf="isRefundModalOpen" (click)="closeRefundModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <span class="material-icons modal-header-icon">currency_rupee</span>
+        <h3>Report Missing Item & Refund</h3>
+      </div>
+      <button class="modal-close-btn" (click)="closeRefundModal()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="activeRefundItem && activeRefundOrder">
+      <!-- Item Info Box -->
+      <div class="refund-item-preview">
+        <img [src]="activeRefundItem.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" class="preview-img" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+        <div class="preview-details">
+          <h4>{{ activeRefundItem.name }}</h4>
+          <p>Order: <strong>#{{ activeRefundOrder.order_id }}</strong></p>
+          <p>Unit Price: <strong>₹{{ activeRefundItem.price | number }}</strong> &bull; Total Ordered: {{ activeRefundItem.quantity }}</p>
+        </div>
+      </div>
+
+      <!-- Missing Quantity Counter -->
+      <div class="form-group">
+        <label>Missing Quantity to Refund:</label>
+        <div class="qty-stepper">
+          <button class="stepper-btn" (click)="refundMissingQty = (refundMissingQty > 1 ? refundMissingQty - 1 : 1)" [disabled]="refundMissingQty <= 1">-</button>
+          <span class="stepper-val">{{ refundMissingQty }}</span>
+          <button class="stepper-btn" (click)="refundMissingQty = (refundMissingQty < activeRefundItem.quantity ? refundMissingQty + 1 : activeRefundItem.quantity)" [disabled]="refundMissingQty >= activeRefundItem.quantity">+</button>
+        </div>
+      </div>
+
+      <!-- Calculated Refund Summary -->
+      <div class="refund-calculation-box">
+        <div class="calc-row">
+          <span>Refund Amount:</span>
+          <span class="calc-total">₹{{ (activeRefundItem.price * refundMissingQty) | number }}</span>
+        </div>
+        <div class="calc-explanation">
+          <span class="material-icons info-icon">info</span>
+          <div *ngIf="activeRefundItem.is_subscription">
+            <strong>Subscription Order:</strong> ₹{{ (activeRefundItem.price * refundMissingQty) | number }} will be credited to customer's ThinkSpot Wallet, and today's delivery schedule will be marked cancelled, <em>reducing their active Ledger Balance immediately</em>.
+          </div>
+          <div *ngIf="!activeRefundItem.is_subscription">
+            <strong>Regular Order:</strong> ₹{{ (activeRefundItem.price * refundMissingQty) | number }} will be credited immediately to customer's ThinkSpot Wallet.
+          </div>
+        </div>
+      </div>
+
+      <!-- Reason Input -->
+      <div class="form-group">
+        <label for="refundReason">Reason for Refund / Missing item:</label>
+        <select id="refundReason" class="custom-select modal-select" [(ngModel)]="refundReason">
+          <option value="Item missing during packing">Item missing during packing</option>
+          <option value="Item damaged or spoiled">Item damaged or spoiled</option>
+          <option value="Out of stock in market">Out of stock in market</option>
+          <option value="Customer requested to omit">Customer requested to omit</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeRefundModal()" [disabled]="isProcessingRefund">Cancel</button>
+      <button class="btn-confirm-refund" (click)="confirmRefund()" [disabled]="isProcessingRefund || !activeRefundItem">
+        <span class="material-icons" [class.spin]="isProcessingRefund">{{ isProcessingRefund ? 'sync' : 'savings' }}</span>
+        <span>{{ isProcessingRefund ? 'Processing...' : 'Confirm & Refund ₹' + ((activeRefundItem ? activeRefundItem.price * refundMissingQty : 0) | number) }}</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- Undelivered Order Modal Dialog                 -->
+<!-- ============================================== -->
+<div class="modal-backdrop" *ngIf="isUndeliveredModalOpen" (click)="closeUndeliveredModal()">
+  <div class="modal-card" (click)="$event.stopPropagation()">
+    
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <span class="material-icons modal-header-icon" style="color: #ef4444;">cancel</span>
+        <h3>Mark Order as Undelivered</h3>
+      </div>
+      <button class="modal-close-btn" (click)="closeUndeliveredModal()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="modal-body" *ngIf="activeUndeliveredOrder">
+      <p class="undelivered-notice">
+        Order <strong>#{{ activeUndeliveredOrder.order_id }}</strong> for <strong>{{ activeUndeliveredOrder.customer_name }}</strong> will be marked as Undelivered.
+      </p>
+
+      <div class="form-group">
+        <label for="undeliveredReasonSelect">Select Failure Reason:</label>
+        <select id="undeliveredReasonSelect" class="custom-select modal-select" [(ngModel)]="undeliveredReason">
+          <option value="Customer unavailable / Door locked">Customer unavailable / Door locked</option>
+          <option value="Phone not reachable / Switched off">Phone not reachable / Switched off</option>
+          <option value="Wrong delivery address / Location not found">Wrong delivery address / Location not found</option>
+          <option value="Customer refused delivery">Customer refused delivery</option>
+          <option value="Weather / Vehicle breakdown issue">Weather / Vehicle breakdown issue</option>
+        </select>
+      </div>
+
+      <div class="checkbox-option" *ngIf="activeUndeliveredOrder.total_amount > 0">
+        <label class="custom-checkbox-row">
+          <input type="checkbox" [(ngModel)]="undeliveredRefundWallet" />
+          <span>Issue full refund of <strong>₹{{ activeUndeliveredOrder.total_amount | number }}</strong> to customer's wallet</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeUndeliveredModal()" [disabled]="isProcessingUndelivered">Cancel</button>
+      <button class="btn-confirm-undelivered" (click)="confirmUndelivered()" [disabled]="isProcessingUndelivered">
+        <span class="material-icons" [class.spin]="isProcessingUndelivered">{{ isProcessingUndelivered ? 'sync' : 'error' }}</span>
+        <span>{{ isProcessingUndelivered ? 'Saving...' : 'Confirm Undelivered' }}</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================== -->
+<!-- Floating Toast Notification                    -->
+<!-- ============================================== -->
+<div class="toast-popup" *ngIf="toast.show" [class.success]="toast.type === 'success'" [class.error]="toast.type === 'error'" [class.info]="toast.type === 'info'">
+  <span class="material-icons toast-icon">
+    {{ toast.type === 'success' ? 'check_circle' : (toast.type === 'error' ? 'error' : 'info') }}
+  </span>
+  <div class="toast-body">
+    <div class="toast-title">{{ toast.title }}</div>
+    <div class="toast-msg">{{ toast.message }}</div>
+  </div>
+  <button class="toast-close" (click)="toast.show = false">
+    <span class="material-icons">close</span>
+  </button>
+</div>

@@ -289,6 +289,7 @@ export type OrderInfo = {
     //Tax and fees
     taxAndFees: number,
 
+    walletDeduction?: number,
     remainingToPay: number,
     cartProductDateWise: CartDateWise,
     subscribedItems: Array<Product>,

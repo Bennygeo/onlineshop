@@ -65,12 +65,29 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   isSubscriptionProduct(pro: any): boolean {
     if (!pro) return false;
-    const type = String(pro.subscriptionType || pro.subscription_type || '').toLowerCase();
-    if (type && type !== 'none' && type !== 'undefined' && type !== 'null') return true;
+    if (pro.is_subscription !== undefined) return !!pro.is_subscription;
 
-    const hasRange = pro.rangeDates && pro.rangeDates !== '[]' && pro.rangeDates !== 'undefined' && pro.rangeDates !== 'null' && pro.rangeDates !== '';
-    const hasSubs = pro.subscribedDates && pro.subscribedDates !== '[]' && pro.subscribedDates !== 'undefined' && pro.subscribedDates !== 'null' && pro.subscribedDates !== '';
-    return !!(hasRange || hasSubs);
+    const type = String(pro.subscriptionType || pro.subscription_type || '').trim().toLowerCase();
+    if (type === 'range' || type === 'multi_day' || type === 'daily' || type === 'subscribed') {
+      return true;
+    }
+
+    const checkDates = (d: any): boolean => {
+      if (!d || d === '[]' || d === 'undefined' || d === 'null' || d === '') return false;
+      if (Array.isArray(d)) return d.length > 0;
+      if (typeof d === 'string') {
+        try {
+          const parsed = JSON.parse(d);
+          return Array.isArray(parsed) && parsed.length > 0;
+        } catch {
+          return false;
+        }
+      }
+      return false;
+    };
+    console.log("isSubscriptionProduct", checkDates(pro.rangeDates) || checkDates(pro.subscribedDates));
+
+    return checkDates(pro.rangeDates) || checkDates(pro.subscribedDates);
   }
 
   getItemDaysCount(pro: any): number {
@@ -112,18 +129,26 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   getItemTotalPrice(pro: any): number {
     if (!pro) return 0;
-    const qty = Number(pro.units || pro.quantity || 1);
     const rawPrice = Number(pro.price || 0);
-    const unitPrice = Number(pro.unit_price || (pro.price && !this.isSubscriptionProduct(pro) ? pro.price : (rawPrice > 0 && this.getItemDaysCount(pro) > 1 ? rawPrice / (qty * this.getItemDaysCount(pro)) : rawPrice)));
-    const days = this.isSubscriptionProduct(pro) ? this.getItemDaysCount(pro) : 1;
-
-    if (this.isSubscriptionProduct(pro) && days > 1) {
-      if (rawPrice > 0 && rawPrice > unitPrice * qty) {
-        return rawPrice;
-      }
-      return (unitPrice > 0 ? unitPrice : rawPrice) * qty * days;
+    if (rawPrice > 0) {
+      return rawPrice;
     }
-    return rawPrice > 0 ? rawPrice * qty : unitPrice * qty;
+    const qty = Number(pro.units || pro.quantity || 1);
+    const unitPrice = Number(pro.unit_price || 0);
+    const days = this.isSubscriptionProduct(pro) ? this.getItemDaysCount(pro) : 1;
+    return unitPrice * qty * days;
+  }
+
+  getItemUnitPrice(pro: any): number {
+    if (!pro) return 0;
+    const qty = Number(pro.units || pro.quantity || 1);
+    const days = this.isSubscriptionProduct(pro) ? this.getItemDaysCount(pro) : 1;
+    const totalUnits = qty * days;
+    const rawPrice = Number(pro.price || 0);
+    if (rawPrice > 0 && totalUnits > 0) {
+      return rawPrice / totalUnits;
+    }
+    return Number(pro.unit_price || pro.price || 0);
   }
 
   ngOnInit(): void {
@@ -160,8 +185,8 @@ export class OrdersComponent implements OnInit, OnDestroy {
           }
         });
 
-        this.upcomingOrders = res.filter((item) => { return item.status == 'PLACED' });
-        this.pastOrders = res.filter((item) => { return (item.status == 'DELIVERED' || item.status == 'CANCELLED') });
+        this.upcomingOrders = res.filter((item) => { return item.status == 'PLACED' || item.status == 'PACKED' || item.status == 'OUT_FOR_DELIVERY' });
+        this.pastOrders = res.filter((item) => { return (item.status == 'DELIVERED' || item.status == 'UNDELIVERED' || item.status == 'CANCELLED') });
         console.log(this.upcomingOrders);
       }
     });
@@ -222,7 +247,6 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   orderCancelAction(order: any) {
-    this.utils.css(".orders-cont", { height: '90vh', overflowY: 'hidden' });
     this.targetOrder = order;
     this.orderCancelFlag = true;
   }
@@ -236,11 +260,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
     this.orderService.getIndividualOrder(order).subscribe({
       next: (res: any) => {
         const itemsList: Array<any> = Array.isArray(res) ? res : (res && Array.isArray(res.items) ? res.items : []);
+        itemsList.forEach((pro: any) => {
+          pro.is_subscription = this.isSubscriptionProduct(pro);
+        });
         order.itemsList = itemsList;
-
-        if (itemsList.some((pro: any) => this.isSubscriptionProduct(pro))) {
-          order.is_subscription = true;
-        }
+        order.is_subscription = itemsList.some((pro: any) => pro.is_subscription);
 
         if (itemsList && itemsList.length > 0) {
           let products_id = itemsList.map((product) => { return product.productID || product.product_id; });
@@ -254,6 +278,8 @@ export class OrdersComponent implements OnInit, OnDestroy {
               weight: product.weight,
               product_name: product.product_name,
               img_url: product.img_url,
+              subscriptionType: product.subscriptionType,
+              is_subscription: product.is_subscription,
               rangeDates: (product.rangeDates && product.rangeDates != "undefined") ? (typeof product.rangeDates === 'string' ? JSON.parse(product.rangeDates) : product.rangeDates) : [],
               subscribedDates: (product.subscribedDates && product.subscribedDates != "undefined") ? (typeof product.subscribedDates === 'string' ? JSON.parse(product.subscribedDates) : product.subscribedDates) : []
             };
@@ -269,28 +295,33 @@ export class OrdersComponent implements OnInit, OnDestroy {
                   item.price = pData.price || item.price;
                   item.name = item.name || pData.product_name || 'Product Item';
                   item.img_url = item.img_url || pData.img_url;
+                  item.is_subscription = (pData.is_subscription !== undefined) ? pData.is_subscription : false;
                   liveProducts.push({ ...item, ...pData });
                 });
               }
               order.products = liveProducts.length > 0 ? liveProducts : itemsList;
               this.products = order.products;
 
-              let calcTotal = 0;
-              order.products.forEach((p: any) => {
-                calcTotal += this.getItemTotalPrice(p);
-              });
-              if (calcTotal > 0) {
-                order.order_total = calcTotal;
+              if (!order.order_total || order.order_total === 0) {
+                let calcTotal = 0;
+                order.products.forEach((p: any) => {
+                  calcTotal += this.getItemTotalPrice(p);
+                });
+                if (calcTotal > 0) {
+                  order.order_total = calcTotal;
+                }
               }
             },
             error: () => {
               order.products = itemsList;
-              let calcTotal = 0;
-              order.products.forEach((p: any) => {
-                calcTotal += this.getItemTotalPrice(p);
-              });
-              if (calcTotal > 0) {
-                order.order_total = calcTotal;
+              if (!order.order_total || order.order_total === 0) {
+                let calcTotal = 0;
+                order.products.forEach((p: any) => {
+                  calcTotal += this.getItemTotalPrice(p);
+                });
+                if (calcTotal > 0) {
+                  order.order_total = calcTotal;
+                }
               }
             }
           });
@@ -311,16 +342,13 @@ export class OrdersComponent implements OnInit, OnDestroy {
   alertClose() {
     this.orderCancelFlag = false;
     this.orderViewFlag = false;
-    this.utils.css(".orders-cont", { height: 'auto', overflowY: 'auto' });
   }
 
   pastOrderViewAction(order: any) {
-    this.utils.css(".orders-cont", { height: '90vh', overflowY: 'hidden' });
-    this.orderService.getIndividualOrder(order);
+    this.orderViewAction(order);
   }
 
   orderAgainAction(order: any) {
-    this.utils.css(".orders-cont", { height: '90vh', overflowY: 'hidden' });
     this.orderService.orderAgain(order);
   }
 

@@ -21,12 +21,14 @@
                     <div *ngFor="let group of groupProductsByCategory(dte.value); let gIndex=index;" class="cat_group">
                         <div class="sub_cat_title">
                             <span class="category_name">{{group.categoryName}}</span>
-                            <span class="subcategory_name" *ngIf="group.subCategoryName && group.subCategoryName.toLowerCase() !== 'general' && group.subCategoryName.toLowerCase() !== group.categoryName.toLowerCase()">
+                            <span class="subcategory_name"
+                                *ngIf="group.subCategoryName && group.subCategoryName.toLowerCase() !== 'general' && group.subCategoryName.toLowerCase() !== group.categoryName.toLowerCase()">
                                 • {{group.subCategoryName}}
                             </span>
                         </div>
                         <div *ngFor="let product of group.products; let i=index;">
-                            <cart [product]="product" [index]="ind+'-'+gIndex+'-'+i" id="cart-list-{{ind}}-{{gIndex}}-{{i}}"></cart>
+                            <cart [product]="product" [index]="ind+'-'+gIndex+'-'+i"
+                                id="cart-list-{{ind}}-{{gIndex}}-{{i}}"></cart>
                         </div>
                     </div>
 
@@ -59,8 +61,10 @@
 
             <div class="error promo-error" *ngIf="couponS.coupons.couponExistFlg">Coupon already exist!</div>
             <div class="promo-success" *ngIf="couponS.coupons.addedFlg">Coupon added sucessfully!</div>
-            <div class="error promo-error" *ngIf="couponS.coupons.invalidFlg && !couponS.coupons.errorMsg">Invalid coupon code!</div>
-            <div class="error promo-error" *ngIf="couponS.coupons.invalidFlg && couponS.coupons.errorMsg">{{couponS.coupons.errorMsg}}</div>
+            <div class="error promo-error" *ngIf="couponS.coupons.invalidFlg && !couponS.coupons.errorMsg">Invalid
+                coupon code!</div>
+            <div class="error promo-error" *ngIf="couponS.coupons.invalidFlg && couponS.coupons.errorMsg">
+                {{couponS.coupons.errorMsg}}</div>
 
         </div>
 
@@ -112,7 +116,7 @@
                 <table class="tg">
                     <tr>
                         <th class="tg-col1">Sub Total</th>
-                        <th class="tg-col2">₹ {{orderInformation.subTotal |number}}</th>
+                        <th class="tg-col2">₹ {{orderInformation.subTotal | number}}</th>
                     </tr>
 
                     <tr *ngIf="orderInformation.selectedCoupon && !orderInformation.couponDiscount">
@@ -121,52 +125,67 @@
                     </tr>
 
                     <tr *ngIf="orderInformation.couponDiscount > 0">
-                        <th class="tg-col1" style="color: #28a745; font-weight: bold;">Promo Discount (5% Veg)</th>
-                        <th class="tg-col2" style="color: #28a745; font-weight: bold;">- ₹ {{orderInformation.couponDiscount | number:'1.2-2'}}</th>
+                        <th class="tg-col1" style="color: #28a745; font-weight: bold;">Promo Discount</th>
+                        <th class="tg-col2" style="color: #28a745; font-weight: bold;">- ₹
+                            {{orderInformation.couponDiscount | number:'1.2-2'}}</th>
                     </tr>
 
                     <tr>
                         <th class="tg-col1">Tax and Fees</th>
-                        <th class="tg-col2">₹ {{orderInformation.taxAndFees}}</th>
+                        <th class="tg-col2">₹ {{orderInformation.taxAndFees | number}}</th>
                     </tr>
 
                     <tr>
                         <th class="tg-col1">Delivery</th>
-                        <th class="tg-col2">₹ {{orderInformation.totalDeliveryCharges}}</th>
+                        <th class="tg-col2">
+                            <span *ngIf="orderInformation.totalDeliveryCharges > 0">₹
+                                {{orderInformation.totalDeliveryCharges | number}}</span>
+                            <span *ngIf="orderInformation.totalDeliveryCharges === 0"
+                                style="color: #28a745; font-weight: bold;">FREE</span>
+                        </th>
                     </tr>
 
                     <tr>
-                        <th class="tg-col1" style="font-weight: bolder;">Total <span
-                                style="color: #BEBEBE;  font-weight: normal;">({{orderInformation.totalItemsCount}}
-                                items)</span></th>
-                        <th class="tg-col2" style="font-weight: bolder; font-size: 14px;">₹
-                            {{orderInformation.total
-                            |number}}</th>
+                        <th class="tg-col1" style="font-weight: bolder;">Total
+                            <span style="color: #BEBEBE; font-weight: normal;">
+                                ({{orderInformation.totalItemsCount}} {{orderInformation.totalItemsCount === 1 ? 'item'
+                                : 'items'}})
+                            </span>
+                        </th>
+                        <th class="tg-col2" style="font-weight: bolder; font-size: 14px;">₹ {{orderInformation.total |
+                            number}}</th>
                     </tr>
 
                     <tr>
                         <th class="tg-col1">Wallet Balance</th>
-                        <th class="tg-col2">₹ {{loginS.user.wallet}}</th>
+                        <th class="tg-col2">₹ {{loginS.user?.wallet | number}}</th>
+                    </tr>
+
+                    <tr *ngIf="orderInformation.walletDeduction > 0">
+                        <th class="tg-col1" style="color: #0284c7; font-weight: bold;">Paid from Wallet</th>
+                        <th class="tg-col2" style="color: #0284c7; font-weight: bold;">- ₹
+                            {{orderInformation.walletDeduction | number}}</th>
                     </tr>
 
                     <tr>
                         <th class="tg-col1" style="font-size: 16px; font-weight: bolder;">Amount to be Paid</th>
-                        <th class="tg-col2" style="font-size: 14px; font-weight:bolder;">₹
-                            {{this.cartService.remainingToPay|number}}</th>
+                        <th class="tg-col2" style="font-size: 14px; font-weight: bolder;">₹
+                            {{this.cartService.remainingToPay | number}}</th>
                     </tr>
                 </table>
             </div>
             <div class="pay-cont">
-                <button class="tnkspt_primary_btn pay-btn" *ngIf="cartService.remainingToPay > 0; else else_content"
-                    (click)="payAction()" style="margin-right: 0px;">Pay ₹{{this.cartService.remainingToPay|number}} &
-                    Checkout</button>
+                <button class="tnkspt_primary_btn pay-btn" *ngIf="cartService.remainingToPay === 0; else wallet_content"
+                    (click)="payAction()" style="margin-right: 0px;">
+                    Checkout
+                </button>
 
-
-                <ng-template #else_content>
-                    <button class="tnkspt_primary_btn pay-btn" (click)="payAction()" style="margin-right: 0px;">
-                        Checkout</button>
+                <ng-template #wallet_content>
+                    <button class="tnkspt_primary_btn pay-btn" (click)="payAction()"
+                        style="margin-right: 0px; background-color: #28a745;">
+                        Pay ₹{{orderInformation.walletDeduction | number}} via Wallet & Place Order
+                    </button>
                 </ng-template>
-
             </div>
         </div>
     </div>

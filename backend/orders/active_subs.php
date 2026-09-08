@@ -31,14 +31,26 @@ try {
             OR (oi.rangeDates IS NOT NULL AND oi.rangeDates != '' AND oi.rangeDates != '[]' AND oi.rangeDates != 'undefined')
             OR (oi.subscribedDates IS NOT NULL AND oi.subscribedDates != '' AND oi.subscribedDates != '[]' AND oi.subscribedDates != 'undefined')
           )
-          AND o.status IN ('PLACED', 'CART', 'active')
+          AND o.status IN ('PLACED', 'active', 'PACKED', 'OUT_FOR_DELIVERY')
         ORDER BY oi.id DESC
     ");
     $stmt->execute([$mobile]);
     $items = $stmt->fetchAll();
 
     $result = [];
+    $seenMap = []; // Deduplicate by product_id or order_id + product_id
+
     foreach ($items as $item) {
+        $prodId = !empty($item['product_id']) ? $item['product_id'] : ('item_' . $item['id']);
+        $orderId = $item['order_id'];
+        $dedupKey = $orderId . '_' . $prodId;
+
+        // Skip if duplicate row for same order item
+        if (isset($seenMap[$dedupKey])) {
+            continue;
+        }
+        $seenMap[$dedupKey] = true;
+
         $datesJson = ($item['subscriptionType'] === 'multi_day' || (isset($item['subscribedDates']) && $item['subscribedDates'] !== '[]' && $item['subscribedDates'] !== '')) ? $item['subscribedDates'] : $item['rangeDates'];
         $parsed = json_decode($datesJson, true);
         $calcQty = 0;
@@ -59,7 +71,7 @@ try {
 
         $result[] = [
             'orderID' => $item['order_id'],
-            'productID' => $item['product_id'],
+            'productID' => $prodId,
             'product_name' => isset($item['product_name']) ? $item['product_name'] : '',
             'quantity' => $finalQty,
             'price' => (float)$item['price'],

@@ -1,80 +1,456 @@
 <div class="orders-admin-page">
-  <div class="page-header">
-    <div>
-      <h2>Order Dispatch & Delivery Assignment</h2>
-      <p>Assign delivery personnel, track order fulfillment, and update order statuses.</p>
+  <!-- Floating Toast Notification Banner -->
+  <div class="toast-notification-banner" *ngIf="toastNotification.show" [class.show]="toastNotification.show" [class.success]="toastNotification.type === 'success'" [class.error]="toastNotification.type === 'error'">
+    <div class="toast-icon">
+      <span class="material-icons">{{ toastNotification.type === 'success' ? 'check_circle' : 'error' }}</span>
     </div>
-    <button class="refresh-btn" (click)="loadOrders()">
-      <span class="material-icons">refresh</span>
-      <span>Refresh Orders</span>
+    <div class="toast-body">
+      <h5 class="toast-title">{{ toastNotification.title }}</h5>
+      <p class="toast-msg">{{ toastNotification.message }}</p>
+    </div>
+    <button class="toast-close-btn" (click)="closeToast()" title="Close notification">
+      <span class="material-icons">close</span>
     </button>
   </div>
 
-  <!-- Filter Bar -->
-  <div class="filter-bar">
-    <span class="filter-label">Filter by Status:</span>
-    <div class="status-tabs">
-      <button [class.active]="statusFilter === 'ALL'" (click)="statusFilter = 'ALL'">All</button>
-      <button [class.active]="statusFilter === 'PLACED'" (click)="statusFilter = 'PLACED'">Placed</button>
-      <button [class.active]="statusFilter === 'PACKED'" (click)="statusFilter = 'PACKED'">Packed</button>
-      <button [class.active]="statusFilter === 'OUT_FOR_DELIVERY'" (click)="statusFilter = 'OUT_FOR_DELIVERY'">Out for Delivery</button>
-      <button [class.active]="statusFilter === 'DELIVERED'" (click)="statusFilter = 'DELIVERED'">Delivered</button>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h2>Order Dispatch & Packing Management</h2>
+      <p>Schedule next 7 days deliveries datewise, inspect order items, generate daily purchase & packing lists, and assign to delivery partners.</p>
+    </div>
+    <div class="header-actions">
+      <button class="partners-btn" (click)="openPartnersModal()">
+        <span class="material-icons">badge</span>
+        <span>5 Delivery Partners Logins</span>
+      </button>
+      <button class="refresh-btn" (click)="loadOrders()">
+        <span class="material-icons">refresh</span>
+        <span>Refresh</span>
+      </button>
     </div>
   </div>
 
-  <!-- Orders Table -->
-  <div class="table-card">
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Order ID</th>
-          <th>Customer Mobile</th>
-          <th>Delivery Address</th>
-          <th>Items Count</th>
-          <th>Total Amount</th>
-          <th>Order Status</th>
-          <th>Assign Delivery Boy</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let o of filteredOrders">
-          <td>
-            <div class="order-id-cell">
-              <span class="id-val">#{{ o.order_id || o.id }}</span>
-              <small class="date-val">{{ (o.modified_at || o.createdAt || o.created_at) | date:'short' }}</small>
+  <!-- View Mode Switcher & 7-Days Date Navigation -->
+  <div class="date-tabs-container">
+    <div class="date-tabs-header">
+      <div class="view-mode-tabs">
+        <button class="mode-btn" [class.active]="activeViewTab === 'orders'" (click)="switchViewTab('orders')">
+          <span class="material-icons">local_shipping</span>
+          <span>Orders & Dispatch</span>
+        </button>
+        <button class="mode-btn" [class.active]="activeViewTab === 'purchase_list'" (click)="switchViewTab('purchase_list')">
+          <span class="material-icons">inventory</span>
+          <span>Daily Purchase & Packing List</span>
+        </button>
+      </div>
+
+      <span class="section-title"><span class="material-icons">event</span> Next 7 Days Deliveries:</span>
+    </div>
+
+    <!-- 7 Days Scrollable Tabs -->
+    <div class="date-tabs-scroll">
+      <button 
+        *ngFor="let tab of dateTabs" 
+        class="date-tab-btn" 
+        [class.active]="selectedDateStr === tab.dateStr"
+        (click)="selectDateTab(tab.dateStr)"
+      >
+        <span class="tab-label">{{ tab.dayLabel }}</span>
+        <span class="tab-count" [class.has-orders]="tab.count > 0">{{ tab.count }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- VIEW 1: ORDERS & DISPATCH TABLE -->
+  <ng-container *ngIf="activeViewTab === 'orders'">
+    <!-- Controls Bar -->
+    <div class="controls-card">
+      <div class="search-and-filters">
+        <div class="search-box">
+          <span class="material-icons">search</span>
+          <input type="text" placeholder="Search order ID, mobile, or address..." [(ngModel)]="searchQuery" />
+        </div>
+
+        <div class="filter-group">
+          <label>Type:</label>
+          <select [(ngModel)]="orderTypeFilter">
+            <option value="ALL">All Types</option>
+            <option value="subscription">Subscriptions Only</option>
+            <option value="regular">Regular Orders</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label>Status:</label>
+          <select [(ngModel)]="statusFilter">
+            <option value="ALL">All Statuses</option>
+            <option value="PLACED">PLACED</option>
+            <option value="PACKED">PACKED</option>
+            <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+            <option value="DELIVERED">DELIVERED</option>
+            <option value="CANCELLED">CANCELLED</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Bulk Assign Section -->
+      <div class="bulk-assign-bar" *ngIf="getSelectedCount() > 0">
+        <span class="bulk-count-badge">{{ getSelectedCount() }} Orders Selected</span>
+        <div class="bulk-action">
+          <select [(ngModel)]="bulkTargetPartner">
+            <option value="">Select Delivery Partner...</option>
+            <option *ngFor="let db of deliveryBoys" [value]="db.name">
+              {{ db.name }} ({{ db.zone }})
+            </option>
+          </select>
+          <button class="bulk-btn" (click)="bulkAssignDelivery()">
+            <span class="material-icons">local_shipping</span>
+            <span>Assign Selected Orders</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Orders Table with Click-to-Expand Items -->
+    <div class="table-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th class="checkbox-col">
+              <input type="checkbox" [checked]="selectAllChecked" (change)="toggleSelectAll($event)" />
+            </th>
+            <th>Order ID & Type</th>
+            <th>Customer Mobile</th>
+            <th>Delivery Date</th>
+            <th>Delivery Address</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Assigned Delivery Partner</th>
+          </tr>
+        </thead>
+        <ng-container *ngFor="let o of filteredOrders">
+          <tbody>
+            <tr class="order-main-row" [class.is-expanded]="o.expanded" (click)="toggleExpand(o)">
+              <td class="checkbox-col" (click)="$event.stopPropagation()">
+                <input type="checkbox" [(ngModel)]="selectedOrderMap[o.order_id || o.id]" />
+              </td>
+              <td>
+                <div class="order-id-cell">
+                  <div class="id-row">
+                    <button class="expand-toggle-btn">
+                      <span class="material-icons">{{ o.expanded ? 'expand_less' : 'expand_more' }}</span>
+                    </button>
+                    <span class="id-val">#{{ o.order_id || o.id }}</span>
+                  </div>
+                  <span class="type-badge" [class.sub-type]="o.order_type === 'subscription'" [class.reg-type]="o.order_type !== 'subscription'">
+                    {{ o.order_type === 'subscription' ? 'Subscription' : 'Regular' }}
+                  </span>
+                </div>
+              </td>
+              <td><b>{{ o.mobile }}</b></td>
+              <td>
+                <span class="date-badge">
+                  <span class="material-icons">today</span>
+                  {{ o.delivery_date || (o.created_at | date:'yyyy-MM-dd') }}
+                </span>
+              </td>
+              <td>
+                <div class="addr-cell">
+                  <span>{{ o.address?.address || o.address || 'Standard Address' }}</span>
+                  <small *ngIf="o.address?.name">Name: {{ o.address?.name }}</small>
+                  <small *ngIf="o.address?.pincode">Pincode: {{ o.address?.pincode }}</small>
+                </div>
+              </td>
+              <td>
+                <button class="items-count-btn">
+                  <span>{{ getItemsForDate(o).length }} item(s)</span>
+                  <span class="material-icons size-16">{{ o.expanded ? 'unfold_less' : 'unfold_more' }}</span>
+                </button>
+              </td>
+              <td><span class="amt-val">₹ {{ o.amount || o.total_amount || 0 }}</span></td>
+              <td (click)="$event.stopPropagation()">
+                <select class="status-select" [value]="o.status" (change)="updateOrderStatus(o, $event)">
+                  <option value="PLACED">PLACED</option>
+                  <option value="PACKED">PACKED</option>
+                  <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+                  <option value="DELIVERED">DELIVERED</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </td>
+              <td (click)="$event.stopPropagation()">
+                <div class="assign-cell">
+                  <select class="delivery-select" [value]="o.assigned_to || ''" (change)="assignDeliveryBoy(o, $event)">
+                    <option value="">-- Unassigned --</option>
+                    <option *ngFor="let db of deliveryBoys" [value]="db.name">
+                      {{ db.name }} ({{ db.zone }})
+                    </option>
+                  </select>
+                  <span class="assigned-label" *ngIf="o.assigned_to">
+                    <span class="material-icons">person</span> {{ o.assigned_to }}
+                  </span>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Expanded Order Items Row -->
+            <tr *ngIf="o.expanded" class="items-expanded-row">
+              <td colspan="9">
+                <div class="items-expanded-card">
+                  <div class="expanded-header">
+                    <h4>Items List for Order #{{ o.order_id || o.id }}</h4>
+                    <span class="items-total-tag">{{ getItemsForDate(o).length }} Product(s)</span>
+                  </div>
+                  <div class="expanded-grid" *ngIf="getItemsForDate(o).length > 0; else noItems">
+                    <div class="expanded-item-card" *ngFor="let it of getItemsForDate(o)">
+                      <img [src]="it.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ it.name }}" class="item-thumb" />
+                      <div class="item-info">
+                        <span class="item-name">{{ it.name || it.product_name || 'Product' }}</span>
+                        <div class="item-meta">
+                          <span class="item-qty">Qty: {{ it.qty || it.quantity || 1 }} × {{ it.weight || '' }} {{ it.unit_name || '' }}</span>
+                          <span class="item-price">₹ {{ it.price || 0 }}</span>
+                        </div>
+                        <small *ngIf="it.subscriptionType && it.subscriptionType !== 'none'" class="sub-type-tag">
+                          Subscription: {{ it.subscriptionType }}
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                  <ng-template #noItems>
+                    <p class="no-items-text">No detailed item rows found for this order.</p>
+                  </ng-template>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </ng-container>
+
+        <tbody *ngIf="filteredOrders.length === 0">
+          <tr>
+            <td colspan="9" class="empty-cell">
+              <span class="material-icons">inventory_2</span>
+              <p>No orders found for the selected date or filter criteria.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+
+  <!-- VIEW 2: DAILY PROCUREMENT & PACKING LIST -->
+  <ng-container *ngIf="activeViewTab === 'purchase_list'">
+    <div class="purchase-summary-card">
+      <div class="summary-header">
+        <div>
+          <h3><span class="material-icons title-icon">inventory_2</span> Daily Procurement, Purchase & Packing List</h3>
+          <p>Market purchase cost vs client selling price for date: <b>{{ selectedDateStr }}</b> (Total {{ filteredOrders.length }} orders)</p>
+        </div>
+        <div class="header-btns">
+          <button class="copy-list-btn" (click)="copyPurchaseListText()">
+            <span class="material-icons">content_copy</span>
+            <span>Copy Purchase List (WhatsApp)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Financial KPI Metrics for Today's Procurement -->
+      <div class="procurement-kpi-grid" *ngIf="dailyPurchaseList.length > 0">
+        <div class="proc-kpi-card varieties">
+          <div class="kpi-icon"><span class="material-icons">category</span></div>
+          <div class="kpi-body">
+            <span class="kpi-label">Items to Procure</span>
+            <h4 class="kpi-val">{{ purchaseTotals.count }} Varieties</h4>
+            <span class="kpi-sub">{{ filteredOrders.length }} customer orders</span>
+          </div>
+        </div>
+
+        <div class="proc-kpi-card client-rev">
+          <div class="kpi-icon"><span class="material-icons">point_of_sale</span></div>
+          <div class="kpi-body">
+            <span class="kpi-label">Client Selling Price (Total)</span>
+            <h4 class="kpi-val">₹ {{ purchaseTotals.totalClientRevenue | number:'1.2-2' }}</h4>
+            <span class="kpi-sub">Total billed to customers</span>
+          </div>
+        </div>
+
+        <div class="proc-kpi-card market-cost">
+          <div class="kpi-icon"><span class="material-icons">shopping_cart_checkout</span></div>
+          <div class="kpi-body">
+            <span class="kpi-label">Market Purchase Cost</span>
+            <h4 class="kpi-val">₹ {{ purchaseTotals.totalMarketCost | number:'1.2-2' }}</h4>
+            <span class="kpi-sub">Total procurement cost</span>
+          </div>
+        </div>
+
+        <div class="proc-kpi-card margin" [class.positive]="purchaseTotals.totalProfit >= 0" [class.negative]="purchaseTotals.totalProfit < 0">
+          <div class="kpi-icon"><span class="material-icons">{{ purchaseTotals.totalProfit >= 0 ? 'trending_up' : 'trending_down' }}</span></div>
+          <div class="kpi-body">
+            <span class="kpi-label">Net Profit / Loss</span>
+            <h4 class="kpi-val">₹ {{ (purchaseTotals.totalProfit < 0 ? -purchaseTotals.totalProfit : purchaseTotals.totalProfit) | number:'1.2-2' }}</h4>
+            <span class="kpi-sub">{{ purchaseTotals.totalProfit >= 0 ? 'Profit Margin' : 'Loss Margin' }} ({{ purchaseTotals.marginPercent }}%)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Procurement Details Table -->
+      <div class="procurement-table-wrapper" *ngIf="dailyPurchaseList.length > 0; else noPurchaseItems">
+        <table class="procurement-table">
+          <thead>
+            <tr>
+              <th>Product & Base Unit</th>
+              <th>Total Ordered Qty</th>
+              <th>Client Selling Price</th>
+              <th>Market Purchase Price (Stock Cost)</th>
+              <th>Profit / Loss Margin</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pItem of dailyPurchaseList; trackBy: trackByProductId" class="proc-row">
+              <!-- Product Info & Base Qty -->
+              <td>
+                <div class="prod-cell">
+                  <img [src]="pItem.imgUrl" alt="{{ pItem.productName }}" class="p-thumb" />
+                  <div class="prod-text">
+                    <span class="p-name">{{ pItem.productName }}</span>
+                    <span class="base-qty-tag">
+                      <span class="material-icons">scale</span>
+                      Base: {{ pItem.baseDisplay }}
+                    </span>
+                  </div>
+                </div>
+              </td>
+
+              <!-- Total Ordered Quantity -->
+              <td>
+                <div class="qty-cell">
+                  <span class="total-qty">{{ pItem.totalDisplay }}</span>
+                  <span class="breakdown-tag" *ngIf="pItem.breakdownSummary !== '()'">{{ pItem.breakdownSummary }}</span>
+                  <small class="orders-count">{{ pItem.ordersCount }} order(s)</small>
+                </div>
+              </td>
+
+              <!-- Client Selling Price -->
+              <td>
+                <div class="price-cell client">
+                  <span class="total-client-amt">₹ {{ pItem.totalClientSellingPrice | number:'1.2-2' }}</span>
+                  <small class="rate-sub">Rate: ₹ {{ pItem.basePrice | number:'1.2-2' }} / {{ pItem.baseDisplay }}</small>
+                </div>
+              </td>
+
+              <!-- Market Purchase / Stock Price -->
+              <td>
+                <div class="price-cell market">
+                  <div class="market-input-group">
+                    <span class="currency-prefix">₹</span>
+                    <input 
+                      type="number" 
+                      step="0.5"
+                      [(ngModel)]="stockPriceEdits[pItem.productId]"
+                      (ngModelChange)="onStockPriceChange(pItem)"
+                      class="market-price-input"
+                      [class.saved-input]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
+                      placeholder="Cost"
+                    />
+                    <span class="per-unit-label">/ {{ pItem.baseDisplay }}</span>
+                  </div>
+                  <span class="total-market-amt">Total: ₹ {{ pItem.totalMarketCost | number:'1.2-2' }}</span>
+                </div>
+              </td>
+
+              <!-- Profit / Margin -->
+              <td>
+                <div class="margin-cell">
+                  <span class="profit-badge" [class.positive]="pItem.profitOrLoss >= 0" [class.negative]="pItem.profitOrLoss < 0">
+                    <span class="material-icons">{{ pItem.profitOrLoss >= 0 ? 'arrow_upward' : 'arrow_downward' }}</span>
+                    <span>{{ pItem.profitOrLoss >= 0 ? '+' : '' }}₹ {{ pItem.profitOrLoss | number:'1.2-2' }}</span>
+                    <small>({{ pItem.profitOrLoss >= 0 ? 'Profit' : 'Loss' }})</small>
+                  </span>
+                </div>
+              </td>
+
+              <!-- Action: Save to Products DB -->
+              <td>
+                <div class="action-cell">
+                  <button 
+                    class="save-prod-btn" 
+                    [class.saved]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
+                    [disabled]="savingProductMap[pItem.productId]"
+                    (click)="saveProductPrice(pItem)"
+                    title="Save this cost price into the Products table"
+                  >
+                    <span class="material-icons" *ngIf="!savedSuccessMap[pItem.productId] && !pItem.savedSuccess && !savingProductMap[pItem.productId]">save</span>
+                    <span class="material-icons spin" *ngIf="savingProductMap[pItem.productId]">autorenew</span>
+                    <span class="material-icons" *ngIf="savedSuccessMap[pItem.productId] || pItem.savedSuccess">check_circle</span>
+                    <span>{{ (savedSuccessMap[pItem.productId] || pItem.savedSuccess) ? 'Updated in DB!' : 'Update Product' }}</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <ng-template #noPurchaseItems>
+        <div class="empty-purchase-state">
+          <span class="material-icons">inventory_2</span>
+          <p>No orders found for date <b>{{ selectedDateStr }}</b>. Select another date tab above.</p>
+        </div>
+      </ng-template>
+    </div>
+  </ng-container>
+
+  <!-- Delivery Partners Info Modal -->
+  <div class="modal-overlay" *ngIf="isPartnersModalOpen" (click)="closePartnersModal()">
+    <div class="modal-card partners-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3>5 Delivery Partners Accounts</h3>
+          <p>Use these default login credentials for delivery personnel</p>
+        </div>
+        <button class="close-btn" (click)="closePartnersModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="partners-grid">
+          <div class="partner-card" *ngFor="let db of deliveryBoys">
+            <div class="p-header">
+              <span class="p-icon material-icons">two_wheeler</span>
+              <div>
+                <h4>{{ db.name }}</h4>
+                <small>{{ db.zone }}</small>
+              </div>
             </div>
-          </td>
-          <td><b>{{ o.mobile }}</b></td>
-          <td>
-            <div class="addr-cell">
-              <span>{{ o.address?.address || o.address || 'Standard Address' }}</span>
-              <small *ngIf="o.address?.pincode">Pincode: {{ o.address?.pincode }}</small>
+            <div class="p-details">
+              <div class="detail-row">
+                <span class="lbl">Username:</span>
+                <span class="val badge-user">{{ db.username || ('delivery' + db.id) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="lbl">Password:</span>
+                <span class="val badge-pass">{{ db.password || 'partner123' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="lbl">Phone:</span>
+                <span class="val">{{ db.phone || db.mobile }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="lbl">Vehicle:</span>
+                <span class="val">{{ db.vehicle || 'TN-37-XX-0000' }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="lbl">Active Deliveries:</span>
+                <span class="val count-badge">{{ db.activeOrders || 0 }} Active</span>
+              </div>
             </div>
-          </td>
-          <td>{{ o.items_count || (o.items ? o.items.length : 1) }} items</td>
-          <td><span class="amt-val">₹ {{ o.amount || o.orderTotal }}</span></td>
-          <td>
-            <select class="status-select" [value]="o.status" (change)="updateOrderStatus(o, $event)">
-              <option value="PLACED">PLACED</option>
-              <option value="PACKED">PACKED</option>
-              <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
-              <option value="DELIVERED">DELIVERED</option>
-              <option value="CANCELLED">CANCELLED</option>
-            </select>
-          </td>
-          <td>
-            <select class="delivery-select" [value]="o.assigned_to || o.assignedTo || ''" (change)="assignDeliveryBoy(o, $event)">
-              <option value="">Unassigned</option>
-              <option *ngFor="let db of deliveryBoys" [value]="db.name">
-                {{ db.name }} ({{ db.zone }})
-              </option>
-            </select>
-          </td>
-        </tr>
-        <tr *ngIf="filteredOrders.length === 0">
-          <td colspan="7" class="empty-cell">No orders found matching status {{ statusFilter }}.</td>
-        </tr>
-      </tbody>
-    </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-primary" (click)="closePartnersModal()">Close</button>
+      </div>
+    </div>
   </div>
 </div>

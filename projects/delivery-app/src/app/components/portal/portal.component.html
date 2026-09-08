@@ -1,0 +1,412 @@
+<div class="portal-wrapper">
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-content">
+      <div class="brand-badge">
+        <span class="material-icons-round brand-icon">local_shipping</span>
+        <div class="brand-text">
+          <span class="brand-name">Thinkspot</span>
+          <span class="app-tag">Delivery Partner Portal</span>
+        </div>
+      </div>
+
+      <div class="partner-meta" *ngIf="partner">
+        <div class="partner-avatar">
+          <span class="material-icons-round">account_circle</span>
+        </div>
+        <div class="partner-details">
+          <span class="partner-name">{{ partner.name }}</span>
+          <span class="partner-zone">{{ partner.zone || 'Zone Assigned' }} &bull; {{ partner.phone }}</span>
+        </div>
+        <button type="button" class="logout-btn" (click)="logout()" title="Logout">
+          <span class="material-icons-round">logout</span>
+          <span class="logout-label">Logout</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Portal Content -->
+  <main class="main-body">
+    <!-- Success / Info Toast -->
+    <div *ngIf="successToast" class="toast-banner">
+      <span class="material-icons-round">check_circle</span>
+      <span>{{ successToast }}</span>
+    </div>
+
+    <!-- Error Banner -->
+    <div *ngIf="errorMessage" class="error-banner">
+      <span class="material-icons-round">error</span>
+      <span>{{ errorMessage }}</span>
+    </div>
+
+    <!-- Date Navigation & Controls -->
+    <div class="date-bar">
+      <div class="date-nav">
+        <button type="button" class="date-btn" (click)="changeDate(-1)" title="Previous Day">
+          <span class="material-icons-round">chevron_left</span>
+        </button>
+        <div class="date-display">
+          <span class="material-icons-round calendar-icon">event</span>
+          <input
+            type="date"
+            class="date-input"
+            [value]="selectedDate"
+            (change)="onDateChange($event)"
+          />
+        </div>
+        <button type="button" class="date-btn" (click)="changeDate(1)" title="Next Day">
+          <span class="material-icons-round">chevron_right</span>
+        </button>
+        <button type="button" class="today-btn" (click)="setToday()">
+          Today
+        </button>
+      </div>
+
+      <div class="date-actions">
+        <button type="button" class="refresh-btn" (click)="loadOrders()" [disabled]="loading" title="Refresh Orders">
+          <span class="material-icons-round" [class.spin]="loading">sync</span>
+          <span class="btn-text">Refresh</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Metric Summary Cards -->
+    <div class="metrics-grid">
+      <div class="metric-card all" (click)="selectedTab = 'all'" [class.active]="selectedTab === 'all'">
+        <div class="metric-icon">
+          <span class="material-icons-round">inventory_2</span>
+        </div>
+        <div class="metric-data">
+          <span class="metric-num">{{ totalOrdersCount }}</span>
+          <span class="metric-label">Total Assigned</span>
+        </div>
+      </div>
+
+      <div class="metric-card packed" (click)="selectedTab = 'packed'" [class.active]="selectedTab === 'packed'">
+        <div class="metric-icon">
+          <span class="material-icons-round">schedule</span>
+        </div>
+        <div class="metric-data">
+          <span class="metric-num">{{ toDeliverCount }}</span>
+          <span class="metric-label">To Deliver</span>
+        </div>
+      </div>
+
+      <div class="metric-card delivered" (click)="selectedTab = 'delivered'" [class.active]="selectedTab === 'delivered'">
+        <div class="metric-icon">
+          <span class="material-icons-round">task_alt</span>
+        </div>
+        <div class="metric-data">
+          <span class="metric-num">{{ deliveredCount }}</span>
+          <span class="metric-label">Delivered</span>
+        </div>
+      </div>
+
+      <div class="metric-card undelivered" (click)="selectedTab = 'undelivered'" [class.active]="selectedTab === 'undelivered'">
+        <div class="metric-icon">
+          <span class="material-icons-round">report_problem</span>
+        </div>
+        <div class="metric-data">
+          <span class="metric-num">{{ undeliveredCount }}</span>
+          <span class="metric-label">Undelivered</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="toolbar">
+      <div class="tabs">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedTab === 'all'"
+          (click)="selectedTab = 'all'"
+        >
+          All ({{ totalOrdersCount }})
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedTab === 'packed'"
+          (click)="selectedTab = 'packed'"
+        >
+          To Deliver ({{ toDeliverCount }})
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedTab === 'delivered'"
+          (click)="selectedTab = 'delivered'"
+        >
+          Delivered ({{ deliveredCount }})
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedTab === 'undelivered'"
+          (click)="selectedTab = 'undelivered'"
+        >
+          Undelivered ({{ undeliveredCount }})
+        </button>
+      </div>
+
+      <div class="search-box">
+        <span class="material-icons-round search-icon">search</span>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Search by Order #, Customer, Phone, Address..."
+        />
+        <button *ngIf="searchQuery" type="button" class="clear-btn" (click)="searchQuery = ''">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Orders Loading State -->
+    <div *ngIf="loading" class="state-container">
+      <div class="spinner-large"></div>
+      <p>Fetching assigned orders...</p>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && filteredOrders.length === 0" class="empty-state">
+      <div class="empty-icon-wrap">
+        <span class="material-icons-round">local_shipping</span>
+      </div>
+      <h3>No Assigned Orders Found</h3>
+      <p *ngIf="orders.length === 0">
+        You have no assigned orders for <strong>{{ selectedDate }}</strong>.
+      </p>
+      <p *ngIf="orders.length > 0">
+        No orders match your filter criteria or search keyword.
+      </p>
+    </div>
+
+    <!-- Order List -->
+    <div *ngIf="!loading && filteredOrders.length > 0" class="orders-list">
+      <div
+        *ngFor="let order of filteredOrders"
+        class="order-card"
+        [class.status-delivered]="order.delivery_category === 'delivered'"
+        [class.status-undelivered]="order.delivery_category === 'undelivered'"
+      >
+        <!-- Card Header -->
+        <div class="order-header" (click)="toggleExpand(order)">
+          <div class="header-left">
+            <div class="order-id-badge">
+              <span class="order-id">#{{ order.order_id }}</span>
+              <span class="payment-badge" [class.cod]="order.payment_type === 'COD'">
+                {{ order.payment_type || 'Paid' }}
+              </span>
+            </div>
+            <div class="order-time">
+              <span>{{ order.delivery_mode || 'Leave at door' }}</span>
+              <span class="bullet">&bull;</span>
+              <span>{{ order.items.length }} Items</span>
+            </div>
+          </div>
+
+          <div class="header-right">
+            <span
+              class="status-pill"
+              [class.pill-delivered]="order.delivery_category === 'delivered'"
+              [class.pill-undelivered]="order.delivery_category === 'undelivered'"
+              [class.pill-packed]="order.delivery_category === 'packed'"
+            >
+              {{ order.delivery_category | uppercase }}
+            </span>
+            <span class="material-icons-round expand-arrow" [class.rotated]="order.expanded">
+              expand_more
+            </span>
+          </div>
+        </div>
+
+        <!-- Card Body (Collapsible) -->
+        <div class="order-body" *ngIf="order.expanded">
+          <!-- Customer & Address Info -->
+          <div class="info-section">
+            <div class="info-row">
+              <div class="cust-info">
+                <div class="cust-name-row">
+                  <span class="material-icons-round info-icon">person</span>
+                  <span class="cust-name">{{ order.customer_name }}</span>
+                </div>
+                <div class="cust-phone-row">
+                  <span class="material-icons-round info-icon">phone</span>
+                  <a [href]="'tel:' + order.phone" class="phone-link">
+                    {{ order.phone }}
+                  </a>
+                  <a [href]="'tel:' + order.phone" class="call-btn" title="Call Customer">
+                    <span class="material-icons-round">call</span>
+                    <span>Call</span>
+                  </a>
+                </div>
+              </div>
+
+              <div class="address-box">
+                <div class="addr-header">
+                  <span class="material-icons-round info-icon">location_on</span>
+                  <span class="addr-title">Delivery Address</span>
+                  <a
+                    [href]="getGoogleMapsUrl(order.address_text)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="map-btn"
+                  >
+                    <span class="material-icons-round">directions</span>
+                    <span>Map</span>
+                  </a>
+                </div>
+                <div class="addr-text">{{ order.address_text }}</div>
+                <div *ngIf="order.delivery_inst" class="delivery-notes">
+                  <span class="material-icons-round note-icon">sticky_note_2</span>
+                  <span><strong>Note:</strong> {{ order.delivery_inst }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Items Checklist Section -->
+          <div class="items-section">
+            <div class="section-title-row">
+              <span class="section-title">Items Checklist ({{ order.items.length }})</span>
+              <span class="checklist-tip">Tap checkbox to mark items packed/verified</span>
+            </div>
+
+            <div class="items-list">
+              <div
+                *ngFor="let item of order.items"
+                class="item-row"
+                [class.item-checked]="item.is_packed"
+                (click)="toggleItemPacked(order, item, $event)"
+              >
+                <div class="item-check">
+                  <input
+                    type="checkbox"
+                    [checked]="item.is_packed"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleItemPacked(order, item, $event)"
+                  />
+                </div>
+                <div class="item-thumb">
+                  <img [src]="item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="item" />
+                </div>
+                <div class="item-details">
+                  <div class="item-name">{{ item.name }}</div>
+                  <div class="item-meta">
+                    <span class="item-qty">Qty: <strong>{{ item.quantity }}</strong></span>
+                    <span class="bullet">&bull;</span>
+                    <span class="item-weight">{{ item.weight }}</span>
+                    <span *ngIf="item.is_subscription" class="sub-badge">Subscription</span>
+                  </div>
+                </div>
+                <div class="item-status-tag" [class.packed]="item.is_packed">
+                  {{ item.is_packed ? 'Packed' : 'Pending' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status / Reason Banner if already delivered or undelivered -->
+          <div *ngIf="order.delivery_category === 'delivered'" class="delivered-banner">
+            <span class="material-icons-round">check_circle</span>
+            <div>
+              <strong>Order Delivered</strong>
+              <span *ngIf="order.delivered_at" class="del-time">
+                &bull; {{ order.delivered_at | date:'medium' }}
+              </span>
+            </div>
+          </div>
+
+          <div *ngIf="order.delivery_category === 'undelivered'" class="undelivered-banner">
+            <span class="material-icons-round">error</span>
+            <div>
+              <strong>Undelivered:</strong> {{ order.undelivered_reason || 'Customer unavailable' }}
+            </div>
+          </div>
+
+          <!-- Partner Action Controls (Delivered / Undelivered Only - No Refund or Cancel) -->
+          <div class="card-actions" *ngIf="order.delivery_category !== 'delivered'">
+            <button
+              type="button"
+              class="action-btn undelivered-btn"
+              [disabled]="actionLoading[order.order_id]"
+              (click)="openUndeliveredModal(order)"
+            >
+              <span class="material-icons-round">report_problem</span>
+              <span>Report Undelivered</span>
+            </button>
+
+            <button
+              type="button"
+              class="action-btn deliver-btn"
+              [disabled]="actionLoading[order.order_id]"
+              (click)="markDelivered(order)"
+            >
+              <span *ngIf="!actionLoading[order.order_id]" class="material-icons-round">check_circle</span>
+              <span *ngIf="actionLoading[order.order_id]" class="btn-spinner"></span>
+              <span>Mark as Delivered</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Report Undelivered Modal -->
+  <div *ngIf="showUndeliveredModal" class="modal-backdrop" (click)="closeUndeliveredModal()">
+    <div class="modal-dialog" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="material-icons-round modal-icon">report_problem</span>
+          <h3 class="modal-title">Report Undelivered Order</h3>
+        </div>
+        <button type="button" class="close-btn" (click)="closeUndeliveredModal()">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body" *ngIf="activeOrderForUndelivered">
+        <p class="modal-order-desc">
+          Order <strong>#{{ activeOrderForUndelivered.order_id }}</strong> for <strong>{{ activeOrderForUndelivered.customer_name }}</strong>
+        </p>
+
+        <label class="reason-label">Select reason for non-delivery:</label>
+        <div class="reasons-list">
+          <label *ngFor="let reason of undeliveredReasons" class="reason-radio">
+            <input
+              type="radio"
+              name="undeliveredReason"
+              [value]="reason"
+              [(ngModel)]="selectedReason"
+            />
+            <span class="radio-text">{{ reason }}</span>
+          </label>
+        </div>
+
+        <div *ngIf="selectedReason === 'Other / Custom Reason'" class="custom-reason-box">
+          <textarea
+            [(ngModel)]="customReason"
+            placeholder="Please specify why delivery could not be completed..."
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancel" (click)="closeUndeliveredModal()">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn-confirm-undelivered"
+          (click)="confirmUndelivered()"
+        >
+          Submit Undelivered Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

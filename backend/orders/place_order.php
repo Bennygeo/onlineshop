@@ -41,7 +41,7 @@ try {
 
 // Calculate total order amount for balance verification
 $finalTotal = $total_amount;
-if (!empty($items) && is_array($items)) {
+if ($finalTotal <= 0 && !empty($items) && is_array($items)) {
     $calcTotal = 0;
     foreach ($items as $item) {
         $qty = isset($item['qty']) ? (int)$item['qty'] : (isset($item['quantity']) ? (int)$item['quantity'] : (isset($item['units']) ? (int)$item['units'] : 1));
@@ -100,6 +100,18 @@ if ($mobile) {
 
 try {
     $pdo->beginTransaction();
+
+    // If address is empty or not provided, fallback to default address in user_addresses
+    if (empty($address_json) || $address_json === '{}' || $address_json === 'null' || $address_json === '""') {
+        try {
+            $addrStmt = $pdo->prepare("SELECT * FROM user_addresses WHERE mobile = ? ORDER BY is_default DESC, id DESC LIMIT 1");
+            $addrStmt->execute([$mobile]);
+            $defaultAddr = $addrStmt->fetch(PDO::FETCH_ASSOC);
+            if ($defaultAddr) {
+                $address_json = json_encode($defaultAddr);
+            }
+        } catch (Exception $addrEx) {}
+    }
 
     $delivery_inst = isset($details['delivery_inst']) ? $details['delivery_inst'] : (isset($details['instructions']) ? $details['instructions'] : '');
     $delivery_mode = isset($details['delivery_mode']) ? (string)$details['delivery_mode'] : '0';
@@ -161,13 +173,14 @@ try {
             }
         }
 
-        if ($calculatedOrderTotal > 0) {
+        if ($calculatedOrderTotal > 0 && $total_amount <= 0) {
             $total_amount = $calculatedOrderTotal;
             $updTotal = $pdo->prepare("UPDATE orders SET total_amount = ? WHERE order_id = ?");
             $updTotal->execute([$calculatedOrderTotal, $order_id]);
         }
     }
 
+    $walletId = null;
     // Insert wallet debit transaction
     if ($mobile && $total_amount > 0) {
         $walletStmt = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description, status) VALUES (?, ?, 'DEBIT', ?, 'placed')");
@@ -176,10 +189,24 @@ try {
             $total_amount,
             "Order #{$order_id} placed"
         ]);
+        $walletId = $pdo->lastInsertId();
     }
 
     $pdo->commit();
-    sendJson(['status' => 'SUCCESS', 'order_id' => $order_id, 'amount' => $total_amount]);
+
+    $newWalletBalance = isset($availableWalletBalance) ? max(0, $availableWalletBalance - $total_amount) : 0;
+
+    sendJson([
+        'status' => 'SUCCESS',
+        'order_id' => $order_id,
+        'amount' => $total_amount,
+        'total' => $newWalletBalance,
+        'type' => 'Debit',
+        'description' => "Order #{$order_id} placed",
+        'created_at' => date('Y-m-d H:i:s'),
+        'timestamp' => time() * 1000,
+        'trxn_id' => 'TXN_' . ($walletId ?: rand(100, 999))
+    ]);
 } catch (Exception $e) {
     if ($pdo && $pdo->inTransaction()) {
         $pdo->rollBack();

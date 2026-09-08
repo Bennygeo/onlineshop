@@ -108,47 +108,119 @@
             }
         }
 
-        .past-order-label {
-            font-size: $font-m;
-            margin: 54px 0 32px 0;
-        }
+        .past-orders-section {
+            margin-top: 36px;
 
-        .order-info {
-            margin-top: 24px;
+            .past-order-label {
+                font-size: 16px;
+                font-weight: 700;
+                color: #1e293b;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
 
-            .clearfix {
-                .contents {
-                    .order-id {
-                        color: $order-id;
-                        font-size: $font-l;
+            .past-order-card {
+                @include shadow;
+                background: #ffffff;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 20px;
+                border: 1px solid #f1f5f9;
+                box-sizing: border-box;
+
+                .past-order-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+
+                    .order-meta {
+                        .meta-date {
+                            font-size: 13px;
+                            color: #64748b;
+                            font-weight: 500;
+                        }
+                        .meta-id {
+                            font-size: 15px;
+                            font-weight: 700;
+                            color: #0f172a;
+                            margin-top: 2px;
+                        }
                     }
 
-                    .float-start {
-                        .label {
-                            font-size: $font-m;
-                            color: $sub-color;
-                            margin-top: 9px;
+                    .order-status-price {
+                        text-align: right;
+
+                        .status-badge {
+                            display: inline-block;
+                            padding: 4px 12px;
+                            border-radius: 20px;
+                            font-size: 12px;
+                            font-weight: 600;
+
+                            &.delivered {
+                                background-color: #dcfce7;
+                                color: #15803d;
+                            }
+                            &.undelivered {
+                                background-color: #fee2e2;
+                                color: #b91c1c;
+                            }
+                            &.cancelled {
+                                background-color: #f1f5f9;
+                                color: #64748b;
+                            }
                         }
 
-                        .info {
-                            font-size: $font-xxxl;
-                            text-align: right;
+                        .total-price {
+                            font-size: 16px;
                             font-weight: 700;
-                            margin-top: 9px;
+                            color: #0f172a;
+                            margin-top: 4px;
                         }
                     }
+                }
 
-                    .float-end {
-                        .label {
-                            font-size: $font-m;
-                            color: $sub-color;
-                            margin-top: 9px;
+                .past-order-address {
+                    margin-top: 10px;
+                    font-size: 13px;
+                    color: #475569;
+                    line-height: 1.4;
+                }
+
+                .past-order-actions {
+                    display: flex;
+                    gap: 12px;
+                    margin-top: 14px;
+                    padding-top: 12px;
+                    border-top: 1px solid #f1f5f9;
+
+                    .action-btn {
+                        flex: 1;
+                        text-align: center;
+                        height: 38px;
+                        line-height: 38px;
+                        font-size: 13px;
+                        font-weight: 600;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        user-select: none;
+                        transition: opacity 0.2s ease;
+
+                        &:hover {
+                            opacity: 0.9;
                         }
-                        .info {
-                            font-size: $font-xxxl;
-                            text-align: right;
-                            font-weight: 700;
-                            margin-top: 9px;
+
+                        &.secondary {
+                            background-color: #f1f5f9;
+                            color: #334155;
+                            border: 1px solid #e2e8f0;
+                        }
+
+                        &.primary {
+                            background-color: #2eb9ac;
+                            color: #ffffff;
                         }
                     }
                 }
