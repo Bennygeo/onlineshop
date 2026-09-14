@@ -99,16 +99,16 @@ try {
         $orderItemQty = max(1, (int)($item['quantity'] ?? 1));
         $totalUnits = $orderItemQty * $daysCount;
         if ($totalUnits > 0 && $rawPrice > 0) {
-            $unitPrice = round($rawPrice / $totalUnits, 2);
+            $unitPrice = $rawPrice / $totalUnits;
         } else {
             $unitPrice = $rawPrice;
         }
 
-        $refundAmount = $unitPrice * $missingQty;
+        $refundAmount = round($unitPrice * $missingQty);
 
         // Update item in order_items
         $currMissing = (int)($item['missing_qty'] ?? 0) + $missingQty;
-        $currRefund = floatval($item['refund_amount'] ?? 0) + $refundAmount;
+        $currRefund = round(floatval($item['refund_amount'] ?? 0) + $refundAmount);
 
         $stmtUpdItem = $pdo->prepare("UPDATE order_items SET item_status = 'missing', missing_qty = ?, refund_amount = ? WHERE id = ?");
         $stmtUpdItem->execute([$currMissing, $currRefund, $itemId]);
@@ -145,7 +145,7 @@ try {
         $stmtWallet->execute([$customerMobile, $refundAmount, $refundDesc]);
 
         // Update order header refund accumulation and notes
-        $newOrderRefundAmt = floatval($order['refund_amount'] ?? 0) + $refundAmount;
+        $newOrderRefundAmt = round(floatval($order['refund_amount'] ?? 0) + $refundAmount);
         $existingNotes = !empty($order['refund_notes']) ? $order['refund_notes'] . "; " : "";
         $newOrderNotes = $existingNotes . "$missingQty x $productName missing (₹$refundAmount refunded to wallet)";
 
@@ -154,7 +154,7 @@ try {
 
         sendJson([
             'status' => 'SUCCESS',
-            'message' => "₹" . number_format($refundAmount, 2) . " refunded to customer wallet and ledger adjusted.",
+            'message' => "₹" . number_format($refundAmount, 0) . " refunded to customer wallet and ledger adjusted.",
             'refund_amount' => $refundAmount,
             'customer_mobile' => $customerMobile,
             'is_subscription' => $isSub
@@ -234,7 +234,7 @@ try {
             $ord = $stmtOrd->fetch();
 
             if ($ord && floatval($ord['total_amount']) > 0) {
-                $refundAmt = floatval($ord['total_amount']);
+                $refundAmt = round(floatval($ord['total_amount']));
                 $stmtWallet = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description, status) VALUES (?, ?, 'CREDIT', ?, 'authorized')");
                 $stmtWallet->execute([$ord['mobile'], $refundAmt, "Full refund for undelivered Order #$orderId ($reason)"]);
 

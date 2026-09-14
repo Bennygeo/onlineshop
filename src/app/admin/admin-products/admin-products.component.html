@@ -4,10 +4,16 @@
       <h2>Product Catalog Admin</h2>
       <p>Add new products, update prices, set units, manage categories and stock availability.</p>
     </div>
-    <button class="add-btn" (click)="openAddModal()">
-      <span class="material-icons">add</span>
-      <span>Add New Product</span>
-    </button>
+    <div class="header-actions-group">
+      <button class="category-btn" (click)="openCategoryModal()">
+        <span class="material-icons">category</span>
+        <span>Manage Categories</span>
+      </button>
+      <button class="add-btn" (click)="openAddModal()">
+        <span class="material-icons">add</span>
+        <span>Add New Product</span>
+      </button>
+    </div>
   </div>
 
   <!-- Filter Controls -->
@@ -20,8 +26,10 @@
     <div class="category-filter">
       <label>Category:</label>
       <select [(ngModel)]="selectedCategory" (change)="filterProducts()">
-        <option value="All">All Categories</option>
-        <option *ngFor="let c of categoryOptions" [value]="c.key">{{ c.label }}</option>
+        <option value="All">All Categories ({{ products.length }})</option>
+        <option *ngFor="let c of categoryOptions" [value]="c.key">
+          {{ c.label }} {{ c.product_count !== undefined ? '(' + c.product_count + ')' : '' }}
+        </option>
       </select>
     </div>
   </div>
@@ -76,6 +84,97 @@
     </table>
   </div>
 
+  <!-- Category Management Modal -->
+  <div class="modal-overlay" *ngIf="isCategoryModalOpen" (click)="closeCategoryModal()">
+    <div class="modal-card category-manager-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="material-icons modal-title-icon">category</span>
+          <div>
+            <h3>Manage Product Categories</h3>
+            <p class="modal-sub">Add new categories or delete obsolete categories from the store</p>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeCategoryModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Add New Category Form Box -->
+        <div class="add-category-box">
+          <h4 class="box-title">
+            <span class="material-icons">add_circle</span> Add New Category
+          </h4>
+          <div class="add-category-grid">
+            <div class="form-group">
+              <label>Category Display Name *</label>
+              <input type="text" [(ngModel)]="newCategory.label" placeholder="e.g. Organic Millet, Cold Beverages" />
+            </div>
+
+            <div class="form-group">
+              <label>Category Key / Code (Optional)</label>
+              <input type="text" [(ngModel)]="newCategory.key" placeholder="e.g. Organicmillet (Auto-generated if empty)" />
+            </div>
+
+            <div class="form-group full-width">
+              <label>Icon / Image URL (Optional)</label>
+              <input type="text" [(ngModel)]="newCategory.img_url" placeholder="assets/categories/Thinkspot_veggiesIcon.png" />
+            </div>
+          </div>
+
+          <div class="add-cat-btn-row">
+            <button class="btn-add-cat" (click)="submitAddCategory()">
+              <span class="material-icons">check</span>
+              <span>Create Category</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Existing Categories List Section -->
+        <div class="existing-categories-section">
+          <div class="section-title-row">
+            <h4>Existing Categories ({{ categoryOptions.length }})</h4>
+            <div class="cat-search-wrap">
+              <span class="material-icons">search</span>
+              <input type="text" placeholder="Filter categories..." [(ngModel)]="categorySearchQuery" />
+            </div>
+          </div>
+
+          <div class="categories-list-container">
+            <div class="category-item-card" *ngFor="let cat of getFilteredCategoriesList()">
+              <div class="cat-info-left">
+                <img [src]="cat.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ cat.label }}" class="cat-icon-thumb" />
+                <div class="cat-text">
+                  <span class="cat-title">{{ cat.label }}</span>
+                  <span class="cat-key-tag">Key: {{ cat.key }}</span>
+                </div>
+              </div>
+
+              <div class="cat-actions-right">
+                <span class="product-count-chip" [class.has-products]="cat.product_count && cat.product_count > 0">
+                  <span class="material-icons">inventory_2</span>
+                  <span>{{ cat.product_count || 0 }} products</span>
+                </span>
+
+                <button class="btn-delete-cat" (click)="deleteCategory(cat)" title="Delete category {{ cat.label }}">
+                  <span class="material-icons">delete_outline</span>
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="no-cat-found" *ngIf="getFilteredCategoriesList().length === 0">
+              No categories found matching "{{ categorySearchQuery }}".
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-primary" (click)="closeCategoryModal()">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Add Product Modal -->
   <div class="modal-overlay" *ngIf="isAddModalOpen" (click)="closeAddModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
@@ -96,7 +195,10 @@
         </div>
 
         <div class="form-group">
-          <label>Category *</label>
+          <div class="label-with-action">
+            <label>Category *</label>
+            <a href="javascript:void(0)" class="quick-link" (click)="openCategoryModal()">+ Manage</a>
+          </div>
           <select [(ngModel)]="newProduct.cat">
             <option *ngFor="let c of categoryOptions" [value]="c.key">{{ c.label }}</option>
           </select>
@@ -162,7 +264,10 @@
         </div>
 
         <div class="form-group">
-          <label>Category *</label>
+          <div class="label-with-action">
+            <label>Category *</label>
+            <a href="javascript:void(0)" class="quick-link" (click)="openCategoryModal()">+ Manage</a>
+          </div>
           <select [(ngModel)]="editingProduct.cat">
             <option *ngFor="let c of categoryOptions" [value]="c.key">{{ c.label }}</option>
           </select>
@@ -216,3 +321,4 @@
     </div>
   </div>
 </div>
+

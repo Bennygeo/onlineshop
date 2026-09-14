@@ -1,18 +1,21 @@
 .dashboard-page {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
 }
 
 .page-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 
   h2 {
     font-size: 26px;
     font-weight: 800;
     margin: 0 0 4px 0;
+    letter-spacing: -0.3px;
   }
   p {
     font-size: 14px;
@@ -33,11 +36,16 @@
     color: #0f172a;
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
 
     &:hover {
       background: #f8fafc;
       border-color: #2eb9ac;
       color: #2eb9ac;
+    }
+
+    &:active {
+      transform: scale(0.97);
     }
   }
 }
@@ -47,7 +55,7 @@
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid #e2e8f0;
-  padding: 28px;
+  padding: 24px;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
 }
 
@@ -55,7 +63,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 12px;
 
@@ -86,17 +94,17 @@
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
 .kpi-card {
   background: #f8fafc;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  padding: 22px;
+  padding: 20px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
@@ -105,8 +113,8 @@
   }
 
   .kpi-icon {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     border-radius: 14px;
     display: flex;
     align-items: center;
@@ -114,7 +122,7 @@
     flex-shrink: 0;
 
     .material-icons {
-      font-size: 26px;
+      font-size: 24px;
     }
   }
 
@@ -126,6 +134,7 @@
   .kpi-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 
     .kpi-label {
       font-size: 11px;
@@ -133,16 +142,26 @@
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .kpi-val {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 800;
       color: #0f172a;
       margin: 3px 0 2px 0;
+      letter-spacing: -0.3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .kpi-sub {
       font-size: 11px;
       color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 }
@@ -182,17 +201,17 @@
 .expense-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
 .expense-card {
   background: #f8fafc;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  padding: 20px;
+  padding: 18px;
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: 14px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
@@ -201,16 +220,16 @@
   }
 
   .expense-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 
     .material-icons {
-      font-size: 24px;
+      font-size: 22px;
     }
   }
 
@@ -231,7 +250,10 @@
       color: #64748b;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 }
@@ -239,21 +261,29 @@
 .expense-val-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 8px;
 
   .expense-val {
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 800;
     color: #0f172a;
+    letter-spacing: -0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .edit-expense-btn {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
+    padding: 6px;
     border-radius: 8px;
     color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s ease;
 
     &:hover {
@@ -270,14 +300,17 @@
 .expense-edit-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: wrap;
 
   .expense-input {
-    width: 100px;
-    padding: 6px 10px;
+    flex: 1;
+    min-width: 70px;
+    width: 100%;
+    padding: 6px 8px;
     border: 2px solid #2eb9ac;
     border-radius: 10px;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     color: #0f172a;
     outline: none;
@@ -297,6 +330,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    flex-shrink: 0;
 
     .material-icons {
       font-size: 18px;
@@ -326,15 +360,15 @@
 .status-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 .status-card {
-  padding: 20px;
+  padding: 16px 18px;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   transition: transform 0.2s ease;
 
   &:hover {
@@ -342,14 +376,15 @@
   }
 
   .status-title {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
   .status-count {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 800;
+    letter-spacing: -0.3px;
   }
 
   &.placed { background: #eff6ff; color: #1d4ed8; }
@@ -357,4 +392,159 @@
   &.out { background: #fff7ed; color: #c2410c; }
   &.delivered { background: #f0fdf4; color: #15803d; }
   &.cancelled { background: #fef2f2; color: #b91c1c; }
+}
+
+/* RESPONSIVE STYLES FOR MOBILE & TABLETS */
+@media (max-width: 768px) {
+  .dashboard-page {
+    gap: 18px;
+  }
+
+  .page-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    h2 {
+      font-size: 20px;
+    }
+    p {
+      font-size: 13px;
+    }
+
+    .refresh-btn {
+      width: 100%;
+      justify-content: center;
+      padding: 8px 14px;
+      font-size: 13px;
+    }
+  }
+
+  .section-block {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .section-header {
+    margin-bottom: 14px;
+    gap: 8px;
+
+    h3 {
+      font-size: 16px;
+      .material-icons {
+        font-size: 20px;
+      }
+    }
+
+    .date-tag {
+      font-size: 11px;
+      padding: 4px 10px;
+    }
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .kpi-card {
+    padding: 12px;
+    border-radius: 12px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+
+    .kpi-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      .material-icons {
+        font-size: 20px;
+      }
+    }
+
+    .kpi-info {
+      width: 100%;
+
+      .kpi-label {
+        font-size: 10px;
+      }
+      .kpi-val {
+        font-size: 17px;
+        margin: 2px 0 1px 0;
+      }
+      .kpi-sub {
+        font-size: 10px;
+      }
+    }
+  }
+
+  .expense-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .expense-card {
+    padding: 12px;
+    border-radius: 12px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+
+    .expense-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      .material-icons {
+        font-size: 18px;
+      }
+    }
+
+    .expense-body {
+      width: 100%;
+
+      .expense-label {
+        font-size: 10px;
+        margin-bottom: 2px;
+      }
+    }
+  }
+
+  .expense-val-row {
+    .expense-val {
+      font-size: 16px;
+    }
+  }
+
+  .expense-summary-tags {
+    gap: 6px;
+
+    .expense-tag, .profit-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+    }
+  }
+
+  .status-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .status-card {
+    padding: 12px;
+    border-radius: 12px;
+
+    .status-title {
+      font-size: 10px;
+    }
+    .status-count {
+      font-size: 20px;
+    }
+  }
+}
+
+@media (max-width: 380px) {
+  .kpi-grid, .expense-grid {
+    grid-template-columns: 1fr;
+  }
 }

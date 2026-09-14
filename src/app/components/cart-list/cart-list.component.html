@@ -1,5 +1,5 @@
 <div class="container">
-    <div id="view-cont" *ngIf="orderInformation.totalItemsCount==0 && fetchUserBagFlg && !cartService.orderPlacedFlag">
+    <div id="view-cont" *ngIf="orderInformation?.totalItemsCount==0 && fetchUserBagFlg && !cartService.orderPlacedFlag">
         <div class="item-cont ">
             <img [src]="'assets/cart/EmptyCart.png'" />
             <p class="empty">Your bag is empty</p>
@@ -11,7 +11,7 @@
         </div>
     </div>
 
-    <div *ngIf="orderInformation.totalItemsCount > 0">
+    <div *ngIf="orderInformation?.totalItemsCount > 0">
         <div class="col-12 row">
             <div *ngFor="let dte of cartProductsDateWise|keyvalue; let ind=index;">
                 <div class="cart-cont">
@@ -108,6 +108,43 @@
             </div>
         </div>
 
+        <div class="container payment-method-container">
+            <div class="title">Choose Payment Method</div>
+            <div class="payment-method-options">
+                <!-- Online / Wallet Option -->
+                <div class="payment-card" [class.active]="selectedPaymentMethod === 'ONLINE'" (click)="selectPaymentMethod('ONLINE')">
+                    <div class="payment-radio">
+                        <span class="radio-dot" *ngIf="selectedPaymentMethod === 'ONLINE'"></span>
+                    </div>
+                    <div class="payment-icon online-icon">
+                        <span class="material-icons">account_balance_wallet</span>
+                    </div>
+                    <div class="payment-details">
+                        <div class="payment-title">Wallet & Online Payment</div>
+                        <div class="payment-sub">
+                            Pay via Wallet, UPI, Cards or NetBanking
+                            <span class="wallet-pill" *ngIf="(loginS.user?.wallet || 0) > 0">₹{{(loginS.user?.wallet || 0) | number}} in Wallet</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cash on Delivery (COD) Option -->
+                <div class="payment-card" [class.active]="selectedPaymentMethod === 'COD'" (click)="selectPaymentMethod('COD')">
+                    <div class="payment-radio">
+                        <span class="radio-dot" *ngIf="selectedPaymentMethod === 'COD'"></span>
+                    </div>
+                    <div class="payment-icon cod-icon">
+                        <span class="material-icons">payments</span>
+                    </div>
+                    <div class="payment-details">
+                        <div class="payment-title">Cash on Delivery (COD)</div>
+                        <div class="payment-sub">Pay in cash or UPI at your doorstep upon delivery</div>
+                    </div>
+                    <span class="cod-tag">Available</span>
+                </div>
+            </div>
+        </div>
+
         <div class="col-12 row" *ngIf="orderInformation.subTotal > 0" [@fadeInOut] style=" margin: 0 auto;">
             <div
                 style="background-color: #fff; padding: 0; padding-left: 12px; padding-right: 12px; margin-bottom: 12px;">
@@ -156,85 +193,93 @@
                             number}}</th>
                     </tr>
 
-                    <tr>
+                    <tr *ngIf="selectedPaymentMethod === 'ONLINE'">
                         <th class="tg-col1">Wallet Balance</th>
                         <th class="tg-col2">₹ {{loginS.user?.wallet | number}}</th>
                     </tr>
 
-                    <tr *ngIf="orderInformation.walletDeduction > 0">
+                    <tr *ngIf="selectedPaymentMethod === 'ONLINE' && orderInformation.walletDeduction > 0">
                         <th class="tg-col1" style="color: #0284c7; font-weight: bold;">Paid from Wallet</th>
                         <th class="tg-col2" style="color: #0284c7; font-weight: bold;">- ₹
                             {{orderInformation.walletDeduction | number}}</th>
                     </tr>
 
-                    <tr>
+                    <tr *ngIf="selectedPaymentMethod === 'ONLINE'">
                         <th class="tg-col1" style="font-size: 16px; font-weight: bolder;">Amount to be Paid</th>
                         <th class="tg-col2" style="font-size: 14px; font-weight: bolder;">₹
                             {{this.cartService.remainingToPay | number}}</th>
                     </tr>
+
+                    <tr *ngIf="selectedPaymentMethod === 'COD'">
+                        <th class="tg-col1" style="font-size: 16px; font-weight: bolder; color: #b45309;">Payment Mode</th>
+                        <th class="tg-col2" style="font-size: 14px; font-weight: bolder; color: #b45309;">Cash on Delivery</th>
+                    </tr>
+
+                    <tr *ngIf="selectedPaymentMethod === 'COD'">
+                        <th class="tg-col1" style="font-size: 16px; font-weight: bolder;">Payable at Doorstep</th>
+                        <th class="tg-col2" style="font-size: 16px; font-weight: bolder; color: #0d9488;">₹
+                            {{orderInformation.total | number}}</th>
+                    </tr>
                 </table>
             </div>
             <div class="pay-cont">
-                <button class="tnkspt_primary_btn pay-btn" *ngIf="cartService.remainingToPay === 0; else wallet_content"
-                    (click)="payAction()" style="margin-right: 0px;">
-                    Checkout
+                <!-- COD Place Order Button -->
+                <button class="tnkspt_primary_btn pay-btn cod-order-btn" *ngIf="selectedPaymentMethod === 'COD'"
+                    (click)="payAction()" [disabled]="isProcessingPayment" style="margin-right: 0px; background: linear-gradient(135deg, #0d9488, #0f766e);">
+                    <span *ngIf="!isProcessingPayment">
+                        <span class="material-icons" style="font-size: 18px; vertical-align: middle; margin-right: 6px;">local_shipping</span>
+                        Place Order (Pay ₹{{orderInformation.total | number}} on Delivery)
+                    </span>
+                    <span *ngIf="isProcessingPayment">Placing Order...</span>
                 </button>
 
-                <ng-template #wallet_content>
-                    <button class="tnkspt_primary_btn pay-btn" (click)="payAction()"
-                        style="margin-right: 0px; background-color: #28a745;">
-                        Pay ₹{{orderInformation.walletDeduction | number}} via Wallet & Place Order
+                <!-- Online / Wallet Place Order Button -->
+                <ng-container *ngIf="selectedPaymentMethod === 'ONLINE'">
+                    <button class="tnkspt_primary_btn pay-btn" *ngIf="cartService.remainingToPay === 0; else deficit_btn"
+                        (click)="payAction()" [disabled]="isProcessingPayment" style="margin-right: 0px; background-color: #28a745;">
+                        <span *ngIf="!isProcessingPayment">Place Order (Pay ₹{{orderInformation?.walletDeduction | number}} via Wallet)</span>
+                        <span *ngIf="isProcessingPayment">Placing Order...</span>
                     </button>
-                </ng-template>
+
+                    <ng-template #deficit_btn>
+                        <button class="tnkspt_primary_btn pay-btn" (click)="payAction()" [disabled]="isProcessingPayment"
+                            style="margin-right: 0px; background-color: #097e63;">
+                            <span *ngIf="!isProcessingPayment">Pay ₹{{cartService.remainingToPay | number}} & Place Order</span>
+                            <span *ngIf="isProcessingPayment">Processing...</span>
+                        </button>
+                    </ng-template>
+                </ng-container>
             </div>
         </div>
     </div>
 </div>
 
-<!-- product description -->
-<!-- <div class="popup_parent" *ngIf="deliveryInfoFlg" [@fadeInOut]>
-    <div class="popup_cont">
-
-        <div class="popup_content" style="padding-bottom: 6px;">
-            <div style="margin-top:6px; margin-bottom:6px;">Delivery charge of ₹10 applicable per delivery.</div>
-        </div>
-
-        <div style="position:relative; cursor: pointer; pointer-events: visiblePainted; background-color: #fff; z-index: 10;"
-            (click)="infoCloseAction()">
-            <div style="width: 50px;background: #eee;border-radius: 4px;margin: 0 auto; text-align: center;     height: 30px;
-            font-weight: 500;
-            line-height: 30px;
-            margin-bottom: 6px;">
-                Okay</div>
-        </div>
-    </div>
-</div> -->
-
 <div class="popup_parent" *ngIf="payFlg" [@fadeInOut]>
     <div class="popup_cont">
-        <div class="head">Add money to wallet</div>
-        <p>Would you like to add money to your wallet to make checkout proceess easier for the future?</p>
+        <div class="head">Complete Payment</div>
+        <p>Wallet balance: <b>₹{{(loginS.user?.wallet || 0) | number}}</b>.<br>Pay <b>₹{{cartService.remainingToPay | number}}</b> to complete and place your order.</p>
         <img [src]="'assets/cart/wallet.png'" />
         <div class="flex-box">
-            <div class="tnkspt_secondary_btn cancel-btn" (click)="addMoneyToWalletAction()">Add Money to wallet</div>
-            <div class="tnkspt_primary_btn view-btn" (click)="payWalletAction()">Pay
-                ₹{{this.cartService.remainingToPay}} & Checkout</div>
+            <div class="tnkspt_secondary_btn cancel-btn" (click)="addMoneyToWalletAction()">Add Custom Money</div>
+            <div class="tnkspt_primary_btn view-btn" (click)="payOnlineAction()">Pay ₹{{this.cartService.remainingToPay | number}} & Checkout</div>
+        </div>
+        <div class="modal-cod-option" (click)="payWithCODAction()">
+            <span class="material-icons" style="font-size: 18px; color: #0d9488; vertical-align: middle;">payments</span>
+            <span>Or choose <strong>Cash on Delivery (COD)</strong> to pay upon arrival &rarr;</span>
         </div>
     </div>
 </div>
-
-
 
 <div class="order-paced-cont" *ngIf="cartService.orderPlacedFlag">
     <div class="item-cont-1">
         <img [src]="'assets/general/order_placed.gif'" />
         <p class="empty">Order placed successfully. Thank You!</p>
-        <p class="order-id">Order ID: {{this.cartService.orderID}}</p>
+        <p class="order-id">Order ID: {{cartService.lastPlacedOrderId || cartService.orderID}}</p>
         <p class="delivery-info">Your order will be delivered on
             <b>{{this.cartService.deliveryDate|date:'EEEE d MMMM'}}</b> between 8:00 am - 10:00 am
         </p>
         <div class="flex-box">
-            <div class="tnkspt_secondary_btn cancel-btn" routerLink="/home/orders">Goto my orders</div>
+            <div class="tnkspt_secondary_btn cancel-btn" routerLink="/home/orders" (click)="cartService.orderPlacedFlag = false">Goto my orders</div>
             <div class="tnkspt_primary_btn view-btn" (click)="shopNowAction()">Browse products</div>
         </div>
     </div>

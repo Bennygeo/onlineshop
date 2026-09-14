@@ -97,7 +97,7 @@ export class User {
     private ledgerAmt: number = 0;
 
     public set wallet(amt: number) {
-        this.walletAmt = amt;
+        this.walletAmt = Math.round(Number(amt) || 0);
     }
 
     public get wallet(): number {
@@ -105,7 +105,7 @@ export class User {
     }
 
     public set ledger(amt: number) {
-        this.ledgerAmt = amt;
+        this.ledgerAmt = Math.round(Number(amt) || 0);
     }
 
     public get ledger(): number {

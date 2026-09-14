@@ -258,7 +258,7 @@ export class SubscriptionViewComponent implements OnInit {
           }
 
           const unitPrice = this.getUnitPrice(this.activeSubsData);
-          const adjAmount = Math.round(unitPrice * Math.abs(totalCount) * 100) / 100;
+          const adjAmount = Math.round(unitPrice * Math.abs(totalCount));
 
           this.alert.price = adjAmount;
           this.alert.walletType = (totalCount < 0) ? WalletType.CREDIT : WalletType.DEBIT;
@@ -529,7 +529,7 @@ export class SubscriptionViewComponent implements OnInit {
     for (let key in data) {
       totalCount += Number(data[key].diff);
     }
-    const totalAmt = Math.round(unitPrice * Math.abs(totalCount) * 100) / 100;
+    const totalAmt = Math.round(unitPrice * Math.abs(totalCount));
     const userWallet = Number(this.user.wallet || 0);
 
     if (totalCount !== 0) {
@@ -550,7 +550,7 @@ export class SubscriptionViewComponent implements OnInit {
           this.alert.msg = `<b>₹${totalAmt}</b> will be debited from your wallet.`;
         } else {
           this.alert.type = "type1";
-          const neededAmount = Math.round(Math.abs(totalAmt - userWallet) * 100) / 100;
+          const neededAmount = Math.round(Math.abs(totalAmt - userWallet));
           this.alert.price = neededAmount;
           this.alert.msg = `Please add <b>₹${neededAmount}</b> to wallet to procced.`;
         }

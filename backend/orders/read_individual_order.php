@@ -10,9 +10,16 @@ if (!$order_id || !$pdo) {
 }
 
 try {
-    $stmtItems = $pdo->prepare("SELECT oi.id, oi.product_id AS productID, COALESCE(NULLIF(oi.product_name, ''), p.name, oi.product_id, 'Product Item') AS product_name, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, oi.item_status, oi.missing_qty, oi.refund_amount, p.img_url FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
-    $stmtItems->execute([$order_id]);
-    $items = $stmtItems->fetchAll();
+    try {
+        $stmtItems = $pdo->prepare("SELECT oi.id, oi.product_id AS productID, COALESCE(NULLIF(oi.product_name, ''), p.name, oi.product_id, 'Product Item') AS product_name, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, oi.item_status, oi.missing_qty, oi.refund_amount, p.img_url FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
+        $stmtItems->execute([$order_id]);
+        $items = $stmtItems->fetchAll();
+    } catch (Exception $colEx) {
+        // Fallback for older schemas missing item_status/refund columns
+        $stmtItems = $pdo->prepare("SELECT oi.id, oi.product_id AS productID, COALESCE(NULLIF(oi.product_name, ''), p.name, oi.product_id, 'Product Item') AS product_name, oi.quantity, oi.price, oi.weight, p.img_url FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
+        $stmtItems->execute([$order_id]);
+        $items = $stmtItems->fetchAll();
+    }
 
     foreach ($items as &$item) {
         if (!empty($item['subscriptionType']) && $item['subscriptionType'] !== 'none') {
@@ -36,6 +43,8 @@ try {
                 $item['quantity'] = (int)$calcQty;
             }
         }
+        $item['price'] = round((float)$item['price']);
+        $item['refund_amount'] = round((float)($item['refund_amount'] ?? 0));
     }
 
     sendJson($items);

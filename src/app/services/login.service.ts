@@ -156,8 +156,8 @@ export class LoginService {
             next: (res: Array<Wallet>) => {
                 if (res && Array.isArray(res)) {
                     this.user.walletHistory = res.reverse();
-                    this.user.wallet = res[0]?.total || 0;
-                    this.user.ledger = (res[0] as any)?.ledger_balance || 0;
+                    this.user.wallet = Math.round(res[0]?.total || 0);
+                    this.user.ledger = Math.round((res[0] as any)?.ledger_balance || 0);
                     this.walletUpdateEvent.next(res);
                 }
             },

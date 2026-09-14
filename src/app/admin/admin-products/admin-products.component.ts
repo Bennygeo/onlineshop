@@ -2,8 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { ApiService } from '../../services/api.service';
 
 export interface CategoryOption {
+  id?: number;
   key: string;
   label: string;
+  img_url?: string;
+  product_count?: number;
 }
 
 @Component({
@@ -20,37 +23,20 @@ export class AdminProductsComponent implements OnInit {
   // Standard Unit Options (grams, kg, pack, ltr, etc.)
   unitOptions: string[] = ['grams', 'kg', 'pack', 'ltr', 'ml', 'pcs'];
 
-  // All Frontend Categories with display labels
-  categoryOptions: CategoryOption[] = [
-    { key: 'Vegetables', label: 'Vegetables' },
-    { key: 'Naturalhydrants', label: 'Natural Hydrants (Tender Coconut)' },
-    { key: 'Fruits', label: 'Fruits' },
-    { key: 'Greenssprouts', label: 'Greens & Sprouts' },
-    { key: 'Flowers', label: 'Flowers' },
-    { key: 'Honeyspices', label: 'Honey & Spices' },
-    { key: 'Woodpressed', label: 'Woodpressed Oils' },
-    { key: 'Dairyeggs', label: 'Dairy & Eggs (Milk)' },
-    { key: 'Naturalsugars', label: 'Natural Sugars' },
-    { key: 'Lentilspulses', label: 'Lentils & Pulses' },
-    { key: 'Breakfast', label: 'Breakfast & Batter' },
-    { key: 'Quickmeals', label: 'Quick Meals' },
-    { key: 'Traditionalsnacks', label: 'Traditional Snacks' },
-    { key: 'Skinhair', label: 'Skin & Hair Care' },
-    { key: 'Veg', label: 'Veg' },
-    { key: 'Oils', label: 'Oils' },
-    { key: 'Eggs', label: 'Eggs' },
-    { key: 'Milk', label: 'Milk' },
-    { key: 'Tender', label: 'Tender Coconut' },
-    { key: 'Sprouts', label: 'Sprouts' },
-    { key: 'Batter', label: 'Batter' },
-    { key: 'Breads', label: 'Breads' },
-    { key: 'Pickles', label: 'Pickles' },
-    { key: 'Pets', label: 'Pets' },
-    { key: 'Vegan', label: 'Vegan' }
-  ];
+  // Categories list
+  categoryOptions: CategoryOption[] = [];
+  categoriesLoading: boolean = false;
 
+  // Modals state
   isAddModalOpen: boolean = false;
   isEditModalOpen: boolean = false;
+  isCategoryModalOpen: boolean = false;
+
+  newCategory: any = {
+    label: '',
+    key: '',
+    img_url: 'assets/categories/Thinkspot_veggiesIcon.png'
+  };
 
   newProduct: any = {
     name: '',
@@ -69,12 +55,34 @@ export class AdminProductsComponent implements OnInit {
   };
 
   editingProduct: any = null;
-  message: string = '';
+  categorySearchQuery: string = '';
 
   constructor(private apiS: ApiService) {}
 
   ngOnInit(): void {
+    this.loadCategories();
     this.loadProducts();
+  }
+
+  loadCategories() {
+    this.categoriesLoading = true;
+    this.apiS.getApi('admin/get_categories.php').subscribe({
+      next: (res: any) => {
+        this.categoriesLoading = false;
+        if (Array.isArray(res)) {
+          this.categoryOptions = res.map((c: any) => ({
+            id: c.id,
+            key: c.key_name || c.key || c.cat,
+            label: c.label || c.name || c.key_name,
+            img_url: c.img_url,
+            product_count: c.product_count || 0
+          }));
+        }
+      },
+      error: () => {
+        this.categoriesLoading = false;
+      }
+    });
   }
 
   loadProducts() {
@@ -82,19 +90,8 @@ export class AdminProductsComponent implements OnInit {
       next: (res: any) => {
         if (Array.isArray(res)) {
           this.products = res;
-          this.syncCategoriesFromProducts();
           this.filterProducts();
         }
-      }
-    });
-  }
-
-  syncCategoriesFromProducts() {
-    // Add any unique categories found in backend products that are not yet in categoryOptions
-    this.products.forEach(p => {
-      const c = p.cat || p.main_category;
-      if (c && !this.categoryOptions.some(opt => opt.key.toLowerCase() === c.toLowerCase())) {
-        this.categoryOptions.push({ key: c, label: c });
       }
     });
   }
@@ -103,6 +100,16 @@ export class AdminProductsComponent implements OnInit {
     if (!key) return '';
     const match = this.categoryOptions.find(c => c.key.toLowerCase() === key.toLowerCase());
     return match ? match.label : key;
+  }
+
+  getFilteredCategoriesList(): CategoryOption[] {
+    if (!this.categorySearchQuery.trim()) {
+      return this.categoryOptions;
+    }
+    const q = this.categorySearchQuery.toLowerCase().trim();
+    return this.categoryOptions.filter(c => 
+      c.label.toLowerCase().includes(q) || c.key.toLowerCase().includes(q)
+    );
   }
 
   filterProducts() {
@@ -121,11 +128,75 @@ export class AdminProductsComponent implements OnInit {
     this.filteredProducts = list;
   }
 
+  // --- Category Management ---
+  openCategoryModal() {
+    this.newCategory = {
+      label: '',
+      key: '',
+      img_url: 'assets/categories/Thinkspot_veggiesIcon.png'
+    };
+    this.categorySearchQuery = '';
+    this.loadCategories();
+    this.isCategoryModalOpen = true;
+  }
+
+  closeCategoryModal() {
+    this.isCategoryModalOpen = false;
+  }
+
+  submitAddCategory() {
+    if (!this.newCategory.label.trim()) {
+      alert("Please enter a category name!");
+      return;
+    }
+
+    this.apiS.postApi('admin/add_category.php', { data: JSON.stringify(this.newCategory) }).subscribe({
+      next: (res: any) => {
+        alert(res?.message || "Category added successfully!");
+        this.newCategory = {
+          label: '',
+          key: '',
+          img_url: 'assets/categories/Thinkspot_veggiesIcon.png'
+        };
+        this.loadCategories();
+      },
+      error: (err) => {
+        alert("Error adding category: " + (err?.error?.error || err?.message || "Unknown error"));
+      }
+    });
+  }
+
+  deleteCategory(cat: CategoryOption) {
+    const warning = (cat.product_count && cat.product_count > 0)
+      ? `Warning: There are ${cat.product_count} product(s) associated with "${cat.label}".\nAre you sure you want to remove this category?`
+      : `Are you sure you want to remove the category "${cat.label}"?`;
+
+    if (!confirm(warning)) {
+      return;
+    }
+
+    this.apiS.postApi('admin/delete_category.php', { data: JSON.stringify({ id: cat.id, key: cat.key }) }).subscribe({
+      next: (res: any) => {
+        alert(res?.message || "Category removed successfully!");
+        if (this.selectedCategory === cat.key) {
+          this.selectedCategory = 'All';
+        }
+        this.loadCategories();
+        this.loadProducts();
+      },
+      error: (err) => {
+        alert("Error removing category: " + (err?.error?.error || err?.message || "Unknown error"));
+      }
+    });
+  }
+
+  // --- Product Modals ---
   openAddModal() {
+    const defaultCat = this.categoryOptions.length > 0 ? this.categoryOptions[0].key : 'Vegetables';
     this.newProduct = {
       name: '',
       tamil_name: '',
-      cat: 'Vegetables',
+      cat: defaultCat,
       sub_cat: 'General',
       price: 100,
       original_price: 120,
@@ -159,6 +230,7 @@ export class AdminProductsComponent implements OnInit {
         alert("Product added successfully!");
         this.isAddModalOpen = false;
         this.loadProducts();
+        this.loadCategories();
       },
       error: (err) => {
         alert("Error adding product: " + (err?.error?.error || err?.message));
@@ -167,9 +239,10 @@ export class AdminProductsComponent implements OnInit {
   }
 
   openEditModal(product: any) {
+    const fallbackCat = this.categoryOptions.length > 0 ? this.categoryOptions[0].key : 'Vegetables';
     this.editingProduct = { 
       ...product,
-      cat: product.cat || product.main_category || 'Vegetables',
+      cat: product.cat || product.main_category || fallbackCat,
       weight: (product.weight !== undefined && product.weight !== null) ? product.weight : 500,
       unit_name: product.unit_name || 'grams'
     };
@@ -198,6 +271,7 @@ export class AdminProductsComponent implements OnInit {
         alert("Product updated successfully!");
         this.isEditModalOpen = false;
         this.loadProducts();
+        this.loadCategories();
       },
       error: (err) => {
         alert("Error updating product: " + (err?.error?.error || err?.message));
@@ -216,3 +290,4 @@ export class AdminProductsComponent implements OnInit {
     });
   }
 }
+

@@ -45,7 +45,8 @@ try {
     
     foreach ($orders as &$ord) {
         $ord['is_subscription'] = ((int)$ord['is_subscription'] === 1);
-        $ord['total_amount'] = (float)$ord['total_amount'];
+        $ord['total_amount'] = round((float)$ord['total_amount']);
+        $ord['refund_amount'] = round((float)($ord['refund_amount'] ?? 0));
     }
     
     sendJson($orders);

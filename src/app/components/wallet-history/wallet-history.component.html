@@ -1,22 +1,53 @@
-<div class="walletCont">
-
-    <div class="box box1">
-        <div class="timestamp">{{safeDate(walletData?.timestamp) | date:'M/d/yy, h:mm a'}}</div>
-        <div class="desc" (click)="descView()">{{walletData.description}}</div>
-        <div class="trxn-id">Transaction ID: {{walletData.trxn_id}}</div>
+<div class="walletTrxCard" [class.is-failed]="isFailed" [class.is-credit]="isCredit && isSuccessful">
+    <!-- Icon Indicator -->
+    <div class="trxAvatar" [class.avatar-credit]="isCredit && isSuccessful" [class.avatar-debit]="!isCredit && isSuccessful" [class.avatar-failed]="isFailed">
+        <span class="material-icons-round" *ngIf="isCredit && isSuccessful">arrow_downward</span>
+        <span class="material-icons-round" *ngIf="!isCredit && isSuccessful">shopping_bag</span>
+        <span class="material-icons-round" *ngIf="isFailed">priority_high</span>
     </div>
 
-    <div class="box box2" *ngIf="walletData.status === payment.PaymentStaus.AUTHORIZED || walletData.status === payment.PaymentStaus.CAPTURED || walletData.status === payment.PaymentStaus.PLACED || walletData.status === 'success'">
-        <div class="credit" *ngIf="walletData.type==='Credit'">+₹{{walletData.amount}}</div>
-        <div class="debit" *ngIf="walletData.type==='Debit'">-₹{{walletData.amount}}</div>
+    <!-- Main Content -->
+    <div class="trxDetails">
+        <div class="trxDescRow">
+            <span class="trxDesc" (click)="descView()" [title]="walletData?.description">
+                {{ walletData?.description || 'Thinkspot Wallet Transaction' }}
+            </span>
+        </div>
 
-        <div class="balance">Balance: ₹{{walletData.total}}</div>
+        <div class="trxMetaRow">
+            <span class="trxDate">
+                <span class="material-icons-round metaIcon">schedule</span>
+                {{ safeDate(walletData?.timestamp) | date:'MMM d, y, h:mm a' }}
+            </span>
+
+            <span class="trxIdChip" (click)="copyTrxnId($event)" title="Click to copy Transaction ID">
+                <span class="chipLabel">ID: {{ walletData?.trxn_id }}</span>
+                <span class="material-icons-round copyIcon" *ngIf="!copied">content_copy</span>
+                <span class="material-icons-round copyIcon copiedIcon" *ngIf="copied">check</span>
+                <span class="copiedToast" *ngIf="copied">Copied!</span>
+            </span>
+        </div>
     </div>
 
-    <div class="box box2" *ngIf="walletData.status === payment.PaymentStaus.FAILED || walletData.status === payment.PaymentStaus.CANCELLED || walletData.status === 'failed' || walletData.status === 'cancelled'">
-        <div class="debit">₹{{walletData.amount}}</div>
-        <div class="failed" style="color: #e53e3e; font-weight: 500;">
-            {{ (walletData.status === payment.PaymentStaus.CANCELLED || walletData.status === 'cancelled') ? 'Transaction cancelled' : 'Transaction failed' }}
+    <!-- Amount & Status -->
+    <div class="trxAmountCol">
+        <div *ngIf="isSuccessful">
+            <div class="amountText creditText" *ngIf="isCredit">
+                +₹{{ walletData?.amount }}
+            </div>
+            <div class="amountText debitText" *ngIf="!isCredit">
+                -₹{{ walletData?.amount }}
+            </div>
+            <div class="runningBalance" *ngIf="walletData?.total !== undefined && walletData?.total !== null">
+                Bal: ₹{{ walletData?.total }}
+            </div>
+        </div>
+
+        <div *ngIf="isFailed" class="failedCol">
+            <div class="amountText failedAmount">₹{{ walletData?.amount }}</div>
+            <span class="statusBadge failedBadge">
+                {{ (walletData.status === payment.PaymentStaus.CANCELLED || walletData.status === 'cancelled' || walletData.status === 'CANCELLED') ? 'Cancelled' : 'Failed' }}
+            </span>
         </div>
     </div>
 </div>

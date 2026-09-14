@@ -5,7 +5,7 @@ $walletData = getParam('walletData');
 $data = is_string($walletData) ? json_decode($walletData, true) : $walletData;
 
 $mobile = isset($data['mobile']) ? $data['mobile'] : getParam('mobile');
-$amount = isset($data['amount']) ? $data['amount'] : getParam('amount', 0);
+$amount = round((float)(isset($data['amount']) ? $data['amount'] : getParam('amount', 0)));
 $type = isset($data['type']) ? $data['type'] : 'CREDIT';
 $description = isset($data['description']) ? $data['description'] : '';
 

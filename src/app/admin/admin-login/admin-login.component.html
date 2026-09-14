@@ -1,0 +1,113 @@
+<div class="login-wrapper">
+  <!-- Subtle decorative background ambient orbs -->
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <div class="login-container">
+    <!-- Top Brand & Header -->
+    <div class="login-card">
+      <div class="card-header">
+        <div class="logo-box">
+          <img src="assets/home/banners/ThinkSpot_logo.png" alt="ThinkSpot Logo" class="brand-logo" />
+        </div>
+        <h1 class="portal-title">ThinkSpot Admin</h1>
+        <p class="portal-subtitle">Secure Store Control & Management Console</p>
+      </div>
+
+      <!-- Error message banner -->
+      <div class="alert alert-danger error-alert" *ngIf="errorMessage">
+        <span class="material-icons alert-icon">error_outline</span>
+        <span class="alert-text">{{ errorMessage }}</span>
+      </div>
+
+      <!-- Login Form -->
+      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form" novalidate>
+        
+        <!-- Username Field -->
+        <div class="form-group">
+          <label for="adminUsername" class="field-label">Username / Admin ID</label>
+          <div class="input-wrapper" [class.is-invalid]="submitted && f['username'].errors">
+            <span class="material-icons input-icon">account_circle</span>
+            <input
+              type="text"
+              id="adminUsername"
+              formControlName="username"
+              class="form-control"
+              placeholder="Enter admin username"
+              autocomplete="username"
+              required
+            />
+          </div>
+          <div *ngIf="submitted && f['username'].errors" class="field-error">
+            <span *ngIf="f['username'].errors['required']">Username is required</span>
+            <span *ngIf="f['username'].errors['minlength']">Username must be at least 3 characters</span>
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label for="adminPassword" class="field-label">Password</label>
+          <div class="input-wrapper" [class.is-invalid]="submitted && f['password'].errors">
+            <span class="material-icons input-icon">lock</span>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              id="adminPassword"
+              formControlName="password"
+              class="form-control password-input"
+              placeholder="Enter admin password"
+              autocomplete="current-password"
+              required
+            />
+            <button
+              type="button"
+              class="toggle-pass-btn"
+              (click)="togglePasswordVisibility()"
+              aria-label="Toggle password visibility"
+              tabindex="-1"
+            >
+              <span class="material-icons">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+          <div *ngIf="submitted && f['password'].errors" class="field-error">
+            <span *ngIf="f['password'].errors['required']">Password is required</span>
+            <span *ngIf="f['password'].errors['minlength']">Password must be at least 4 characters</span>
+          </div>
+        </div>
+
+        <!-- Remember Me & Quick Demo Bar -->
+        <div class="form-options">
+          <label class="remember-checkbox">
+            <input type="checkbox" formControlName="rememberMe" />
+            <span class="custom-check"></span>
+            <span class="check-text">Remember session</span>
+          </label>
+
+          <button type="button" class="demo-fill-btn" (click)="fillDemoCredentials()">
+            <span class="material-icons">key</span>
+            <span>Fill Demo</span>
+          </button>
+        </div>
+
+        <!-- Sign In Button -->
+        <button type="submit" class="submit-btn" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          <span class="material-icons btn-icon" *ngIf="!loading">login</span>
+          <span class="btn-text">{{ loading ? 'Authenticating...' : 'Sign In to Admin Portal' }}</span>
+        </button>
+      </form>
+
+      <!-- Security Notice & Storefront Link -->
+      <div class="card-footer">
+        <div class="security-badge">
+          <span class="material-icons">verified_user</span>
+          <span>Authorized Staff & Store Managers Only</span>
+        </div>
+
+        <a routerLink="/web" class="storefront-link">
+          <span class="material-icons">arrow_back</span>
+          <span>Return to Customer Web Store</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

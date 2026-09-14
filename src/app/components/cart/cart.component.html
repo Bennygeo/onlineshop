@@ -1,110 +1,166 @@
-<div *ngIf="!product.subscribe">
-    <div class="row" style="margin-top: 24px; margin-bottom: 24px;" id="cart_{{index}}">
-        <div class="col-md-3 col-xs-3 col-3" style="text-align: center;">
-            <img style="width: 54px; margin-top: 0px;" src={{product.img_url}} />
-
-        </div>
-        <div class="col-md-4 col-xs-4 col-4">
-            <h4 class="pName">{{product.name}} <span *ngIf="product.subs_options">{{product.subs_options.type}}</span>
-            </h4>
-            <div>
-                <span class="productWeight">{{product.updated_weight}} {{product.unit_name}}</span>
+<!-- Regular Product Card -->
+<div *ngIf="!product.subscribe" class="modernCartItemCard" id="cart_{{index}}">
+    <div class="cartItemGrid">
+        <!-- Thumbnail -->
+        <div class="productThumbCol">
+            <div class="imgBox">
+                <img [src]="product.img_url" [alt]="product.name" loading="lazy" />
             </div>
-
-            <div *ngIf="!product.zoneAvailability">
-                <div class="price">₹ {{product.price|number}}</div>
-            </div>
-
-            <div *ngIf="product.zoneAvailability" class="unavailable">Not available for now.</div>
         </div>
 
-        <div class="col-md-5 col-xs-5 col-5">
-            <div style="position: relative; top:12px;">
-                <div class="left">
-                    <plus-minus [inputVal]="(product.units || 0)" [stepVal]="1" [minVal]="1" [caption]="''"
-                        class="counterCont" (onChange)="plusMinusAction($event)"></plus-minus>
-                </div>
+        <!-- Product Details -->
+        <div class="productInfoCol">
+            <div class="titleRow">
+                <h4 class="productName">{{product.name}}</h4>
+                <span class="subOptionType" *ngIf="product.subs_options?.type">{{product.subs_options.type}}</span>
+            </div>
 
-                <div class="detete-cont" (click)="deleteItem($event)">
-                    <img [src]="'assets/cart/delete.png'">
+            <div class="metaRow">
+                <span class="weightBadge" *ngIf="product.updated_weight || product.unit_name">
+                    <span class="material-icons-round metaIcon">scale</span>
+                    {{product.updated_weight}} {{product.unit_name}}
+                </span>
+
+                <span class="catBadge" *ngIf="product.sub_cat && product.sub_cat.toLowerCase() !== 'general'">
+                    {{product.sub_cat}}
+                </span>
+            </div>
+
+            <div class="priceRow">
+                <div class="unitPrice" *ngIf="!product.zoneAvailability">
+                    <span class="currency">₹</span>{{product.price | number}}
+                </div>
+                <div *ngIf="product.zoneAvailability" class="unavailableBadge">
+                    <span class="material-icons-round unavailIcon">error_outline</span>
+                    <span>Currently out of stock</span>
                 </div>
             </div>
+        </div>
+
+        <!-- Actions: Counter & Delete -->
+        <div class="productActionsCol">
+            <div class="stepperRow">
+                <plus-minus 
+                    [inputVal]="(product.units || 0)" 
+                    [stepVal]="1" 
+                    [minVal]="1" 
+                    [caption]="''"
+                    class="customPlusMinus" 
+                    (onChange)="plusMinusAction($event)">
+                </plus-minus>
+            </div>
+
+            <button class="deleteItemBtn" (click)="deleteItem($event)" title="Remove item from cart">
+                <span class="material-icons-round">delete_outline</span>
+            </button>
         </div>
     </div>
 </div>
 
-<div *ngIf="product.subscribe">
-    <div class="row" style="margin-top: 0px; margin-bottom: 6px;" id="cart_{{index}}">
-        <div class="col-3" style="text-align: center;">
-            <img style="width: 54px; margin-top: 0px;" src={{product.img_url}} />
+<!-- Subscribed Product Card -->
+<div *ngIf="product.subscribe" class="modernCartItemCard subscriptionItemCard" id="cart_{{index}}">
+    <div class="cartItemGrid">
+        <!-- Thumbnail -->
+        <div class="productThumbCol">
+            <div class="imgBox">
+                <img [src]="product.img_url" [alt]="product.name" loading="lazy" />
+                <span class="subsCornerBadge" title="Recurring Subscription">
+                    <span class="material-icons-round">event_repeat</span>
+                </span>
+            </div>
         </div>
-        <div class="col-7">
-            <h4 class="pName">{{product.name}} <span *ngIf="product.subs_options">{{product.subs_options.type}}</span>
-            </h4>
-            <div *ngIf="product.sub_cat || product.cat" class="pSubCat">
-                {{(product.sub_cat && product.sub_cat.toLowerCase() !== 'general') ? product.sub_cat : product.cat}}
-            </div>
-            <div>
-                <span class="productWeight"></span>
-            </div>
 
-            <div *ngIf="!product.zoneAvailability">
-                <div class="price" style="margin: 6px 0 6px 0;">₹ {{product.subs_options.price|number}}</div>
-                <button class="tnkspt_secondary_btn"
-                    style="height: 25px; line-height: 20px; width: 100px; font-size: 12px; margin-bottom: 12px;"
-                    (click)="viewDates($event)">View dates</button>
+        <!-- Product Details -->
+        <div class="productInfoCol">
+            <div class="titleRow">
+                <h4 class="productName">{{product.name}}</h4>
+                <span class="subsTypePill" *ngIf="product.subs_options?.type">
+                    {{product.subs_options.type}}
+                </span>
             </div>
 
-            <div *ngIf="product.zoneAvailability" class="unavailable">Not available for now.</div>
+            <div class="metaRow" *ngIf="product.sub_cat || product.cat">
+                <span class="catBadge">
+                    {{(product.sub_cat && product.sub_cat.toLowerCase() !== 'general') ? product.sub_cat : product.cat}}
+                </span>
+                <span class="weightBadge" *ngIf="product.updated_weight || product.unit_name">
+                    {{product.updated_weight}} {{product.unit_name}}
+                </span>
+            </div>
 
+            <div class="priceRow">
+                <div class="unitPrice" *ngIf="!product.zoneAvailability">
+                    <span class="currency">₹</span>{{product.subs_options.price | number}}
+                </div>
+                <div *ngIf="product.zoneAvailability" class="unavailableBadge">
+                    <span class="material-icons-round unavailIcon">error_outline</span>
+                    <span>Currently unavailable</span>
+                </div>
+            </div>
+
+            <div class="subsDatesRow" *ngIf="!product.zoneAvailability">
+                <button class="viewDatesBtn" (click)="viewDates($event)">
+                    <span class="material-icons-round">event_available</span>
+                    <span>View Delivery Dates</span>
+                </button>
+            </div>
         </div>
-        <div class="col-2 delete-cont" (click)="deleteItem($event)">
-            <div class="detete-cont">
-                <img [src]="'assets/cart/delete.png'">
-            </div>
+
+        <!-- Actions: Delete -->
+        <div class="productActionsCol">
+            <button class="deleteItemBtn" (click)="deleteItem($event)" title="Remove subscription from cart">
+                <span class="material-icons-round">delete_outline</span>
+            </button>
         </div>
     </div>
 </div>
 
+<!-- Scheduled Subscription Dates Modal -->
+<div class="popup_parent" *ngIf="viewDatesFlg" (click)="viewDatesCloseAction($event)">
+    <div class="popup_cont datesModalSheet" (click)="$event.stopPropagation()">
+        <div class="sheetHandleBar" (click)="viewDatesCloseAction($event)"></div>
 
-<!-- product description -->
-<div class="popup_parent" *ngIf="viewDatesFlg">
-    <div class="popup_cont" style="padding: 12px;">
-
-        <div style="position:absolute; right:20px; top:20px; cursor: pointer; pointer-events: visiblePainted; background-color: #fff; z-index: 10;"
-            (click)="viewDatesCloseAction($event)">
-            <img src="assets/icons/close.png" />
-        </div>
-
-        <div class="popup_content" style="padding: 0; margin-top:36px;">
-            <div style="position: relative;">
-                <div *ngFor="let item of product.subs_options.rangeSelected;  let i=index;" class="row"
-                    style="margin: 12px 0 12px 0;">
-                    <div class="col-8" style="line-height: 40px;">
-                        {{i+1}}. {{item.date | date:'EEE, MMM d, y'}} - <b>{{product.updated_weight}}
-                            {{product.unit_name}}</b>
-                    </div>
-
-                    <div class="col-4 ms-auto text-end">
-                        <!-- <plus-minus [inputVal]="(product.units || 0)" [stepVal]="1" [minVal]="1" [caption]="''"
-                            (onChange)="plusMinusSubsAction($event)"></plus-minus> -->
-                    </div>
+        <div class="datesModalHeader">
+            <div class="datesHeaderLeft">
+                <div class="datesIconCircle">
+                    <span class="material-icons-round">calendar_month</span>
                 </div>
-
-                <div *ngFor="let item of product.subs_options.multiDaySelected; let i=index;" class="row"
-                    style="margin: 12px 0 12px 0;">
-                    <div class="col-8" style="line-height: 20px;">
-                        {{i+1}}. {{item.date | date:'EEE, MMM d, y'}} - <b>{{product.updated_weight}}
-                            {{product.unit_name}}</b>
-                    </div>
-
-                    <div class="col-4 ms-auto text-end">
-                        <!-- <plus-minus [inputVal]="(product.units || 0)" [stepVal]="1" [minVal]="1" [caption]="''"
-                            [disable]="true"></plus-minus> -->
-                    </div>
+                <div>
+                    <h3 class="datesSheetTitle">Scheduled Deliveries</h3>
+                    <p class="datesSheetSub">{{product.name}} ({{product.updated_weight}} {{product.unit_name}})</p>
                 </div>
             </div>
-            <div class="clearfix"></div>
+            <button class="datesCloseBtn" (click)="viewDatesCloseAction($event)">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+
+        <div class="datesListScroll">
+            <!-- Range selected dates -->
+            <div *ngFor="let item of product.subs_options?.rangeSelected; let i=index;" class="dateListItem">
+                <div class="dateItemIndex">{{i + 1}}</div>
+                <div class="dateItemContent">
+                    <span class="dateItemText">{{item.date | date:'EEE, MMM d, y'}}</span>
+                    <span class="dateItemQty">Qty: 1 ({{product.updated_weight}} {{product.unit_name}})</span>
+                </div>
+                <span class="material-icons-round dateCheckIcon">check_circle</span>
+            </div>
+
+            <!-- Multi-day selected dates -->
+            <div *ngFor="let item of product.subs_options?.multiDaySelected; let i=index;" class="dateListItem">
+                <div class="dateItemIndex">{{i + 1}}</div>
+                <div class="dateItemContent">
+                    <span class="dateItemText">{{item.date | date:'EEE, MMM d, y'}}</span>
+                    <span class="dateItemQty">Qty: 1 ({{product.updated_weight}} {{product.unit_name}})</span>
+                </div>
+                <span class="material-icons-round dateCheckIcon">check_circle</span>
+            </div>
+        </div>
+
+        <div class="datesModalFooter">
+            <button class="datesDoneBtn" (click)="viewDatesCloseAction($event)">
+                Done
+            </button>
         </div>
     </div>
 </div>

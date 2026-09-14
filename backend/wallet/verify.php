@@ -47,6 +47,8 @@ if ($pdo) {
             $amountRupees = 100.00;
         }
 
+        $amountRupees = round((float)$amountRupees);
+
         if (!$mobile) {
             $mobile = '7200015551';
         }

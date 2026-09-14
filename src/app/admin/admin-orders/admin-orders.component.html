@@ -112,8 +112,8 @@
       </div>
     </div>
 
-    <!-- Orders Table with Click-to-Expand Items -->
-    <div class="table-card">
+    <!-- Orders Table (Desktop) -->
+    <div class="table-card desktop-only">
       <table class="admin-table">
         <thead>
           <tr>
@@ -144,9 +144,13 @@
                     </button>
                     <span class="id-val">#{{ o.order_id || o.id }}</span>
                   </div>
-                  <span class="type-badge" [class.sub-type]="o.order_type === 'subscription'" [class.reg-type]="o.order_type !== 'subscription'">
-                    {{ o.order_type === 'subscription' ? 'Subscription' : 'Regular' }}
-                  </span>
+                  <div style="display: flex; gap: 4px; align-items: center; margin-top: 4px; flex-wrap: wrap;">
+                    <span class="type-badge" [class.sub-type]="o.order_type === 'subscription'" [class.reg-type]="o.order_type !== 'subscription'">
+                      {{ o.order_type === 'subscription' ? 'Subscription' : 'Regular' }}
+                    </span>
+                    <span *ngIf="o.payment_type === 'COD'" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">COD</span>
+                    <span *ngIf="o.payment_type && o.payment_type !== 'COD'" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">Prepaid</span>
+                  </div>
                 </div>
               </td>
               <td><b>{{ o.mobile }}</b></td>
@@ -169,7 +173,10 @@
                   <span class="material-icons size-16">{{ o.expanded ? 'unfold_less' : 'unfold_more' }}</span>
                 </button>
               </td>
-              <td><span class="amt-val">₹ {{ o.amount || o.total_amount || 0 }}</span></td>
+              <td>
+                <span class="amt-val">₹ {{ o.amount || o.total_amount || 0 }}</span>
+                <div *ngIf="o.payment_type === 'COD'" style="font-size: 10px; color: #b45309; font-weight: 600;">Collect Cash</div>
+              </td>
               <td (click)="$event.stopPropagation()">
                 <select class="status-select" [value]="o.status" (change)="updateOrderStatus(o, $event)">
                   <option value="PLACED">PLACED</option>
@@ -236,6 +243,109 @@
         </tbody>
       </table>
     </div>
+
+    <!-- Mobile Orders Feed (Smart Touch Cards on Phones & Tablets) -->
+    <div class="mobile-orders-feed mobile-only">
+      <div class="empty-mobile-state" *ngIf="filteredOrders.length === 0">
+        <span class="material-icons">inventory_2</span>
+        <p>No orders found for the selected date or filter criteria.</p>
+      </div>
+
+      <div class="mobile-order-card" *ngFor="let o of filteredOrders" [class.selected]="selectedOrderMap[o.order_id || o.id]">
+        <!-- Mobile Card Header -->
+        <div class="m-card-header">
+          <div class="m-header-left">
+            <label class="m-checkbox-wrap" (click)="$event.stopPropagation()">
+              <input type="checkbox" class="m-checkbox" [(ngModel)]="selectedOrderMap[o.order_id || o.id]" />
+            </label>
+            <span class="m-order-id">#{{ o.order_id || o.id }}</span>
+            <span class="type-badge" [class.sub-type]="o.order_type === 'subscription'" [class.reg-type]="o.order_type !== 'subscription'">
+              {{ o.order_type === 'subscription' ? 'Subscription' : 'Regular' }}
+            </span>
+          </div>
+
+          <div class="m-status-wrap">
+            <select class="status-select compact" [value]="o.status" (change)="updateOrderStatus(o, $event)">
+              <option value="PLACED">PLACED</option>
+              <option value="PACKED">PACKED</option>
+              <option value="OUT_FOR_DELIVERY">OUT_FOR_DELIVERY</option>
+              <option value="DELIVERED">DELIVERED</option>
+              <option value="CANCELLED">CANCELLED</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Customer & Delivery Meta -->
+        <div class="m-card-body">
+          <div class="m-meta-row">
+            <a [href]="'tel:' + o.mobile" class="m-phone-chip">
+              <span class="material-icons">phone</span>
+              <span>{{ o.mobile }}</span>
+            </a>
+
+            <span class="m-date-chip">
+              <span class="material-icons">today</span>
+              <span>{{ o.delivery_date || (o.created_at | date:'MMM d') }}</span>
+            </span>
+          </div>
+
+          <div class="m-address-box">
+            <span class="material-icons m-addr-icon">location_on</span>
+            <div class="m-addr-text">
+              <span class="m-addr-line">{{ o.address?.address || o.address || 'Standard Delivery Address' }}</span>
+              <small class="m-cust-name" *ngIf="o.address?.name || o.name">Name: {{ o.address?.name || o.name }}</small>
+            </div>
+          </div>
+
+          <!-- Items Expand / Summary Row -->
+          <div class="m-items-summary" (click)="toggleExpand(o)">
+            <div class="m-items-badge">
+              <span class="material-icons">shopping_bag</span>
+              <span>{{ getItemsForDate(o).length }} item(s)</span>
+            </div>
+            <button class="m-expand-btn">
+              <span>{{ o.expanded ? 'Hide details' : 'View items' }}</span>
+              <span class="material-icons">{{ o.expanded ? 'expand_less' : 'expand_more' }}</span>
+            </button>
+          </div>
+
+          <!-- Expanded Items List in Mobile Card -->
+          <div class="m-expanded-items-box" *ngIf="o.expanded">
+            <div class="m-item-row" *ngFor="let it of getItemsForDate(o)">
+              <img [src]="it.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ it.name }}" class="m-item-thumb" />
+              <div class="m-item-details">
+                <span class="m-item-title">{{ it.name || it.product_name || 'Product' }}</span>
+                <div class="m-item-numbers">
+                  <span class="m-qty-val">Qty: {{ it.qty || it.quantity || 1 }} × {{ it.weight || '' }} {{ it.unit_name || '' }}</span>
+                  <span class="m-price-val">₹ {{ it.price || 0 }}</span>
+                </div>
+                <small *ngIf="it.subscriptionType && it.subscriptionType !== 'none'" class="sub-type-tag">
+                  Subscription: {{ it.subscriptionType }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Card Footer: Total & Delivery Partner -->
+        <div class="m-card-footer">
+          <div class="m-total-col">
+            <span class="m-total-label">Total Amount</span>
+            <span class="m-total-val">₹ {{ o.amount || o.total_amount || 0 }}</span>
+          </div>
+
+          <div class="m-assign-col">
+            <label class="m-assign-label"><span class="material-icons">two_wheeler</span> Partner:</label>
+            <select class="delivery-select m-partner-select" [value]="o.assigned_to || ''" (change)="assignDeliveryBoy(o, $event)">
+              <option value="">-- Assign Partner --</option>
+              <option *ngFor="let db of deliveryBoys" [value]="db.name">
+                {{ db.name }} ({{ db.zone }})
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
   </ng-container>
 
   <!-- VIEW 2: DAILY PROCUREMENT & PACKING LIST -->
@@ -293,8 +403,8 @@
         </div>
       </div>
 
-      <!-- Procurement Details Table -->
-      <div class="procurement-table-wrapper" *ngIf="dailyPurchaseList.length > 0; else noPurchaseItems">
+      <!-- Procurement Details Table (Desktop) -->
+      <div class="procurement-table-wrapper desktop-only" *ngIf="dailyPurchaseList.length > 0">
         <table class="procurement-table">
           <thead>
             <tr>
@@ -392,12 +502,77 @@
         </table>
       </div>
 
-      <ng-template #noPurchaseItems>
-        <div class="empty-purchase-state">
-          <span class="material-icons">inventory_2</span>
-          <p>No orders found for date <b>{{ selectedDateStr }}</b>. Select another date tab above.</p>
+      <!-- Procurement Mobile Card List -->
+      <div class="procurement-mobile-list mobile-only" *ngIf="dailyPurchaseList.length > 0">
+        <div class="proc-mobile-card" *ngFor="let pItem of dailyPurchaseList; trackBy: trackByProductId">
+          <div class="pm-header">
+            <img [src]="pItem.imgUrl" alt="{{ pItem.productName }}" class="pm-thumb" />
+            <div class="pm-info">
+              <span class="pm-name">{{ pItem.productName }}</span>
+              <div class="pm-tags">
+                <span class="pm-base-tag">Base: {{ pItem.baseDisplay }}</span>
+                <span class="pm-qty-badge">{{ pItem.totalDisplay }} total</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pm-body">
+            <div class="pm-row" *ngIf="pItem.breakdownSummary !== '()'">
+              <span class="pm-lbl">Order breakdown:</span>
+              <span class="pm-val breakdown">{{ pItem.breakdownSummary }} ({{ pItem.ordersCount }} orders)</span>
+            </div>
+
+            <div class="pm-row">
+              <span class="pm-lbl">Client selling price:</span>
+              <span class="pm-val">₹ {{ pItem.totalClientSellingPrice | number:'1.2-2' }} <small>(₹{{ pItem.basePrice }}/unit)</small></span>
+            </div>
+
+            <div class="pm-cost-row">
+              <span class="pm-lbl">Market cost price:</span>
+              <div class="market-input-group compact">
+                <span class="currency-prefix">₹</span>
+                <input 
+                  type="number" 
+                  step="0.5"
+                  [(ngModel)]="stockPriceEdits[pItem.productId]"
+                  (ngModelChange)="onStockPriceChange(pItem)"
+                  class="market-price-input"
+                  [class.saved-input]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
+                  placeholder="Cost"
+                />
+                <span class="per-unit-label">/ {{ pItem.baseDisplay }}</span>
+              </div>
+            </div>
+
+            <div class="pm-row margin-row">
+              <span class="pm-lbl">Profit / Loss:</span>
+              <span class="profit-badge compact" [class.positive]="pItem.profitOrLoss >= 0" [class.negative]="pItem.profitOrLoss < 0">
+                <span class="material-icons">{{ pItem.profitOrLoss >= 0 ? 'arrow_upward' : 'arrow_downward' }}</span>
+                <span>{{ pItem.profitOrLoss >= 0 ? '+' : '' }}₹ {{ pItem.profitOrLoss | number:'1.2-2' }}</span>
+              </span>
+            </div>
+          </div>
+
+          <div class="pm-footer">
+            <button 
+              class="save-prod-btn full-w" 
+              [class.saved]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
+              [disabled]="savingProductMap[pItem.productId]"
+              (click)="saveProductPrice(pItem)"
+            >
+              <span class="material-icons" *ngIf="!savedSuccessMap[pItem.productId] && !pItem.savedSuccess && !savingProductMap[pItem.productId]">save</span>
+              <span class="material-icons spin" *ngIf="savingProductMap[pItem.productId]">autorenew</span>
+              <span class="material-icons" *ngIf="savedSuccessMap[pItem.productId] || pItem.savedSuccess">check_circle</span>
+              <span>{{ (savedSuccessMap[pItem.productId] || pItem.savedSuccess) ? 'Cost Saved in DB' : 'Save Cost Price to DB' }}</span>
+            </button>
+          </div>
         </div>
-      </ng-template>
+      </div>
+
+      <div class="empty-purchase-state" *ngIf="dailyPurchaseList.length === 0">
+        <span class="material-icons">inventory_2</span>
+        <p>No orders found for date <b>{{ selectedDateStr }}</b>. Select another date tab above.</p>
+      </div>
     </div>
   </ng-container>
 

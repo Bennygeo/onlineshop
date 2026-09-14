@@ -137,7 +137,7 @@ try {
                 'product_id' => $it['product_id'],
                 'name' => !empty($it['product_name']) ? $it['product_name'] : 'Product Item',
                 'quantity' => $todayCount,
-                'price' => $unitPrice,
+                'price' => round($unitPrice),
                 'weight' => $it['weight'] ?? $it['base_weight'] ?? 500,
                 'unit_name' => $it['unit_name'] ?? 'grams',
                 'img_url' => !empty($it['img_url']) ? $it['img_url'] : 'assets/categories/Thinkspot_veggiesIcon.png',
@@ -147,7 +147,7 @@ try {
                 'is_packed' => ($itemStatus === 'packed' || $itemStatus === 'delivered'),
                 'is_missing' => ($itemStatus === 'missing' || $itemStatus === 'refunded'),
                 'missing_qty' => $missingQty,
-                'refund_amount' => $itemRefundAmount,
+                'refund_amount' => round($itemRefundAmount),
                 'scheduled_today' => $itemScheduledToday,
                 'today_delivery_status' => $todayDeliveryStatus
             ];
@@ -179,7 +179,7 @@ try {
             'address_text' => is_array($parsedAddr) 
                 ? (($parsedAddr['name'] ? $parsedAddr['name'] . ', ' : '') . ($parsedAddr['address'] ?? $parsedAddr['addr_line_1'] ?? '') . ' ' . ($parsedAddr['landmark'] ?? '') . ' - ' . ($parsedAddr['pincode'] ?? ''))
                 : (string)($ord['address_json'] ?? ''),
-            'total_amount' => floatval($ord['total_amount']),
+            'total_amount' => round(floatval($ord['total_amount'])),
             'payment_type' => $ord['payment_type'] ?? 'Wallet',
             'status' => $orderStatus,
             'delivery_category' => $deliveryStatusCategory,
@@ -189,7 +189,7 @@ try {
             'delivery_mode' => $ord['delivery_mode'] ?? 'Leave at door',
             'delivered_at' => $ord['delivered_at'] ?? null,
             'undelivered_reason' => $ord['undelivered_reason'] ?? '',
-            'refund_amount' => floatval($ord['refund_amount'] ?? 0),
+            'refund_amount' => round(floatval($ord['refund_amount'] ?? 0)),
             'refund_notes' => $ord['refund_notes'] ?? '',
             'order_type' => $orderType,
             'items' => $formattedItems,

@@ -74,7 +74,7 @@ try {
             'productID' => $prodId,
             'product_name' => isset($item['product_name']) ? $item['product_name'] : '',
             'quantity' => $finalQty,
-            'price' => (float)$item['price'],
+            'price' => round((float)$item['price']),
             'weight' => isset($item['weight']) ? $item['weight'] : '',
             'rangeDates' => isset($item['rangeDates']) ? $item['rangeDates'] : '[]',
             'subscribedDates' => isset($item['subscribedDates']) ? $item['subscribedDates'] : '[]',

@@ -1,88 +1,150 @@
 @import "../../../assets/styles/global-constants.scss";
-@import "../../../assets/styles/utils.scss";
 
-.mainCont {
-    padding-right: 6px;
-    display: block;
-    margin-top: 6px;
+:host {
+    display: inline-block;
+    vertical-align: middle;
+    font-family: $inter;
+}
 
-    .handle-counter {
-        overflow: hidden;
-        border: 0px solid #eee;
-        margin-top: 0px;
-        width: 100%;
-        position: relative;
-        margin: 0 auto;
+.plusMinusRoot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    line-height: 1;
 
-        .addBtnAlign {
-            z-index: 2;
-            background: $teal-100;
-            width: 80px;
-            height: 27px;
-            border: 0px solid $teal-100;
-            color: $white-clr;
-            border-radius: $border-radius-xxl;
-            font-size: $font-s;
+    &.disabled-root {
+        opacity: 0.55;
+        pointer-events: none;
+    }
+
+    /* ==========================================================================
+       Initial "ADD" Button
+       ========================================================================== */
+    .modernAddBtn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        background: #ffffff;
+        border: 1.5px solid $teal-100;
+        color: $teal-100;
+        border-radius: 20px;
+        padding: 4px 12px;
+        height: 28px;
+        min-width: 74px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        cursor: pointer;
+        box-shadow: 0 1px 4px rgba(9, 126, 99, 0.12);
+        transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+
+        .addIcon {
+            font-size: 15px;
+            font-weight: 700;
+            color: $teal-100;
         }
 
-        .btnCont {
-            display: flex;
-            align-items: left;
-            justify-content: left;
+        .btnText {
+            line-height: 1;
+        }
 
-            .btn {
-                float: left;
-                text-align: center;
-                font-family: $inter;
-                border-radius: 50px !important;
+        &:hover {
+            background: #ecfdf5;
+            border-color: $teal-100;
+            color: #065f46;
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(9, 126, 99, 0.2);
 
-                background-color: $teal-100;
-                outline: none;
-                border: none;
-                height: 27px;
-                width: 27px;
-
-                &:active {
-                    background: $teal-100 !important;
-                }
-                &:focus {
-                    background: $teal-100 !important;
-                }
-                &:disabled {
-                    background: $teal-100;
-                    opacity: 0.5;
-                    color: black;
-                    cursor: not-allowed;
-                }
-
-                .imgCls {
-                    width: 18px;
-                    margin-left: -6px;
-                    margin-top: -7px;
-                }
+            .addIcon {
+                color: #065f46;
             }
+        }
 
-            .txtCont {
-                width: 23px;
-                float: left;
-                text-align: center;
-                margin-top: 2px;
-                font-family: $inter;
-                font-size: $font-xl;
-                color: $para-txt-clr;
-            }
+        &:active {
+            transform: scale(0.96);
+        }
 
-            .txt-disabled {
-                opacity: 0.5;
-            }
+        &:disabled {
+            border-color: #cbd5e1;
+            color: #94a3b8;
+            background: #f8fafc;
+            cursor: not-allowed;
+            box-shadow: none;
 
-            .txt-enabled {
-                opacity: 1;
+            .addIcon {
+                color: #94a3b8;
             }
         }
     }
-}
 
-plus-minus {
-    width: 100%;
+    /* ==========================================================================
+       Stepper Capsule Control
+       ========================================================================== */
+    .stepperCapsule {
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, #097e63 0%, #0d9677 100%);
+        color: #ffffff;
+        border-radius: 20px;
+        height: 28px;
+        min-width: 78px;
+        padding: 0 3px;
+        box-shadow: 0 2px 8px rgba(9, 126, 99, 0.28);
+        transition: all 0.15s ease;
+
+        .stepBtn {
+            background: transparent;
+            border: none;
+            color: #ffffff;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            outline: none;
+            transition: background 0.12s ease, transform 0.1s ease;
+
+            span.material-icons-round {
+                font-size: 15px;
+                color: #ffffff;
+                line-height: 1;
+            }
+
+            &:hover:not(:disabled) {
+                background: rgba(255, 255, 255, 0.22);
+            }
+
+            &:active:not(:disabled) {
+                background: rgba(255, 255, 255, 0.35);
+                transform: scale(0.92);
+            }
+
+            &:disabled {
+                opacity: 0.4;
+                cursor: not-allowed;
+            }
+        }
+
+        .valueDisplay {
+            min-width: 22px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1;
+            color: #ffffff;
+            padding: 0 2px;
+            font-family: inherit;
+
+            &.txt-disabled {
+                opacity: 0.6;
+            }
+        }
+    }
 }

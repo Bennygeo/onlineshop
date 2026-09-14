@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { ApiService } from 'src/app/services/api.service';
 import { CartService } from 'src/app/services/cart.service';
@@ -15,12 +15,15 @@ import { Utils } from 'src/app/utils/utils';
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.scss']
 })
-export class SearchComponent implements OnInit {
+export class SearchComponent implements OnInit, OnDestroy {
+
+  searchTerm: string = '';
+  searchSubject: Subject<string> = new Subject<string>();
 
   productsOptions: ProductOptions = {
     products: [],
     productsCategoryWise: {},
-    loadingFlg: true
+    loadingFlg: false
   };
 
   subsOptions: SubsOptions = {
@@ -37,145 +40,212 @@ export class SearchComponent implements OnInit {
     multiDaySelected: []
   };
 
-  loadingFlg: boolean = true;
+  loadingFlg: boolean = false;
   notFoundFlg: boolean = false;
-  productCategoryWise: SubProductType = {
-  };
-  categoryPriorityIndex: Array<string> = [];
+  hasSearched: boolean = false;
 
-  priorityIndexedCategories: Array<string> = [];
+  allResults: Array<Product> = [];
+  filteredResults: Array<Product> = [];
+  trendingProducts: Array<Product> = [];
+  availableCategories: Array<{ name: string, count: number }> = [];
+  activeCategoryFilter: string = 'ALL';
+
+  // Popular Trending Keywords for 1-Click Search
+  trendingKeywords: string[] = [
+    'Idli Dosa Batter',
+    'Tomato',
+    'Farm Fresh Milk',
+    'Ragi Batter',
+    'Country Eggs',
+    'Tender Coconut',
+    'Onion',
+    'Greens',
+    'Cold-Pressed Oil',
+    'Carrot'
+  ];
+
+  // Popular Categories for quick browsing
+  quickCategories = [
+    { name: 'Vegetables', cat: 'Vegetables', icon: 'eco' },
+    { name: 'Fruits', cat: 'Fruits', icon: 'nutrition' },
+    { name: 'Batters', cat: 'Batter', icon: 'breakfast_dining' },
+    { name: 'Milk & Dairy', cat: 'Dairyeggs', icon: 'local_drink' },
+    { name: 'Coconut & Hydration', cat: 'Naturalhydrants', icon: 'water_drop' },
+    { name: 'Greens & Sprouts', cat: 'Greenssprouts', icon: 'grass' },
+    { name: 'Woodpressed Oils', cat: 'Woodpressed', icon: 'opacity' }
+  ];
 
   menus: menuOptions = {
     list: this.cartService.categoryPriorityIndex,
     defaultMenu: "Vegetables",
     subCategoryList: [],
     subCategoryListID: []
-  }
+  };
 
-  calendarSwitchMsg: string = "";
-  calendarSwitchFlg: boolean = false;
-  calenderSwitchBtnName: string = "";
-  firstTimeCalViewFlg: boolean = true;
-  selectedCalendarType: "undefined" | "range" | "multi_day";
+  private subs: Subscription = new Subscription();
 
   constructor(
     private apiService: ApiService,
-    private cartService: CartService,
+    public cartService: CartService,
     private _utils: Utils,
     public productService: ProductService,
-    private cart: CartService,
-    private loginService: LoginService,
-    private router: Router
+    public loginService: LoginService,
+    public router: Router
   ) {
     this.cartService.headerChangeEvent.next("type6");
 
-    this.categoryPriorityIndex = this.cartService.categoryPriorityIndex;
-
-    this.cartService.searchChangeEvent.pipe(
-      debounceTime(500),
-      distinctUntilChanged(),
-
-      switchMap(searchTerm => {
-        if (searchTerm.length > 2) {
-          return this.apiService.postApi("/products/search_product.php", { query: searchTerm });
-        } else {
-          return of([]);
+    // Search subject debounce pipeline
+    this.subs.add(
+      this.searchSubject.pipe(
+        debounceTime(350),
+        distinctUntilChanged(),
+        switchMap(query => {
+          const trimmed = (query || '').trim();
+          if (trimmed.length >= 2) {
+            this.loadingFlg = true;
+            this.hasSearched = true;
+            return this.apiService.postApi("/products/search_product.php", { query: trimmed });
+          } else if (trimmed.length === 0) {
+            this.hasSearched = false;
+            this.loadingFlg = false;
+            this.notFoundFlg = false;
+            this.allResults = [];
+            this.filteredResults = [];
+            return of([]);
+          } else {
+            return of([]);
+          }
+        })
+      ).subscribe((results: Array<Product>) => {
+        this.loadingFlg = false;
+        if (this.hasSearched) {
+          this.processSearchResults(results || []);
         }
       })
-    ).subscribe((searchResult: Array<Product>) => {
-      this.loadingFlg = false;
-      this.notFoundFlg = false;
-      this.productCategoryWise = {};
+    );
 
-      searchResult.forEach((element: any) => {
-        if (!this.productCategoryWise[element.cat]) this.productCategoryWise[element.cat] = { products: [], index: this.categoryPriorityIndex.indexOf(element.cat) };
-
-        if (this.cartService.cartProducts[element.id]) {
-          element = { ...element, ...this.cartService.cartProducts[element.id] }
+    // Also sync header search input
+    this.subs.add(
+      this.cartService.searchChangeEvent.subscribe(term => {
+        if (term !== this.searchTerm) {
+          this.searchTerm = term;
+          this.searchSubject.next(term);
         }
+      })
+    );
 
-        this.productCategoryWise[element.cat].products.push(element);
-      });
+    // Sync cart updates with live quantities
+    this.subs.add(
+      this.cartService.cartUpdateEvent.subscribe(() => {
+        this.syncProductUnits(this.allResults);
+        this.syncProductUnits(this.filteredResults);
+        this.syncProductUnits(this.trendingProducts);
+      })
+    );
 
-      if (Object.keys(this.productCategoryWise).length == 0) this.notFoundFlg = true;
-
-      let indexPos = [];
-      for (let key in this.productCategoryWise) {
-        indexPos.push({ index: this.productCategoryWise[key].index, cat: key });
-      }
-      indexPos.sort((a: any, b: any) => {
-        return a.index - b.index;
-      });
-
-      this.priorityIndexedCategories = [];
-      indexPos.forEach(el => {
-        this.priorityIndexedCategories.push(el.cat);
-      });
-    });
-
-    this.menus.menuClickHandler = (menu: string): void => {
-      this.menus.activeMenu = menu;
-
-      //re-position the menu
-      this.menu_position();
-      const catSection = document.getElementById('cat_section_' + menu);
-      if (catSection) {
-        catSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } else {
-        const zone = this.loginService.user?.zone || 'zone1';
-        this.cartService.read_products(zone, menu);
-        this.router.navigate(['/products/category/' + menu]);
-      }
-    };
-
-    this.cartService.isCart$.subscribe((res: boolean) => {
-      console.log("search page :: " + res);
-
-      // this.isCart = res;
-      let productContHeight = (res) ? (window.innerHeight - 120) + "px" : (window.innerHeight - 70) + "px";
-      // console.log("height :: " + productContHeight);
-      //update product page height (page height - menu height - footer height)
-      let timeout = setTimeout(() => {
-        this._utils.css(".products-cont", { top: "60px", height: productContHeight, width: "calc(100vw - 67px)", "overflow-y": "scroll" });
-        clearTimeout(timeout);
-      });
-    });
-
+    this.subs.add(
+      this.cartService.notifyCartEvent.subscribe(() => {
+        this.syncProductUnits(this.allResults);
+        this.syncProductUnits(this.filteredResults);
+        this.syncProductUnits(this.trendingProducts);
+      })
+    );
   }
 
-  menu_position(): void {
-    if (this.menus.activeMenu) {
-      try {
-        let _pos_top = this._utils.getElement("#" + this.menus.activeMenu).offsetTop + this._utils.getElement('.sub_menu')['scrollTop'];
-        let _diff_to_minus = 0;
-        if (_pos_top > 200) {
-          _diff_to_minus = _pos_top - ((window.innerHeight - 50) / 2 - this._utils.getElement("#" + this.menus.activeMenu).offsetHeight / 2);
+  ngOnInit(): void {
+    this.loadTrendingProducts();
+  }
+
+  loadTrendingProducts() {
+    this.apiService.postApi("/products/search_product.php", { query: '' }).subscribe({
+      next: (res: Array<Product>) => {
+        if (Array.isArray(res) && res.length > 0) {
+          this.trendingProducts = res.slice(0, 10);
+          this.syncProductUnits(this.trendingProducts);
         }
-        _diff_to_minus = _diff_to_minus - this._utils.getElement(".sub_menu").scrollTop;
+      }
+    });
+  }
 
-        this._utils.getElement(".sub_menu").scrollTo({
-          top: Math.max(0, _diff_to_minus),
-          behavior: 'smooth'
-        });
+  onSearchInput(event: any) {
+    const val = event.target ? event.target.value : event;
+    this.searchTerm = val;
+    this.searchSubject.next(val);
+  }
 
-      } catch (e) { }
+  searchKeyword(keyword: string) {
+    this.searchTerm = keyword;
+    this.searchSubject.next(keyword);
+  }
+
+  searchCategory(cat: string) {
+    this.searchTerm = cat;
+    this.searchSubject.next(cat);
+  }
+
+  clearSearch() {
+    this.searchTerm = '';
+    this.hasSearched = false;
+    this.notFoundFlg = false;
+    this.allResults = [];
+    this.filteredResults = [];
+    this.searchSubject.next('');
+  }
+
+  processSearchResults(products: Array<Product>) {
+    this.allResults = products;
+    this.syncProductUnits(this.allResults);
+
+    // Compute category counts
+    const catMap: { [cat: string]: number } = {};
+    products.forEach(p => {
+      const c = p.cat || 'General';
+      catMap[c] = (catMap[c] || 0) + 1;
+    });
+
+    this.availableCategories = Object.keys(catMap).map(c => ({
+      name: c,
+      count: catMap[c]
+    }));
+
+    this.activeCategoryFilter = 'ALL';
+    this.filteredResults = [...this.allResults];
+    this.notFoundFlg = this.filteredResults.length === 0;
+  }
+
+  filterByCategory(categoryName: string) {
+    this.activeCategoryFilter = categoryName;
+    if (categoryName === 'ALL') {
+      this.filteredResults = [...this.allResults];
+    } else {
+      this.filteredResults = this.allResults.filter(p => p.cat === categoryName);
     }
   }
 
-  popup_close_click_action() {
-    this.firstTimeCalViewFlg = true;
-    this.productsOptions.product['subscribe'] = false;
-    this.productService.productsOptions = this.productsOptions;
-    //to update Product component subscribe button status
-    // this.updateChildComponent();
-    // this.product.subs_options = undefined;
+  syncProductUnits(productList: Array<Product>) {
+    if (!productList || !Array.isArray(productList)) return;
+    for (let pro of productList) {
+      pro.disabled = String(pro.disabled) === 'true';
+      if (this.cartService.cartProducts[pro.id]) {
+        pro.units = this.cartService.cartProducts[pro.id]["units"];
+      } else {
+        pro.units = 0;
+      }
+    }
   }
 
+  plusMinusValue(val: number, product: Product) {
+    this.cartService.cartUpdateEvent.next({ cart: this.cartService.cartProducts, product: product, unit: val });
+  }
 
+  popup_close_click_action() {
+    if (this.productsOptions.product) {
+      this.productsOptions.product['subscribe'] = false;
+    }
+  }
 
   onProductChanges(product: Product) {
     this.productsOptions.product = product;
-    //reset the local object
     this.subsOptions = {
       units: product.units,
       startDate: null,
@@ -188,29 +258,13 @@ export class SearchComponent implements OnInit {
       multiDaySelected: [],
       rangeSelected: []
     };
-
-    this.subsOptions = (this.productsOptions.product.subs_options) ? this.productsOptions.product.subs_options : this.subsOptions;
-    if (this.subsOptions.startDate && this.subsOptions.startDate) {
-      this.subsOptions.rangeCnt = DateE.dateDiff(this.cart.deliveryDate, this.subsOptions.endDate);
-    }
-    //get the count of selected days
-    this.subsOptions.multiCnt = this.subsOptions.multiDaySelected.length || 0;
-    this.subsOptions.rangeCnt = this.subsOptions.rangeSelected.length || 0;
-
-    this.productsOptions.product['max_days'] = Number(this.productsOptions.product['max_days']);
-    //update calendar
-    this.subsOptions.minDate = new DateE();
-    this.subsOptions.maxDate = new DateE();
-    this.subsOptions.minDate.addDays(1);
-    this.subsOptions.maxDate.addDays(this.productsOptions.product['max_days'] || 30);
-    //render buttons, and it should triggered after the popup has been updated, since element creation happening inside the popup
-    window.setTimeout(() => {
-      // this.subscribeCalendarSelection(this.subsOptions.type || "range");
-      this.subsOptions.type = this.subsOptions.type || "range";
-    });
   }
 
-  ngOnInit(): void {
+  goBack() {
+    this.router.navigate(['/home/view']);
   }
 
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
+  }
 }

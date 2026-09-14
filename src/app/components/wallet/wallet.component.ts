@@ -32,10 +32,14 @@ export class WalletComponent implements OnInit, OnDestroy {
 
     history: Array<Wallet> = [];
 
-    rechargeAmounts: Array<string> = ["₹100", "₹500", "₹1000", "₹5000"];
-    rechargeActiveAmtindex: number = 0;
-    rechargeAmt: string = "₹0";
+    rechargeAmounts: Array<string> = ["₹200", "₹500", "₹1000", "₹2000", "₹5000"];
+    rechargeActiveAmtindex: number = 1;
+    rechargeAmt: string = "₹500";
     rcWindowFlg: boolean = false;
+    showLedgerModal: boolean = false;
+
+    activeTab: 'all' | 'credit' | 'debit' = 'all';
+    searchTerm: string = '';
 
     walletForm: FormGroup;
     walletTotal: number = 0;
@@ -62,14 +66,13 @@ export class WalletComponent implements OnInit, OnDestroy {
 
         this.loginS.walletUpdateEvent.subscribe((res) => {
             this.user = this.loginS.user;
-            this.history = this.user.walletHistory;
-            this.walletTotal = this.user.wallet;
+            this.history = this.user.walletHistory || [];
+            this.walletTotal = Math.round(this.user.wallet || 0);
         });
 
-        this.rechargeAmt = this.rechargeAmounts[this.rechargeActiveAmtindex];
+        this.rechargeAmt = this.rechargeAmounts[this.rechargeActiveAmtindex] || "₹500";
         this.walletForm = this.fb.group({
-            amount: [this.rechargeAmt, [
-                Validators.required]],
+            amount: [this.rechargeAmt, [Validators.required]],
         });
 
         this.walletForm.valueChanges.subscribe((res: any) => {
@@ -80,7 +83,7 @@ export class WalletComponent implements OnInit, OnDestroy {
                     break;
                 }
             }
-            this.rechargeAmt = (res.amount.length > 1) ? res.amount : ("₹" + 0);
+            this.rechargeAmt = (res.amount && res.amount.length > 1) ? res.amount : ("₹" + 0);
         });
 
         this.razorPay.changeEvent.pipe(
@@ -109,12 +112,10 @@ export class WalletComponent implements OnInit, OnDestroy {
 
             }
         });
-        // this.loginS.readWallet();
     }
+
     ngOnDestroy(): void {
-        // Emit something to stop all Observables
         this.unsubscribe.next();
-        // Complete the notifying Observable to remove it
         this.unsubscribe.complete();
     }
 
@@ -136,7 +137,7 @@ export class WalletComponent implements OnInit, OnDestroy {
     rcOptionClickAction(amt: string): void {
         this.rechargeActiveAmtindex = this.rechargeAmounts.indexOf(amt);
         if (this.rechargeActiveAmtindex === -1) {
-            this.rechargeAmt = "₹" + amt;
+            this.rechargeAmt = amt.startsWith("₹") ? amt : ("₹" + amt);
         } else {
             this.rechargeAmt = amt;
         }
@@ -160,19 +161,58 @@ export class WalletComponent implements OnInit, OnDestroy {
         return recent.length > 0 ? recent : this.history;
     }
 
+    get filteredHistory(): Array<Wallet> {
+        let list = this.displayedHistory || [];
+
+        if (this.activeTab === 'credit') {
+            list = list.filter(item => item.type === 'Credit');
+        } else if (this.activeTab === 'debit') {
+            list = list.filter(item => item.type === 'Debit');
+        }
+
+        if (this.searchTerm && this.searchTerm.trim() !== '') {
+            const query = this.searchTerm.toLowerCase().trim();
+            list = list.filter(item => 
+                (item.description && item.description.toLowerCase().includes(query)) ||
+                (item.trxn_id && item.trxn_id.toLowerCase().includes(query)) ||
+                (item.amount && item.amount.toString().includes(query))
+            );
+        }
+
+        return list;
+    }
+
+    get parsedRechargeAmt(): number {
+        if (!this.rechargeAmt) return 0;
+        const num = parseInt(this.rechargeAmt.replace(/[^0-9]/g, ''), 10);
+        return isNaN(num) ? 0 : num;
+    }
+
+    get projectedBalance(): number {
+        return (this.walletTotal || 0) + this.parsedRechargeAmt;
+    }
+
+    setTab(tab: 'all' | 'credit' | 'debit'): void {
+        this.activeTab = tab;
+    }
+
+    toggleLedgerModal(show?: boolean): void {
+        this.showLedgerModal = show !== undefined ? show : !this.showLedgerModal;
+    }
+
     addMoneyToWallet(evt: MouseEvent) {
         this.razorPay.initiatePaymentModal(this.user, this.rechargeAmt);
     }
 
     rcWindowClose() {
-        this.rcWindowFlg = !this.rcWindowFlg;
+        this.rcWindowFlg = false;
     }
 
     readLastTrxn(): void {
         this.apiService.postApi("wallet/read_last.php", { id: this.user.mobile }).subscribe(res => {
             if (res && res[0]) {
                 this.history.unshift(res[0]);
-                this.walletTotal = res[0].total;
+                this.walletTotal = Math.round(res[0].total || 0);
                 this.loginS.user.wallet = this.walletTotal;
                 this.loginS.user.walletHistory = this.history;
             }
@@ -189,7 +229,7 @@ export class WalletComponent implements OnInit, OnDestroy {
                 if (isSuccessTx) {
                     this.cartS.placeOrder((orderRes: Wallet) => {
                         this.history.unshift(orderRes);
-                        this.walletTotal = orderRes.total;
+                        this.walletTotal = Math.round(orderRes.total || 0);
                         this.loginS.user.wallet = this.walletTotal;
                         this.loginS.user.walletHistory = this.history;
                         this.cartS.payAndCheckoutFlg = false;

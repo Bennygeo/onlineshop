@@ -3,9 +3,12 @@ import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Subscription, map } from 'rxjs';
 import { Common } from 'src/app/modal/Common';
+import { Payment } from 'src/app/modal/payment';
+import { ApiService } from 'src/app/services/api.service';
 import { CartService } from 'src/app/services/cart.service';
 import { CouponService, UserCoupon } from 'src/app/services/coupon.service';
 import { LoginService } from 'src/app/services/login.service';
+import { RazorpayService } from 'src/app/services/razorpay.service';
 import { StorageService } from 'src/app/services/storage.service';
 import { AddressAction, CartDateWise, CartType, OrderInfo, Product, Wallet } from 'src/app/utils/types';
 
@@ -28,7 +31,6 @@ import { AddressAction, CartDateWise, CartType, OrderInfo, Product, Wallet } fro
 export class CartListComponent implements OnInit, OnDestroy {
 
   cartProducts: CartType = {};
-
   cartProductsDateWise: CartDateWise = {};
 
   //Delivery charge instruction flag
@@ -37,8 +39,11 @@ export class CartListComponent implements OnInit, OnDestroy {
   fetchUserBagFlg: boolean = false;
   cartEventSubscription: Subscription;
   cartupdateEventSubscription: Subscription;
+  razorPaySubscription: Subscription;
   public couponForm: FormGroup;
   payFlg: boolean = false;
+  isProcessingPayment: boolean = false;
+  selectedPaymentMethod: 'ONLINE' | 'COD' = 'ONLINE';
   orderInformation: OrderInfo;
 
   addressFlg: boolean = false;
@@ -57,6 +62,9 @@ export class CartListComponent implements OnInit, OnDestroy {
     public couponS: CouponService,
     public loginS: LoginService,
     private storageS: StorageService,
+    private apiS: ApiService,
+    public razorPay: RazorpayService,
+    public payment: Payment
   ) {
     this.selectedInstructionIndex = (this.storageS.getItem("tnkspt_delivery_mode")) ? this.storageS.getItem("tnkspt_delivery_mode").index : 0;
     this.storageS.setItem("tnkspt_delivery_mode", { index: this.selectedInstructionIndex });
@@ -64,7 +72,7 @@ export class CartListComponent implements OnInit, OnDestroy {
     this.couponForm = new FormGroup({
       coupon: new FormControl("", [Validators.required, Validators.minLength(3)])
     });
-    //rest couupon values
+    //rest coupon values
     this.couponForm.valueChanges.subscribe(res => {
       this.couponS.coupons.addedFlg = false;
       this.couponS.coupons.couponExistFlg = false;
@@ -73,64 +81,137 @@ export class CartListComponent implements OnInit, OnDestroy {
 
     this.cartService.headerChangeEvent.next("type2");
 
-    this.cartupdateEventSubscription = this.cartService.cartUpdateEvent.subscribe(() => {
-      this.orderInformation = this.cartService.orderInformation;
+    this.orderInformation = this.cartService.orderInformation;
+    if (this.orderInformation) {
       this.cartService.remainingToPay = this.orderInformation.remainingToPay;
       this.cartProductsDateWise = this.orderInformation.cartProductDateWise;
+    }
+
+    this.cartupdateEventSubscription = this.cartService.cartUpdateEvent.subscribe(() => {
+      this.orderInformation = this.cartService.orderInformation;
+      if (this.orderInformation) {
+        this.cartService.remainingToPay = this.orderInformation.remainingToPay;
+        this.cartProductsDateWise = this.orderInformation.cartProductDateWise;
+      }
       this.fetchUserBagFlg = true;
     });
 
     /*
-    * If the user has referral coupon then it willnot have `code` property
+    * If the user has referral coupon then it will not have `code` property
     * count will be available in 'rec_used_cnt' and 'ref_used_cnt'
     * and it will be written into the 'used_count' property to cop-up with the existing logic
     */
-    this.couponS.getUserCoupons({ mobile: this.loginS.user.mobile }).pipe(
-      map((res) => {
-        if (Array.isArray(res)) {
-          const uniqueCoupons: UserCoupon[] = [];
-          const seenCodes = new Set<string>();
-          res.forEach(element => {
-            if (element.reciever) {
-              if (element.reciever == this.loginS.user.mobile) {
-                element['used_count'] = element.rec_used_cnt;
-              } else if (element.referrer == this.loginS.user.mobile) {
-                element['used_count'] = element.ref_used_cnt;
+    if (this.loginS.user?.mobile) {
+      this.couponS.getUserCoupons({ mobile: this.loginS.user.mobile }).pipe(
+        map((res) => {
+          if (Array.isArray(res)) {
+            const uniqueCoupons: UserCoupon[] = [];
+            const seenCodes = new Set<string>();
+            res.forEach(element => {
+              if (element.reciever) {
+                if (element.reciever == this.loginS.user.mobile) {
+                  element['used_count'] = element.rec_used_cnt;
+                } else if (element.referrer == this.loginS.user.mobile) {
+                  element['used_count'] = element.ref_used_cnt;
+                }
               }
-            }
-            const cCode = String(element.code || element.coupon_code || '').toUpperCase();
-            if (cCode && !seenCodes.has(cCode)) {
-              seenCodes.add(cCode);
-              uniqueCoupons.push(element);
-            }
-          });
-          return uniqueCoupons;
+              const cCode = String(element.code || element.coupon_code || '').toUpperCase();
+              if (cCode && !seenCodes.has(cCode)) {
+                seenCodes.add(cCode);
+                uniqueCoupons.push(element);
+              }
+            });
+            return uniqueCoupons;
+          }
+          return res;
+        })
+      ).subscribe((res: any) => {
+        if (res === "NOT_EXIST") {
+          this.couponS.coupons.msg = "Not exist or expired!";
+        } else {
+          this.couponS.coupons.users = res;
         }
-        return res;
-      })
-    ).subscribe((res: any) => {
-      if (res === "NOT_EXIST") {
-        this.couponS.coupons.msg = "Not exist or expired!";
-      } else {
-        this.couponS.coupons.users = res;
+      });
+    }
+  }
+
+  ngOnInit(): void {
+    let loadingEl = document.getElementById("loading");
+    if (loadingEl)
+      loadingEl.remove();
+    
+    // Refresh wallet
+    if (this.loginS.user?.mobile) {
+      this.loginS.readWallet();
+    }
+
+    this.orderInformation = this.cartService.orderInformation;
+    if (this.orderInformation) {
+      this.cartService.remainingToPay = this.orderInformation.remainingToPay;
+      this.cartProductsDateWise = this.orderInformation.cartProductDateWise;
+    }
+    this.fetchUserBagFlg = true;
+
+    this.cartEventSubscription = this.cartService.notifyCartEvent.subscribe(() => {
+      this.orderInformation = this.cartService.orderInformation;
+      if (this.orderInformation) {
+        this.cartService.remainingToPay = this.orderInformation.remainingToPay;
+        this.cartProductsDateWise = this.orderInformation.cartProductDateWise;
+      }
+      this.fetchUserBagFlg = true;
+    });
+
+    this.razorPaySubscription = this.razorPay.changeEvent.subscribe({
+      next: (state: string) => {
+        switch (state) {
+          case this.payment.PaymentStaus.AUTHORIZED:
+            this.handleOnlinePaymentSuccess();
+            break;
+          case this.payment.PaymentStaus.CANCELLED:
+          case this.payment.PaymentStaus.FAILED:
+            this.isProcessingPayment = false;
+            break;
+        }
       }
     });
   }
 
-  ngOnInit(): void {
+  handleOnlinePaymentSuccess() {
+    this.isProcessingPayment = true;
+    this.payFlg = false;
+    const mobile = this.loginS.user?.mobile;
+    if (!mobile) {
+      this.isProcessingPayment = false;
+      return;
+    }
 
-    let loadingEl = document.getElementById("loading");
-    if (loadingEl)
-      loadingEl.remove();
-    //set as true from wallet component
-    this.cartService.payAndCheckoutFlg = false;
+    this.apiS.postApi("wallet/read_last.php", { id: mobile }).subscribe({
+      next: (res: any) => {
+        if (res && res[0]) {
+          this.loginS.user.wallet = Math.round(res[0].total || 0);
+          if (this.loginS.user.walletHistory && Array.isArray(this.loginS.user.walletHistory)) {
+            this.loginS.user.walletHistory.unshift(res[0]);
+          }
+        }
+        this.loginS.readWallet();
+        this.orderInformation = this.cartService.orderInformation;
+        if (this.orderInformation) {
+          this.cartService.remainingToPay = this.orderInformation.remainingToPay;
+        }
 
-    this.cartEventSubscription = this.cartService.notifyCartEvent.subscribe(() => {
-      //reset it
-      this.orderInformation = this.cartService.orderInformation;
-      this.cartService.remainingToPay = this.orderInformation.remainingToPay;
-      this.cartProductsDateWise = this.orderInformation.cartProductDateWise;
-      this.fetchUserBagFlg = true;
+        // Place order directly
+        this.cartService.placeOrder((orderRes: any) => {
+          this.isProcessingPayment = false;
+          if (orderRes && orderRes.total !== undefined) {
+            this.loginS.user.wallet = orderRes.total;
+          }
+          this.loginS.readWallet();
+          this.loginS.walletUpdateEvent.next([orderRes]);
+        });
+      },
+      error: () => {
+        this.isProcessingPayment = false;
+      }
     });
   }
 
@@ -237,6 +318,7 @@ export class CartListComponent implements OnInit, OnDestroy {
 
   //If the cart is empty select the action to do
   shopNowAction(): void {
+    this.cartService.orderPlacedFlag = false;
     this.cartService.router.navigate(["products/category/Vegetables"]);
   }
 
@@ -261,9 +343,27 @@ export class CartListComponent implements OnInit, OnDestroy {
     this.storageS.setItem("tnkspt_delivery_mode", { index: this.selectedInstructionIndex });
   }
 
+  payOnlineAction() {
+    this.payFlg = false;
+    this.isProcessingPayment = true;
+    const remainingAmt = this.cartService.remainingToPay;
+    this.razorPay.initiatePaymentModal(this.loginS.user, remainingAmt);
+  }
+
   addMoneyToWalletAction() {
+    this.payFlg = false;
     this.cartService.payAndCheckoutFlg = true;
     this.cartService.router.navigate(["/home/wallet"], { queryParams: { pay: this.cartService.remainingToPay } });
+  }
+
+  selectPaymentMethod(method: 'ONLINE' | 'COD') {
+    this.selectedPaymentMethod = method;
+  }
+
+  payWithCODAction() {
+    this.payFlg = false;
+    this.selectedPaymentMethod = 'COD';
+    this.payAction();
   }
 
   payAction() {
@@ -280,10 +380,10 @@ export class CartListComponent implements OnInit, OnDestroy {
       this.loginS.user.address = activeAddress;
     }
 
-    if (this.cartService.remainingToPay > 0) {
-      this.payFlg = true;
-    } else {
+    if (this.selectedPaymentMethod === 'COD') {
+      this.isProcessingPayment = true;
       this.cartService.placeOrder((res: any) => {
+        this.isProcessingPayment = false;
         if (res && res.total !== undefined) {
           this.loginS.user.wallet = res.total;
         }
@@ -292,13 +392,30 @@ export class CartListComponent implements OnInit, OnDestroy {
         }
         this.loginS.readWallet();
         this.loginS.walletUpdateEvent.next([res]);
-      });
+      }, 'COD');
+      return;
+    }
+
+    if (this.cartService.remainingToPay > 0) {
+      this.payFlg = true;
+    } else {
+      this.isProcessingPayment = true;
+      this.cartService.placeOrder((res: any) => {
+        this.isProcessingPayment = false;
+        if (res && res.total !== undefined) {
+          this.loginS.user.wallet = res.total;
+        }
+        if (this.loginS.user?.walletHistory && Array.isArray(this.loginS.user.walletHistory)) {
+          this.loginS.user.walletHistory.unshift(res);
+        }
+        this.loginS.readWallet();
+        this.loginS.walletUpdateEvent.next([res]);
+      }, 'Wallet');
     }
   }
 
   payWalletAction() {
-    this.cartService.payAndCheckoutFlg = true;
-    this.cartService.router.navigate(["/home/wallet"], { queryParams: { pay: this.cartService.remainingToPay } });
+    this.payOnlineAction();
   }
 
   onTextChange(evt: any) {
@@ -308,7 +425,7 @@ export class CartListComponent implements OnInit, OnDestroy {
 
   @HostListener("click", ["$event.target"])
   outsideClickAction(evt: any) {
-    if (evt.classList[0] == "popup_parent") {
+    if (evt.classList && evt.classList[0] == "popup_parent") {
       this.payFlg = false;
     }
   }
@@ -342,8 +459,9 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.cartEventSubscription.unsubscribe();
-    this.cartupdateEventSubscription.unsubscribe();
+    this.cartEventSubscription?.unsubscribe();
+    this.cartupdateEventSubscription?.unsubscribe();
+    this.razorPaySubscription?.unsubscribe();
     this.cartService.orderPlacedFlag = false;
   }
 }

@@ -1,113 +1,317 @@
-<div class="baseCont" id="viewCont">
-    <div class="welcomeCont">
-        <div class="userName">Hi {{userName||'there!'}},</div>
-        <div class="wishes">{{greeting}}</div>
-    </div>
-    <div id="featureCont">
-        <div class="search-title">
-            What are you looking for today?<span style="float:right;" [routerLink]="['/products/search']">
-                <img src="assets/home/search.png" />
-            </span>
-        </div>
+<div class="home-view-wrapper" id="viewCont">
 
-        <div class="row" style="margin:0px; position: relative;">
-            <div class="container recent-group" style="padding: 0;">
-                <div class="row text-center" style="margin: 0px;">
-                    <div class="col-4" *ngFor="let item of categories; let i=index;" style="width:21.4% !important;">
-                        <div class="categoryItems" [routerLink]="[item.routerLink]" [queryParams]="{tnk: timestamp}">
-                            <div class="imgBg">
-                                <img [src]=item.imgUrl width="49" class="categories" alt="...">
-                            </div>
-                            <div class="card-body">
-                                <h5 class="card-title">{{item.name}}</h5>
-                            </div>
-                        </div>
-                    </div>
+    <!-- TOP IMMERSIVE HEADER (Teal Brand Canvas) -->
+    <div class="home-top-header">
+        <div class="header-inner-container">
+            <!-- Top Utility Bar: Location Selector & Wallet Chip -->
+            <div class="top-utility-bar">
+                <div class="location-chip" (click)="openAddressSelector()" title="Change Delivery Location">
+                    <span class="material-icons loc-icon">location_on</span>
+                    <span class="loc-text">{{ getAddressShortText() }}</span>
+                    <span class="material-icons loc-arrow">expand_more</span>
                 </div>
-            </div>
-        </div>
 
-        <div class="seeAll" (click)="sellAllAction()" [routerLink]="['/products/category/Vegetables']">See All</div>
-
-        <!-- Beautiful 4-Slide Banner Carousel (Vegetables, Fruits, Milk, Tender Coconut) -->
-        <div class="hero-banner-container">
-            <div class="banner-carousel" [style.transform]="'translateX(-' + (activeSlideIndex * 100) + '%)'">
-                <div class="banner-slide" 
-                     *ngFor="let slide of heroSlides; let i = index" 
-                     [style.background]="slide.bgGradient"
-                     (click)="onBannerClick(slide)">
-                    <div class="slide-content">
-                        <span class="slide-badge">{{ slide.badge }}</span>
-                        <h2 class="slide-title">{{ slide.title }}</h2>
-                        <p class="slide-desc">{{ slide.desc }}</p>
-                        <div class="slide-cta">
-                            <span>{{ slide.btnText }}</span>
-                            <span class="material-icons">arrow_forward</span>
-                        </div>
-                    </div>
-                    <div class="slide-visual">
-                        <img [src]="slide.imgUrl" [alt]="slide.title" class="slide-img" />
-                    </div>
+                <div class="wallet-chip" (click)="goToWallet()" title="Your Wallet Balance">
+                    <span class="material-icons wallet-icon">account_balance_wallet</span>
+                    <span class="wallet-balance">₹{{ walletBalance | number }}</span>
+                    <span class="material-icons wallet-add-icon">add_circle</span>
                 </div>
             </div>
 
-            <!-- Left & Right Arrow Controls -->
-            <button class="carousel-arrow prev" (click)="prevSlide($event)" aria-label="Previous Slide">
-                <span class="material-icons">chevron_left</span>
-            </button>
-            <button class="carousel-arrow next" (click)="nextSlide($event)" aria-label="Next Slide">
-                <span class="material-icons">chevron_right</span>
-            </button>
+            <!-- Welcome Greeting & Tagline -->
+            <div class="welcome-section">
+                <div class="user-greeting">
+                    <span class="material-icons greeting-time-icon">{{ greetingData.icon }}</span>
+                    <span class="greeting-text">{{ greetingData.greeting }}, {{ userName }}!</span>
+                </div>
+                <div class="greeting-tagline">
+                    Fresh morning deliveries at your doorstep by 7:00 AM
+                </div>
+            </div>
 
-            <!-- Slide Indicator Dots -->
-            <div class="carousel-dots">
-                <span *ngFor="let slide of heroSlides; let i = index" 
-                      class="dot" 
-                      [class.active]="i === activeSlideIndex"
-                      (click)="goToSlide(i); $event.stopPropagation()">
+            <!-- Interactive Search Bar Trigger -->
+            <div class="search-bar-trigger" (click)="goToSearch()">
+                <span class="material-icons search-icon">search</span>
+                <span class="search-placeholder">Search fresh veggies, milk, batter, fruits...</span>
+                <span class="search-action-badge">
+                    <span class="material-icons size-16">arrow_forward</span>
                 </span>
             </div>
         </div>
+    </div>
 
-        <div class="tnkspt-because-title">
-            Recommended
-        </div>
+    <!-- MAIN BODY CONTENT (White Sheet with curved top) -->
+    <div class="home-main-content">
+        <div class="content-inner-container">
 
-        <div class="row" style="margin:0px; position: relative;">
+            <!-- 1. ACTIVE DELIVERY TRACKER (Shows when user has an active order) -->
+            <div class="active-tracker-widget" *ngIf="activeUpcomingOrder" (click)="goToOrders()">
+                <div class="tracker-left">
+                    <div class="truck-icon-wrap">
+                        <span class="material-icons truck-icon">local_shipping</span>
+                        <span class="live-pulse-dot"></span>
+                    </div>
+                    <div class="tracker-text">
+                        <div class="tracker-eta">
+                            <span class="eta-title">Arriving {{ isTomorrow(activeUpcomingOrder.delivery_date) ?
+                                'Tomorrow' : (activeUpcomingOrder.delivery_date | date:'EEE, MMM d') }}</span>
+                            <span class="eta-slot"> • 8:00 AM – 10:00 AM</span>
+                        </div>
+                        <div class="tracker-order-id">
+                            Order {{ formatShortId(activeUpcomingOrder.order_id) }} &bull;
+                            <span class="tracker-status-tag">{{ activeUpcomingOrder.status === 'OUT_FOR_DELIVERY' ? 'Out
+                                for Delivery' : (activeUpcomingOrder.status === 'PACKED' ? 'Packed' : 'Order Placed')
+                                }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="tracker-action">
+                    <span class="track-btn-text">Track</span>
+                    <span class="material-icons size-16">chevron_right</span>
+                </div>
+            </div>
 
-            <div class="container recent-group" style="padding: 0; margin: 0;">
-                <div class=" row text-center" style="margin: 0px;">
-                    <div class="col-3" style="width: 36% !important;"
-                        *ngFor="let product of recommended_products; let i=index;">
-                        <div class="categoryItems_2">
-                            <div class="imgBg_1">
-                                <img [src]=product.img_url height="64" width="64" class="categories" alt="...">
+            <!-- 2. FRESH GROCERY PERKS STRIP (Trust & Value Props) -->
+            <div class="grocery-perks-strip">
+                <div class="perk-item" *ngFor="let perk of groceryPerks">
+                    <div class="perk-icon-circle">
+                        <span class="material-icons">{{ perk.icon }}</span>
+                    </div>
+                    <div class="perk-info">
+                        <span class="perk-title">{{ perk.title }}</span>
+                        <span class="perk-desc">{{ perk.desc }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. BUY AGAIN / RECENTLY PURCHASED SECTION (Shown if user has past orders) -->
+            <div class="section-block recent-purchases-section" *ngIf="recent_products && recent_products.length > 0">
+                <div class="section-header-row">
+                    <div class="section-title-wrap">
+                        <span class="material-icons section-title-icon reorder-icon">history</span>
+                        <div>
+                            <h2 class="section-title">Buy Again</h2>
+                            <p class="section-subtitle">Items you recently ordered</p>
+                        </div>
+                    </div>
+                    <a class="see-all-link" (click)="goToOrders()">
+                        <span>View Orders</span>
+                        <span class="material-icons size-14">arrow_forward</span>
+                    </a>
+                </div>
+
+                <div class="products-grid-scroll">
+                    <div class="product-item-card" *ngFor="let product of recent_products">
+                        <div class="prod-badge reorder-badge">Previous Order</div>
+                        <div class="prod-img-box">
+                            <img [src]="product.img_url || 'assets/general/no_image.png'" class="prod-img"
+                                [alt]="product.name" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                        </div>
+                        <div class="prod-details">
+                            <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
+                            <div class="prod-weight">{{ product.updated_weight || product.weight }} {{ product.unit_name
+                                || '' }}</div>
+                            <div class="prod-price-row">
+                                <span class="price-val">₹{{ product.price }}</span>
                             </div>
-                            <div class="p_info">
-                                <p class="card-title-plain">{{product.name}} - {{product.updated_weight ||
-                                    product.weight}} {{product.unit_name}}
-                                </p>
-                                <p class="price">₹{{product.price}}</p>
-                            </div>
+                        </div>
 
-                            <plus-minus [caption]="" [inputVal]="(product['units']||0)" [stepVal]="1" [minVal]="0"
+                        <div class="prod-action-wrap">
+                            <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
                                 (onChange)="plusMinusValue($event, product)"
-                                *ngIf="!product.disabled; else NotAvailable">
+                                *ngIf="!product.disabled; else NotAvailableRecent">
                             </plus-minus>
-
-                            <ng-template #NotAvailable>
-                                <span style="color: red;">Not Available</span>
+                            <ng-template #NotAvailableRecent>
+                                <span class="not-avail-tag">Sold Out</span>
                             </ng-template>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row" style="margin:6px; position: relative;" *ngIf="cartS.isCart$ | async">
-            <div style="height: 64px;"></div>
+            <!-- 4. CATEGORY EXPLORER -->
+            <div class="section-block categories-section">
+                <div class="section-header-row">
+                    <div class="section-title-wrap">
+                        <span class="material-icons section-title-icon">grid_view</span>
+                        <h2 class="section-title">Shop by Category</h2>
+                    </div>
+                    <a class="see-all-link" (click)="sellAllAction()" [routerLink]="['/products/category/Vegetables']">
+                        <span>See All</span>
+                        <span class="material-icons size-14">arrow_forward</span>
+                    </a>
+                </div>
+
+                <div class="categories-scroll-wrapper">
+                    <div class="category-card" *ngFor="let item of categories" [routerLink]="[item.routerLink]"
+                        [queryParams]="{tnk: timestamp}">
+                        <div class="cat-img-box">
+                            <img [src]="item.imgUrl" class="cat-img" [alt]="item.name"
+                                onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'">
+                        </div>
+                        <span class="cat-name">{{ item.name }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. FEATURED HERO PROMO CAROUSEL -->
+            <div class="hero-banner-container">
+                <div class="banner-carousel" [style.transform]="'translateX(-' + (activeSlideIndex * 100) + '%)'">
+                    <div class="banner-slide" *ngFor="let slide of heroSlides; let i = index"
+                        [style.background]="slide.bgGradient" (click)="onBannerClick(slide)">
+                        <div class="slide-content">
+                            <span class="slide-badge">{{ slide.badge }}</span>
+                            <h2 class="slide-title">{{ slide.title }}</h2>
+                            <p class="slide-desc">{{ slide.desc }}</p>
+                            <div class="slide-cta">
+                                <span>{{ slide.btnText }}</span>
+                                <span class="material-icons">arrow_forward</span>
+                            </div>
+                        </div>
+                        <div class="slide-visual">
+                            <img [src]="slide.imgUrl" [alt]="slide.title" class="slide-img" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Arrow Controls -->
+                <button class="carousel-arrow prev" (click)="prevSlide($event)" aria-label="Previous Slide">
+                    <span class="material-icons">chevron_left</span>
+                </button>
+                <button class="carousel-arrow next" (click)="nextSlide($event)" aria-label="Next Slide">
+                    <span class="material-icons">chevron_right</span>
+                </button>
+
+                <!-- Indicator Dots -->
+                <div class="carousel-dots">
+                    <span *ngFor="let slide of heroSlides; let i = index" class="dot"
+                        [class.active]="i === activeSlideIndex" (click)="goToSlide(i); $event.stopPropagation()">
+                    </span>
+                </div>
+            </div>
+
+            <!-- 6. FRESHLY GROUND BATTERS SECTION -->
+            <div class="section-block batter-section" *ngIf="batter_products && batter_products.length > 0">
+                <div class="section-header-row">
+                    <div class="section-title-wrap">
+                        <span class="material-icons section-title-icon batter-icon">breakfast_dining</span>
+                        <div>
+                            <h2 class="section-title">Freshly Ground Batters</h2>
+                            <p class="section-subtitle">Naturally fermented, 0 preservatives & stone ground</p>
+                        </div>
+                    </div>
+                    <a class="see-all-link" (click)="goToCategory('Batter')">
+                        <span>See All Batters</span>
+                        <span class="material-icons size-14">arrow_forward</span>
+                    </a>
+                </div>
+
+                <div class="products-grid-scroll">
+                    <div class="product-item-card batter-card" *ngFor="let product of batter_products">
+                        <div class="prod-badge batter-badge">Stone Ground</div>
+                        <div class="prod-img-box">
+                            <img [src]="product.img_url || 'assets/categories/Thinkspot_BatterIcon.png'"
+                                class="prod-img" [alt]="product.name"
+                                onerror="this.src='assets/categories/Thinkspot_BatterIcon.png'" />
+                        </div>
+                        <div class="prod-details">
+                            <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
+                            <div class="prod-weight">{{ product.updated_weight || product.weight }} {{ product.unit_name
+                                || 'grams' }}</div>
+                            <div class="prod-price-row">
+                                <span class="price-val">₹{{ product.price }}</span>
+                            </div>
+                        </div>
+
+                        <div class="prod-action-wrap">
+                            <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
+                                (onChange)="plusMinusValue($event, product)"
+                                *ngIf="!product.disabled; else NotAvailableBatter">
+                            </plus-minus>
+                            <ng-template #NotAvailableBatter>
+                                <span class="not-avail-tag">Sold Out</span>
+                            </ng-template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. FARM-FRESH RECOMMENDED PICKS -->
+            <div class="section-block recommended-section">
+                <div class="section-header-row">
+                    <div class="section-title-wrap">
+                        <span class="material-icons section-title-icon fresh-icon">eco</span>
+                        <div>
+                            <h2 class="section-title">Farm Fresh Recommended</h2>
+                            <p class="section-subtitle">Handpicked daily from organic growers</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="products-grid-scroll" *ngIf="recommended_products && recommended_products.length > 0">
+                    <div class="product-item-card" *ngFor="let product of recommended_products">
+                        <div class="prod-badge">Farm Direct</div>
+                        <div class="prod-img-box">
+                            <img [src]="product.img_url || 'assets/general/no_image.png'" class="prod-img"
+                                [alt]="product.name" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                        </div>
+                        <div class="prod-details">
+                            <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
+                            <div class="prod-weight">{{ product.updated_weight || product.weight }} {{ product.unit_name
+                                || '' }}</div>
+                            <div class="prod-price-row">
+                                <span class="price-val">₹{{ product.price }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Stepper / Add button -->
+                        <div class="prod-action-wrap">
+                            <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
+                                (onChange)="plusMinusValue($event, product)"
+                                *ngIf="!product.disabled; else NotAvailable">
+                            </plus-minus>
+                            <ng-template #NotAvailable>
+                                <span class="not-avail-tag">Sold Out</span>
+                            </ng-template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. WHY CHOOSE THINKSPOT (Freshness Promise) -->
+            <div class="section-block freshness-promise-block">
+                <h3 class="promise-heading">The Thinkspot Freshness Promise</h3>
+                <div class="promise-cards-grid">
+                    <div class="promise-card">
+                        <div class="promise-icon-wrap">
+                            <span class="material-icons">agriculture</span>
+                        </div>
+                        <h4 class="promise-title">Direct from Farms</h4>
+                        <p class="promise-desc">Harvested within 12 hours of delivery directly from local trusted farms.
+                        </p>
+                    </div>
+                    <div class="promise-card">
+                        <div class="promise-icon-wrap">
+                            <span class="material-icons">verified</span>
+                        </div>
+                        <h4 class="promise-title">100% Quality Checked</h4>
+                        <p class="promise-desc">Strict quality grading ensures only unblemished, wholesome produce
+                            reaches you.</p>
+                    </div>
+                    <div class="promise-card">
+                        <div class="promise-icon-wrap">
+                            <span class="material-icons">savings</span>
+                        </div>
+                        <h4 class="promise-title">Zero Delivery Fee</h4>
+                        <p class="promise-desc">Enjoy everyday free early morning doorstep delivery on active daily
+                            subscriptions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Minimized compact bottom spacing when cart is active -->
+            <div class="bottom-spacer" *ngIf="cartS.isCart$ | async"></div>
+
         </div>
     </div>
-    <div class="clearfix"></div>
-    <!-- <app-footer></app-footer> -->
 </div>

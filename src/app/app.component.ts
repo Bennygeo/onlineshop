@@ -13,7 +13,7 @@ import { Utils } from './utils/utils';
 })
 export class AppComponent implements OnInit {
   loadingFlg: boolean = false;
-  test:string="trt";
+  test: string = "trt";
 
   cart_details: CartDetails = {
     total: 0,
@@ -58,7 +58,7 @@ export class AppComponent implements OnInit {
         const hash = window.location.hash || "";
         this.isAdminPage = url.startsWith("/admin") || hash.includes("admin") || window.location.pathname.includes("admin");
 
-        if (url === "/home/view") {
+        if (url === "/home/view" || url === "/products/search") {
           this.bottombarClass = "type1";
         } else if (url.search("/products/category/") != 1) {
           this.bottombarClass = "type2";

@@ -2,55 +2,116 @@
   <!-- Top Admin Navigation Bar -->
   <header class="admin-header">
     <div class="admin-header-container">
-      <div class="brand-box">
-        <img src="assets/home/banners/ThinkSpot_logo.png" alt="ThinkSpot Admin" class="logo" />
-        <div class="brand-title">
-          <span class="main">ThinkSpot Admin</span>
-          <span class="sub">Store Control Center</span>
+      <div class="header-left">
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation menu">
+          <span class="material-icons">{{ mobileMenuOpen ? 'close' : 'menu' }}</span>
+        </button>
+
+        <div class="brand-box">
+          <!-- <img src="assets/home/banners/ThinkSpot_logo.png" alt="ThinkSpot Admin" class="logo" /> -->
+          <div class="brand-title">
+            <span class="main">ThinkSpot Admin</span>
+            <span class="sub">Store Control Center</span>
+          </div>
         </div>
       </div>
 
       <div class="header-right">
-        <a routerLink="/web" class="customer-site-btn">
+        <a routerLink="/web" class="customer-site-btn" title="View Storefront">
           <span class="material-icons">open_in_new</span>
-          <span>View Storefront (Web)</span>
+          <span class="btn-text">Storefront</span>
         </a>
-        <div class="admin-profile-chip">
+        <div class="admin-profile-chip" [title]="currentUser?.role || 'Store Manager'">
           <span class="material-icons">admin_panel_settings</span>
-          <span>Store Manager</span>
+          <span class="profile-text">{{ currentUser?.displayName || currentUser?.username || 'Manager' }}</span>
         </div>
+        <button class="logout-btn" (click)="logout()" title="Sign Out">
+          <span class="material-icons">logout</span>
+          <span class="logout-text">Sign Out</span>
+        </button>
       </div>
     </div>
   </header>
 
+  <!-- Mobile Drawer Overlay & Sidebar -->
+  <div class="mobile-drawer-overlay" *ngIf="mobileMenuOpen" (click)="closeMobileMenu()"></div>
+
   <!-- Sidebar + Router Workspace -->
   <div class="admin-main-container">
-    <aside class="admin-sidebar">
+    <!-- Desktop Sidebar & Mobile Drawer -->
+    <aside class="admin-sidebar" [class.mobile-open]="mobileMenuOpen">
+      <div class="drawer-header" *ngIf="mobileMenuOpen">
+        <div class="drawer-user-info">
+          <span class="material-icons user-avatar">account_circle</span>
+          <div class="user-meta">
+            <span class="user-name">{{ currentUser?.displayName || currentUser?.username || 'Admin' }}</span>
+            <span class="user-role">{{ currentUser?.role || 'Store Manager' }}</span>
+          </div>
+        </div>
+        <button class="drawer-close-btn" (click)="closeMobileMenu()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
       <nav class="sidebar-nav">
-        <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+        <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
           <span class="material-icons">dashboard</span>
           <span>Sales Dashboard</span>
         </a>
 
-        <a routerLink="/admin/products" routerLinkActive="active" class="nav-item">
+        <a routerLink="/admin/products" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
           <span class="material-icons">inventory_2</span>
           <span>Products Catalog</span>
         </a>
 
-        <a routerLink="/admin/orders" routerLinkActive="active" class="nav-item">
+        <a routerLink="/admin/orders" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
           <span class="material-icons">local_shipping</span>
           <span>Orders & Dispatch</span>
         </a>
 
-        <a routerLink="/admin/delivery" routerLinkActive="active" class="nav-item">
+        <a routerLink="/admin/delivery" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
           <span class="material-icons">two_wheeler</span>
           <span>Delivery Console</span>
         </a>
       </nav>
+
+      <div class="drawer-footer">
+        <a routerLink="/web" class="drawer-storefront-link" (click)="closeMobileMenu()">
+          <span class="material-icons">storefront</span>
+          <span>Customer Web Store</span>
+        </a>
+        <button type="button" class="drawer-logout-link" (click)="logout()">
+          <span class="material-icons">logout</span>
+          <span>Sign Out</span>
+        </button>
+      </div>
     </aside>
 
     <main class="admin-content-area">
       <router-outlet></router-outlet>
     </main>
   </div>
+
+  <!-- Mobile Bottom Quick Navigation Bar -->
+  <nav class="mobile-bottom-nav">
+    <a routerLink="/admin/dashboard" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-icons">dashboard</span>
+      <span class="nav-label">Dashboard</span>
+    </a>
+
+    <a routerLink="/admin/products" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-icons">inventory_2</span>
+      <span class="nav-label">Products</span>
+    </a>
+
+    <a routerLink="/admin/orders" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-icons">local_shipping</span>
+      <span class="nav-label">Orders</span>
+    </a>
+
+    <a routerLink="/admin/delivery" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-icons">two_wheeler</span>
+      <span class="nav-label">Delivery</span>
+    </a>
+  </nav>
 </div>

@@ -3,18 +3,20 @@
     <app-header></app-header>
     <router-outlet></router-outlet>
 
-    <div id="bottom_cart_view" [class]="bottombarClass" *ngIf="cartS.isCart$ | async">
-        <div class="bag_img_cont">
-            <img src="assets/cart/cart_bag.png" width="23" height="23" alt="Cart bag" />
+    <div id="bottom_cart_view" [class]="bottombarClass" *ngIf="cartS.isCart$ | async" [routerLink]="'products/cart'">
+        <div class="cart-left-info">
+            <div class="cart-icon-pill">
+                <span class="material-icons-round">shopping_bag</span>
+            </div>
+            <div class="cart-meta-wrap">
+                <span class="cart-items-count">{{cart_details['totalItems']}} {{cart_details['totalItems'] === 1 ? 'item' : 'items'}}</span>
+                <span class="cart-total-amount">₹{{cart_details['total'] | number:'1.0-0'}}</span>
+            </div>
         </div>
-        <div class="bag_content">
-            {{cart_details['totalItems']}} items
-        </div>
-        <div [routerLink]="'products/cart'" class="cart-box">
-            <span class="cart-total">₹ {{cart_details['total'] | number}}</span>
-            <span class="material-icons arrow-icon">
-                keyboard_arrow_right
-            </span>
+
+        <div class="cart-right-action">
+            <span class="view-cart-text">View Cart</span>
+            <span class="material-icons-round arrow-icon">arrow_forward</span>
         </div>
     </div>
 

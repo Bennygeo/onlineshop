@@ -9,7 +9,7 @@ if (!$details) {
 }
 
 $mobile = isset($details['mobile']) ? $details['mobile'] : (isset($details['user_id']) ? $details['user_id'] : '');
-$total_amount = isset($details['total_amount']) ? (float)$details['total_amount'] : (isset($details['amount']) ? (float)$details['amount'] : 0);
+$total_amount = isset($details['total_amount']) ? round((float)$details['total_amount']) : (isset($details['amount']) ? round((float)$details['amount']) : 0);
 $payment_type = isset($details['payment_type']) ? $details['payment_type'] : 'Wallet';
 $address_json = isset($details['address']) ? (is_string($details['address']) ? $details['address'] : json_encode($details['address'])) : '';
 $order_id = isset($details['order_id']) && !empty($details['order_id']) ? $details['order_id'] : ('ORD_' . date('YmdHis') . '_' . rand(100, 999));
@@ -45,7 +45,7 @@ if ($finalTotal <= 0 && !empty($items) && is_array($items)) {
     $calcTotal = 0;
     foreach ($items as $item) {
         $qty = isset($item['qty']) ? (int)$item['qty'] : (isset($item['quantity']) ? (int)$item['quantity'] : (isset($item['units']) ? (int)$item['units'] : 1));
-        $price = isset($item['price']) ? (float)$item['price'] : 0;
+        $price = isset($item['price']) ? round((float)$item['price']) : 0;
         $rangeDates = isset($item['rangeDates']) ? (is_string($item['rangeDates']) ? $item['rangeDates'] : json_encode($item['rangeDates'])) : '[]';
         $subsDates = isset($item['subscribedDates']) ? (is_string($item['subscribedDates']) ? $item['subscribedDates'] : json_encode($item['subscribedDates'])) : '[]';
         $daysCount = 1;
@@ -56,25 +56,26 @@ if ($finalTotal <= 0 && !empty($items) && is_array($items)) {
             $s = json_decode($subsDates, true);
             if (is_array($s) && count($s) > 0) $daysCount = count($s);
         }
-        if (isset($item['unit_price']) && (float)$item['unit_price'] > 0 && $price == (float)$item['unit_price']) {
-            $price = (float)$item['unit_price'] * $qty * $daysCount;
+        if (isset($item['unit_price']) && (float)$item['unit_price'] > 0 && $price == round((float)$item['unit_price'])) {
+            $price = round((float)$item['unit_price'] * $qty * $daysCount);
         }
         $calcTotal += $price;
     }
     if ($calcTotal > 0) {
-        $finalTotal = $calcTotal;
+        $finalTotal = round($calcTotal);
     }
 }
+$finalTotal = round($finalTotal);
 
-// Verify available wallet balance
-if ($mobile) {
+// Verify available wallet balance (only required for Prepaid / Wallet payment)
+if ($mobile && $payment_type !== 'COD') {
     $stmtBal = $pdo->prepare("SELECT amount, type, status FROM wallets WHERE mobile = ?");
     $stmtBal->execute([$mobile]);
     $walletRows = $stmtBal->fetchAll();
 
     $availableWalletBalance = 0;
     foreach ($walletRows as $wRow) {
-        $wAmt = (float)$wRow['amount'];
+        $wAmt = round((float)$wRow['amount']);
         $wType = strtoupper($wRow['type']);
         $wStatus = strtolower($wRow['status'] ?: 'authorized');
 
@@ -86,10 +87,11 @@ if ($mobile) {
             }
         }
     }
+    $availableWalletBalance = round($availableWalletBalance);
 
-    if ($availableWalletBalance < ($finalTotal - 0.01)) {
+    if ($availableWalletBalance < $finalTotal) {
         sendJson([
-            'error' => 'Insufficient wallet balance. Available: ₹' . number_format($availableWalletBalance, 2) . ', Required: ₹' . number_format($finalTotal, 2),
+            'error' => 'Insufficient wallet balance. Available: ₹' . number_format($availableWalletBalance, 0) . ', Required: ₹' . number_format($finalTotal, 0),
             'code' => 'INSUFFICIENT_WALLET_BALANCE',
             'available_balance' => $availableWalletBalance,
             'required_amount' => $finalTotal
@@ -120,6 +122,8 @@ try {
     $stmtCheck = $pdo->prepare("SELECT order_id, status FROM orders WHERE order_id = ?");
     $stmtCheck->execute([$order_id]);
     $existing = $stmtCheck->fetch();
+
+    $total_amount = round($total_amount);
 
     if ($existing && $existing['status'] === 'CART') {
         $stmtUpd = $pdo->prepare("UPDATE orders SET mobile = ?, address_json = ?, total_amount = ?, payment_type = ?, status = 'PLACED', delivery_date = ?, delivery_inst = ?, delivery_mode = ? WHERE order_id = ?");
@@ -161,11 +165,12 @@ try {
                 if (is_array($s) && count($s) > 0) $daysCount = count($s);
             }
 
-            $price = isset($item['price']) ? (float)$item['price'] : 0;
-            if (isset($item['unit_price']) && (float)$item['unit_price'] > 0 && $price == (float)$item['unit_price']) {
-                $price = (float)$item['unit_price'] * $qty * $daysCount;
+            $price = isset($item['price']) ? round((float)$item['price']) : 0;
+            if (isset($item['unit_price']) && (float)$item['unit_price'] > 0 && $price == round((float)$item['unit_price'])) {
+                $price = round((float)$item['unit_price'] * $qty * $daysCount);
             }
 
+            $price = round($price);
             $calculatedOrderTotal += $price;
 
             if ($prod_id) {
@@ -173,6 +178,7 @@ try {
             }
         }
 
+        $calculatedOrderTotal = round($calculatedOrderTotal);
         if ($calculatedOrderTotal > 0 && $total_amount <= 0) {
             $total_amount = $calculatedOrderTotal;
             $updTotal = $pdo->prepare("UPDATE orders SET total_amount = ? WHERE order_id = ?");
@@ -181,12 +187,12 @@ try {
     }
 
     $walletId = null;
-    // Insert wallet debit transaction
-    if ($mobile && $total_amount > 0) {
+    // Insert wallet debit transaction only for non-COD orders
+    if ($mobile && $total_amount > 0 && $payment_type !== 'COD') {
         $walletStmt = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description, status) VALUES (?, ?, 'DEBIT', ?, 'placed')");
         $walletStmt->execute([
             $mobile,
-            $total_amount,
+            round($total_amount),
             "Order #{$order_id} placed"
         ]);
         $walletId = $pdo->lastInsertId();
@@ -194,15 +200,32 @@ try {
 
     $pdo->commit();
 
-    $newWalletBalance = isset($availableWalletBalance) ? max(0, $availableWalletBalance - $total_amount) : 0;
+    // Calculate current wallet balance
+    $currentWalletBal = 0;
+    if ($mobile) {
+        $stmtBal = $pdo->prepare("SELECT amount, type, status FROM wallets WHERE mobile = ?");
+        $stmtBal->execute([$mobile]);
+        $walletRows = $stmtBal->fetchAll();
+        foreach ($walletRows as $wRow) {
+            $wAmt = round((float)$wRow['amount']);
+            $wType = strtoupper($wRow['type']);
+            $wStatus = strtolower($wRow['status'] ?: 'authorized');
+            if ($wStatus === 'authorized' || $wStatus === 'captured' || $wStatus === 'placed' || $wStatus === 'success') {
+                if ($wType === 'DEBIT') $currentWalletBal -= $wAmt;
+                else $currentWalletBal += $wAmt;
+            }
+        }
+        $currentWalletBal = max(0, round($currentWalletBal));
+    }
 
     sendJson([
         'status' => 'SUCCESS',
         'order_id' => $order_id,
-        'amount' => $total_amount,
-        'total' => $newWalletBalance,
-        'type' => 'Debit',
-        'description' => "Order #{$order_id} placed",
+        'amount' => round($total_amount),
+        'total' => $currentWalletBal,
+        'payment_type' => $payment_type,
+        'type' => ($payment_type === 'COD') ? 'COD' : 'Debit',
+        'description' => "Order #{$order_id} placed (" . ($payment_type === 'COD' ? 'Cash on Delivery' : 'Prepaid') . ")",
         'created_at' => date('Y-m-d H:i:s'),
         'timestamp' => time() * 1000,
         'trxn_id' => 'TXN_' . ($walletId ?: rand(100, 999))

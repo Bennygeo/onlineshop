@@ -144,6 +144,17 @@ export class AddressComponent implements OnInit, OnChanges {
     });
   }
 
+  setTitlePreset(preset: string): void {
+    if (this.addressGroup) {
+      this.addressGroup.get('title')?.setValue(preset);
+      this.cdr.detectChanges();
+    }
+  }
+
+  isPresetActive(preset: string): boolean {
+    return this.addressGroup?.get('title')?.value?.toLowerCase() === preset.toLowerCase();
+  }
+
   onReferralSubmit(evt, val) {
     document.getElementById("#referral").setAttribute("disabled", "true");
   }

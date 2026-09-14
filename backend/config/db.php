@@ -36,8 +36,73 @@ try {
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
+
+    // Auto-ensure required columns exist in production
+    ensureSchemaColumns($pdo);
 } catch (PDOException $e) {
     $pdo = null;
+}
+
+function ensureSchemaColumns($pdo) {
+    if (!$pdo) return;
+    static $ensured = false;
+    if ($ensured) return;
+    $ensured = true;
+
+    $columns = [
+        "orders" => [
+            "assigned_to VARCHAR(100) DEFAULT ''",
+            "delivery_inst TEXT",
+            "delivery_mode VARCHAR(100) DEFAULT ''",
+            "delivered_at DATETIME NULL",
+            "undelivered_reason VARCHAR(255) DEFAULT NULL",
+            "refund_amount DECIMAL(10,2) DEFAULT 0.00",
+            "refund_notes TEXT DEFAULT NULL"
+        ],
+        "order_items" => [
+            "item_status VARCHAR(50) DEFAULT 'packed'",
+            "missing_qty INT DEFAULT 0",
+            "refund_amount DECIMAL(10,2) DEFAULT 0.00",
+            "subscriptionType VARCHAR(50) DEFAULT 'none'",
+            "rangeDates TEXT",
+            "subscribedDates TEXT",
+            "subsStatus VARCHAR(50) DEFAULT 'active'",
+            "pausedDates TEXT",
+            "startDate VARCHAR(50) DEFAULT ''",
+            "endDate VARCHAR(50) DEFAULT ''"
+        ],
+        "wallets" => [
+            "status VARCHAR(20) DEFAULT 'authorized'"
+        ],
+        "users" => [
+            "referral_id VARCHAR(50) DEFAULT NULL"
+        ],
+        "coupons" => [
+            "count INT DEFAULT 5",
+            "categories VARCHAR(255) DEFAULT 'all'",
+            "description VARCHAR(255) DEFAULT NULL",
+            "offer VARCHAR(100) DEFAULT NULL",
+            "offer_desc VARCHAR(255) DEFAULT NULL"
+        ]
+    ];
+
+    foreach ($columns as $table => $cols) {
+        foreach ($cols as $colDef) {
+            try {
+                $pdo->exec("ALTER TABLE `$table` ADD COLUMN $colDef");
+            } catch (Exception $ex) {
+                // Column already exists or table not yet created
+            }
+        }
+    }
+
+    // Bi-directional sync: if either razorpay_orders or wallets table is cleared, clear the other
+    syncWalletAndRazorpayTables($pdo);
+}
+
+function syncWalletAndRazorpayTables($pdo) {
+    // Safe no-op to prevent destructive deletion of wallet records
+    return;
 }
 
 /**

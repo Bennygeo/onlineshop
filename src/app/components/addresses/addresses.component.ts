@@ -246,6 +246,28 @@ export class AddressesComponent implements OnInit, OnDestroy {
     return !!address && (address.default == 1 || address['is_default'] == 1);
   }
 
+  getAddressIcon(title: string): string {
+    if (!title) return 'place';
+    const t = title.toLowerCase();
+    if (t.includes('home')) return 'home';
+    if (t.includes('work') || t.includes('office')) return 'work';
+    if (t.includes('flat') || t.includes('apt') || t.includes('apartment')) return 'apartment';
+    return 'place';
+  }
+
+  selectCardAddress(address: Address, index: number): void {
+    if (this.selectedIndex === index && address.active === 1) {
+      return;
+    }
+    this.selectedIndex = index;
+    for (var ind = 0; ind < this.addresses.length; ind++) {
+      this.addresses[ind].active = (ind === index) ? 1 : 0;
+    }
+    this.user.address = this.addresses[index];
+    this.selectedAddress = this.addresses[index];
+    this.user.pincode = this.user.address.pincode;
+  }
+
   syncActiveAddress(): void {
     if (this.addresses && this.addresses.length > 0) {
       let activeIdx = -1;
@@ -272,6 +294,5 @@ export class AddressesComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // this.loginS.noAddressEvent.complete();
   }
 }

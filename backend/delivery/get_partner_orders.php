@@ -85,7 +85,7 @@ try {
                 'product_id' => $it['product_id'],
                 'name' => !empty($it['product_name']) ? $it['product_name'] : 'Product Item',
                 'quantity' => $todayCount,
-                'price' => floatval($it['price']),
+                'price' => round(floatval($it['price'])),
                 'weight' => $it['weight'] ?? $it['base_weight'] ?? '1 kg',
                 'unit_name' => $it['unit_name'] ?? 'pack',
                 'img_url' => !empty($it['img_url']) ? $it['img_url'] : 'assets/categories/Thinkspot_veggiesIcon.png',
@@ -123,7 +123,7 @@ try {
             'address_text' => is_array($parsedAddr) 
                 ? (($parsedAddr['name'] ? $parsedAddr['name'] . ', ' : '') . ($parsedAddr['address'] ?? $parsedAddr['addr_line_1'] ?? '') . ' ' . ($parsedAddr['landmark'] ?? '') . ' - ' . ($parsedAddr['pincode'] ?? ''))
                 : (string)($ord['address_json'] ?? ''),
-            'total_amount' => floatval($ord['total_amount']),
+            'total_amount' => round(floatval($ord['total_amount'])),
             'payment_type' => $ord['payment_type'] ?? 'Wallet',
             'status' => $orderStatus,
             'delivery_category' => $deliveryStatusCategory,

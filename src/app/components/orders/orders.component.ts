@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CartService } from 'src/app/services/cart.service';
+import { LoginService } from 'src/app/services/login.service';
 import { OrderService } from 'src/app/services/order.service';
 import { Product } from 'src/app/utils/types';
 import { Utils } from 'src/app/utils/utils';
@@ -21,20 +22,46 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   orderViewFlag: boolean = false;
   orderCancelFlag: boolean = false;
+  itemCancelFlag: boolean = false;
+  isCancelling: boolean = false;
 
-  targetOrder: any;
+  targetOrder: any = null;
+  targetItemToCancel: any = null;
+  targetItemOrder: any = null;
+
+  toastNotification: { show: boolean, message: string, type: string } = { show: false, message: '', type: 'success' };
 
   subscriptionOrders: any = {};
   subscriptionOrdersLength: number = 0;
 
   expanded: boolean = false;
-  testC: string = "dgrt\n<b>rtwertre</b>\nfdgsdfg\nfdgfgd\nfdgfdgsdf\n\nsdsadfdsf\n";
+  copiedOrderId: string = '';
 
   constructor(
-    private cartService: CartService,
+    public cartService: CartService,
     public orderService: OrderService,
+    public loginService: LoginService,
     private utils: Utils
   ) {
+  }
+
+  showToast(message: string, type: 'success' | 'info' | 'error' = 'success') {
+    this.toastNotification = { show: true, message, type };
+    setTimeout(() => {
+      this.toastNotification.show = false;
+    }, 4500);
+  }
+
+  formatShortId(orderId: string): string {
+    if (!orderId) return '';
+    const parts = String(orderId).split('_');
+    if (parts.length >= 3) {
+      return '#' + parts[parts.length - 1];
+    }
+    if (orderId.length > 8) {
+      return '#' + orderId.slice(-5);
+    }
+    return '#' + orderId;
   }
 
   safeDate(rawDate: any): Date {
@@ -54,6 +81,23 @@ export class OrdersComponent implements OnInit, OnDestroy {
     }
   }
 
+  copyOrderId(id: string, event: MouseEvent) {
+    event.stopPropagation();
+    if (!id) return;
+    navigator.clipboard?.writeText(id).then(() => {
+      this.copiedOrderId = id;
+      setTimeout(() => {
+        if (this.copiedOrderId === id) {
+          this.copiedOrderId = '';
+        }
+      }, 2000);
+    });
+  }
+
+  shopNow() {
+    this.cartService.router.navigate(['/products/category/Vegetables']);
+  }
+
   getDeliveryModeText(mode: any): string {
     if (mode === undefined || mode === null || mode === '') return 'Leave at door';
     const sMode = String(mode).trim().toLowerCase();
@@ -61,6 +105,35 @@ export class OrdersComponent implements OnInit, OnDestroy {
     if (sMode === '1' || sMode.includes('ring')) return 'Ring the bell';
     if (sMode === '2' || sMode.includes('hand')) return 'Hand it over to me';
     return String(mode);
+  }
+
+  getDeliveryModeIcon(mode: any): string {
+    if (mode === undefined || mode === null || mode === '') return 'door_front';
+    const sMode = String(mode).trim().toLowerCase();
+    if (sMode === '0' || sMode.includes('door')) return 'door_front';
+    if (sMode === '1' || sMode.includes('ring')) return 'notifications_active';
+    if (sMode === '2' || sMode.includes('hand')) return 'pan_tool';
+    return 'local_shipping';
+  }
+
+  getStatusBadge(status: string): { label: string, icon: string, class: string } {
+    const s = String(status || '').toUpperCase();
+    switch (s) {
+      case 'PLACED':
+        return { label: 'Order Placed', icon: 'inventory_2', class: 'status-placed' };
+      case 'PACKED':
+        return { label: 'Packed & Ready', icon: 'takeout_dining', class: 'status-packed' };
+      case 'OUT_FOR_DELIVERY':
+        return { label: 'Out for Delivery', icon: 'local_shipping', class: 'status-out' };
+      case 'DELIVERED':
+        return { label: 'Delivered', icon: 'check_circle', class: 'status-delivered' };
+      case 'UNDELIVERED':
+        return { label: 'Undelivered', icon: 'error_outline', class: 'status-undelivered' };
+      case 'CANCELLED':
+        return { label: 'Cancelled', icon: 'cancel', class: 'status-cancelled' };
+      default:
+        return { label: s || 'Active', icon: 'info', class: 'status-placed' };
+    }
   }
 
   isSubscriptionProduct(pro: any): boolean {
@@ -273,6 +346,9 @@ export class OrdersComponent implements OnInit, OnDestroy {
           for (let product of itemsList) {
             const pId = product.productID || product.product_id;
             productsMap[pId] = {
+              order_item_id: product.id,
+              product_id: pId,
+              productID: pId,
               quantity: product.quantity,
               price: product.price,
               weight: product.weight,
@@ -280,6 +356,9 @@ export class OrdersComponent implements OnInit, OnDestroy {
               img_url: product.img_url,
               subscriptionType: product.subscriptionType,
               is_subscription: product.is_subscription,
+              item_status: product.item_status || 'active',
+              subsStatus: product.subsStatus || 'active',
+              refund_amount: product.refund_amount || 0,
               rangeDates: (product.rangeDates && product.rangeDates != "undefined") ? (typeof product.rangeDates === 'string' ? JSON.parse(product.rangeDates) : product.rangeDates) : [],
               subscribedDates: (product.subscribedDates && product.subscribedDates != "undefined") ? (typeof product.subscribedDates === 'string' ? JSON.parse(product.subscribedDates) : product.subscribedDates) : []
             };
@@ -291,11 +370,16 @@ export class OrdersComponent implements OnInit, OnDestroy {
               if (prodRes && prodRes.live) {
                 prodRes.live.forEach(item => {
                   const pData = productsMap[item.id] || {};
+                  item.order_item_id = pData.order_item_id;
+                  item.product_id = item.id;
+                  item.productID = item.id;
                   item.units = pData.quantity || 1;
                   item.price = pData.price || item.price;
                   item.name = item.name || pData.product_name || 'Product Item';
                   item.img_url = item.img_url || pData.img_url;
                   item.is_subscription = (pData.is_subscription !== undefined) ? pData.is_subscription : false;
+                  item.item_status = pData.item_status || 'active';
+                  item.subsStatus = pData.subsStatus || 'active';
                   liveProducts.push({ ...item, ...pData });
                 });
               }
@@ -336,12 +420,107 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   orderCancelConfirmAction() {
-    this.orderService.cancelOrder(this.targetOrder);
+    if (!this.targetOrder) return;
+    this.isCancelling = true;
+
+    this.orderService.cancelOrder(this.targetOrder).subscribe({
+      next: (res: any) => {
+        this.isCancelling = false;
+        this.orderCancelFlag = false;
+
+        const isSuccess = res === 'SUCCESS' || res?.status === 'SUCCESS';
+        if (isSuccess) {
+          this.targetOrder.status = 'CANCELLED';
+          if (res?.refund_amount > 0) {
+            this.targetOrder.refund_amount = res.refund_amount;
+            this.loginService.readWallet();
+            this.showToast(`Order cancelled. ₹${res.refund_amount} has been refunded to your wallet!`, 'success');
+          } else {
+            const codMsg = this.targetOrder.payment_type === 'COD' 
+              ? 'Order cancelled. Since this was Cash on Delivery, no wallet refund was needed.' 
+              : 'Order cancelled successfully.';
+            this.showToast(codMsg, 'info');
+          }
+
+          // Move order from upcomingOrders to pastOrders
+          this.upcomingOrders = this.upcomingOrders.filter(o => o.order_id !== this.targetOrder.order_id);
+          if (!this.pastOrders.some(o => o.order_id === this.targetOrder.order_id)) {
+            this.pastOrders.unshift(this.targetOrder);
+          }
+        } else {
+          this.showToast(res?.error || 'Unable to cancel order.', 'error');
+        }
+      },
+      error: (err: any) => {
+        this.isCancelling = false;
+        this.orderCancelFlag = false;
+        this.showToast(err?.error?.error || 'Error cancelling order.', 'error');
+      }
+    });
+  }
+
+  promptCancelItem(order: any, item: any, event: MouseEvent) {
+    event.stopPropagation();
+    this.targetItemOrder = order;
+    this.targetItemToCancel = item;
+    this.itemCancelFlag = true;
+  }
+
+  confirmCancelItem() {
+    if (!this.targetItemOrder || !this.targetItemToCancel) return;
+    this.isCancelling = true;
+
+    this.orderService.cancelOrderItem(this.targetItemOrder.order_id, this.targetItemToCancel).subscribe({
+      next: (res: any) => {
+        this.isCancelling = false;
+        this.itemCancelFlag = false;
+
+        if (res && res.status === 'SUCCESS') {
+          this.targetItemToCancel.item_status = 'cancelled';
+          this.targetItemToCancel.subsStatus = 'cancelled';
+
+          if (res.new_order_total !== undefined) {
+            this.targetItemOrder.order_total = res.new_order_total;
+          }
+          if (res.order_status) {
+            this.targetItemOrder.status = res.order_status;
+            if (res.order_status === 'CANCELLED') {
+              this.upcomingOrders = this.upcomingOrders.filter(o => o.order_id !== this.targetItemOrder.order_id);
+              if (!this.pastOrders.some(o => o.order_id === this.targetItemOrder.order_id)) {
+                this.pastOrders.unshift(this.targetItemOrder);
+              }
+            }
+          }
+
+          if (res.refund_amount > 0) {
+            this.targetItemOrder.refund_amount = (this.targetItemOrder.refund_amount || 0) + res.refund_amount;
+            this.loginService.readWallet();
+            this.showToast(`Item cancelled. ₹${res.refund_amount} refunded to your wallet!`, 'success');
+          } else {
+            const itemMsg = this.targetItemOrder.payment_type === 'COD'
+              ? `Item cancelled. Order total payable on delivery updated to ₹${res.new_order_total || this.targetItemOrder.order_total}.`
+              : 'Item cancelled successfully.';
+            this.showToast(itemMsg, 'info');
+          }
+        } else {
+          this.showToast(res?.error || 'Unable to cancel item.', 'error');
+        }
+      },
+      error: (err: any) => {
+        this.isCancelling = false;
+        this.itemCancelFlag = false;
+        this.showToast(err?.error?.error || 'Error cancelling item.', 'error');
+      }
+    });
   }
 
   alertClose() {
     this.orderCancelFlag = false;
+    this.itemCancelFlag = false;
     this.orderViewFlag = false;
+    this.targetOrder = null;
+    this.targetItemToCancel = null;
+    this.targetItemOrder = null;
   }
 
   pastOrderViewAction(order: any) {

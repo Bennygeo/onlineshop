@@ -1,69 +1,263 @@
 <div class="walletContainer">
-    <div class="row">
-        <div class="balanceBox">
-            <div class="label">Balance</div>
-            <div class="balance">₹{{walletTotal}}</div>
-        </div>
-        <div class="detailBox">
-            <div class="box box1">
-                <div class="label">Available Balance</div>
-                <div class="balanceLedger">₹{{ (walletTotal - user.ledger) > 0 ? (walletTotal - user.ledger) : 0 }}
+    <!-- Hero Digital Card -->
+    <div class="walletHeroCard">
+        <div class="cardAmbientGlow"></div>
+        <div class="cardPattern"></div>
+        
+        <div class="cardHeaderRow">
+            <div class="brandCol">
+                <div class="brandBadge">
+                    <span class="brandDot"></span>
+                    <span class="brandName">Thinkspot Wallet</span>
                 </div>
-                <p>Your balance minus your ledger balance</p>
             </div>
-            <div class="box box2">
-                <div class="label">Ledger Balance</div>
-                <div class="balanceLedger">₹{{ user.ledger }}</div>
-                <p>This is the balance kept aside for your subscription</p>
+            <div class="contactlessIcon" title="Secured Digital Wallet">
+                <span class="material-icons-round">contactless</span>
             </div>
+        </div>
+
+        <!-- Main Balance -->
+        <div class="mainBalanceSection">
+            <span class="balanceLabel">Total Balance</span>
+            <div class="balanceAmount">
+                <span class="currencySymbol">₹</span>{{ walletTotal | number:'1.0-0' }}
+            </div>
+        </div>
+
+        <!-- Sub-balances breakdown -->
+        <div class="balanceBreakdownGrid">
+            <div class="breakdownCard availableCard">
+                <div class="cardTop">
+                    <span class="material-icons-round cardIcon">shopping_bag</span>
+                    <span class="breakdownTitle">Available</span>
+                </div>
+                <div class="breakdownValue">
+                    ₹{{ (walletTotal - user.ledger) > 0 ? ((walletTotal - user.ledger) | number:'1.0-0') : 0 }}
+                </div>
+                <div class="breakdownHint">Ready for instant orders</div>
+            </div>
+
+            <div class="breakdownCard ledgerCard" (click)="toggleLedgerModal(true)">
+                <div class="cardTop">
+                    <span class="material-icons-round cardIcon">event_repeat</span>
+                    <span class="breakdownTitle">Ledger</span>
+                    <span class="material-icons-round infoIcon" title="What is Ledger Balance?">info</span>
+                </div>
+                <div class="breakdownValue">
+                    ₹{{ user.ledger | number:'1.0-0' }}
+                </div>
+                <div class="breakdownHint">Reserved for subscriptions</div>
+            </div>
+        </div>
+
+        <!-- Card Action: Add Money -->
+        <div class="heroActionRow">
+            <button class="addMoneyHeroBtn" (click)="rcWindowFlg = true">
+                <span class="material-icons-round btnIcon">add_circle</span>
+                <span>Add Money</span>
+            </button>
         </div>
     </div>
-    <div class="tnkspt_primary_btn addWallet" (click)="this.rcWindowFlg = !this.rcWindowFlg;">Add money to
-        wallet</div>
 
-    <div class="history">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-weight: 600; font-size: 16px;">Past activities {{ showAllHistory ? '(All)' : '(Last 5
-                Days)' }}</span>
-            <span *ngIf="history.length > displayedHistory.length && !showAllHistory" (click)="showAllHistory = true"
-                style="cursor: pointer; color: #097e63; font-size: 13px; font-weight: 500;">Show All History</span>
+    <!-- History & Activity Section -->
+    <div class="historySection">
+        <!-- Section Header -->
+        <div class="historyHeader">
+            <div class="headerLeft">
+                <h3 class="sectionTitle">Transaction History</h3>
+                <span class="trxCountBadge">{{ filteredHistory.length }}</span>
+            </div>
+
+            <div class="timeFilterToggle">
+                <button class="timeToggleBtn" [class.active]="!showAllHistory" (click)="showAllHistory = false">
+                    Recent
+                </button>
+                <button class="timeToggleBtn" [class.active]="showAllHistory" (click)="showAllHistory = true">
+                    All
+                </button>
+            </div>
         </div>
 
-        <div class="historyCont" *ngIf="displayedHistory.length > 0; else no_history">
-            <div *ngFor="let wallet of displayedHistory">
+        <!-- Filter & Search Controls -->
+        <div class="historyControls">
+            <!-- Segmented Filter Tabs -->
+            <div class="filterTabs">
+                <button class="tabBtn" [class.active]="activeTab === 'all'" (click)="setTab('all')">
+                    All
+                </button>
+                <button class="tabBtn" [class.active]="activeTab === 'credit'" (click)="setTab('credit')">
+                    <span class="tabDot creditDot"></span>
+                    Deposits (+)
+                </button>
+                <button class="tabBtn" [class.active]="activeTab === 'debit'" (click)="setTab('debit')">
+                    <span class="tabDot debitDot"></span>
+                    Orders (-)
+                </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="historySearchBox">
+                <span class="material-icons-round searchIcon">search</span>
+                <input 
+                    type="text" 
+                    [(ngModel)]="searchTerm" 
+                    placeholder="Search by ID or description..." 
+                    class="historySearchInput"
+                />
+                <button *ngIf="searchTerm" class="clearSearchBtn" (click)="searchTerm = ''">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Transactions List -->
+        <div class="historyListCont" *ngIf="filteredHistory.length > 0; else no_history_template">
+            <div *ngFor="let wallet of filteredHistory">
                 <wallet-history [walletData]="wallet"></wallet-history>
             </div>
         </div>
 
-        <ng-template #no_history>
-            <div style="padding: 16px 0; color: #888;">No transactions recorded in the last 5 days.</div>
+        <!-- Empty State Template -->
+        <ng-template #no_history_template>
+            <div class="emptyStateCard">
+                <div class="emptyIconCircle">
+                    <span class="material-icons-round">receipt_long</span>
+                </div>
+                <h4 class="emptyTitle">No transactions found</h4>
+                <p class="emptySubtext" *ngIf="searchTerm">
+                    No results match "{{ searchTerm }}". Try clearing your search.
+                </p>
+                <p class="emptySubtext" *ngIf="!searchTerm && activeTab !== 'all'">
+                    No {{ activeTab === 'credit' ? 'deposit' : 'order' }} records found in this time period.
+                </p>
+                <p class="emptySubtext" *ngIf="!searchTerm && activeTab === 'all'">
+                    You have not made any wallet transactions yet.
+                </p>
+
+                <div class="emptyActions">
+                    <button *ngIf="searchTerm" class="resetFilterBtn" (click)="searchTerm = ''">
+                        Clear Search
+                    </button>
+                    <button class="emptyAddMoneyBtn" (click)="rcWindowFlg = true">
+                        + Add Money to Wallet
+                    </button>
+                </div>
+            </div>
         </ng-template>
 
-        <div class="loadMoreCont" *ngIf="history.length > displayedHistory.length && !showAllHistory">
-            <div class="tnkspt_primary_btn loadMore" (click)="showAllHistory = true">View full transaction history</div>
+        <!-- View Full History Footer CTA -->
+        <div class="viewAllFooter" *ngIf="history.length > displayedHistory.length && !showAllHistory">
+            <button class="viewAllBtn" (click)="showAllHistory = true">
+                <span>View Full Transaction History ({{ history.length }} transactions)</span>
+                <span class="material-icons-round">keyboard_arrow_right</span>
+            </button>
         </div>
     </div>
 </div>
 
-<div class="addWalletCont" *ngIf="rcWindowFlg" [@fadeInOut]>
-    <div class="bg" (click)="this.rcWindowFlg = !this.rcWindowFlg;"></div>
-    <div class="cont">
-        <p style="font-size: 14px; font-weight: 400;">Add money</p>
-        <p style="font-size: 12px; color: #98A1A1;">Enter the amount you want to add to Thinkspot wallet</p>
-        <div class="rcAmount">
-            <form [formGroup]="walletForm">
-                <input formControlName="amount" type="text" TextInputFilter />
+<!-- Add Money Bottom Sheet Modal -->
+<div class="addMoneyModal" *ngIf="rcWindowFlg" [@fadeInOut]>
+    <div class="modalBackdrop" (click)="rcWindowClose()"></div>
+    
+    <div class="modalSheet">
+        <div class="sheetHandleBar" (click)="rcWindowClose()"></div>
+
+        <div class="sheetHeader">
+            <div>
+                <h3 class="sheetTitle">Add Money to Wallet</h3>
+                <p class="sheetSub">Instant & secure recharge for seamless grocery orders</p>
+            </div>
+            <button class="sheetCloseBtn" (click)="rcWindowClose()">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+
+        <!-- Amount Input Card -->
+        <div class="amountInputCard">
+            <span class="inputCurrencyPrefix">₹</span>
+            <form [formGroup]="walletForm" class="amountForm">
+                <input 
+                    formControlName="amount" 
+                    type="text" 
+                    TextInputFilter 
+                    placeholder="0"
+                    class="customAmountInput"
+                    id="wallet-recharge-amount-input"
+                />
             </form>
         </div>
 
-        <div class="rcOptionCont">
-            <span class="rechargeOptions" *ngFor="let amt of rechargeAmounts; let i=index;"
-                [class.active]="rechargeActiveAmtindex === i" (click)="rcOptionClickAction(amt)">
-                {{amt}}
-            </span>
+        <!-- Quick Select Pills -->
+        <div class="quickPillsSection">
+            <span class="sectionSublabel">Select Recommended Amount</span>
+            <div class="pillsGrid">
+                <button 
+                    type="button"
+                    *ngFor="let amt of rechargeAmounts; let i = index;"
+                    class="amountPill" 
+                    [class.active]="rechargeActiveAmtindex === i" 
+                    (click)="rcOptionClickAction(amt)">
+                    <span class="pillText">{{ amt }}</span>
+                    <span class="popularBadge" *ngIf="amt === '₹500' || amt === '₹1000'">Popular</span>
+                </button>
+            </div>
         </div>
 
-        <div class="tnkspt_primary_btn" style="width: auto; margin-top: 50px; font-size: 14px; font-weight: 500;"
-            (click)="addMoneyToWallet($event)">Add {{rechargeAmt}} to wallet</div>
+        <!-- Calculation Preview -->
+        <div class="balanceSummaryBox" *ngIf="parsedRechargeAmt > 0">
+            <div class="summaryRow">
+                <span>Current Balance:</span>
+                <span class="summaryVal">₹{{ walletTotal | number:'1.0-0' }}</span>
+            </div>
+            <div class="summaryRow highlightRow">
+                <span>Updated Balance After Recharge:</span>
+                <span class="summaryVal highlightVal">₹{{ projectedBalance | number:'1.0-0' }}</span>
+            </div>
+        </div>
+
+        <!-- Safe & Secure Trust Badge -->
+        <div class="trustSecurityBanner">
+            <span class="material-icons-round lockIcon">lock</span>
+            <span>100% Safe & Secure Payments via Razorpay (UPI, Cards, NetBanking)</span>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="modalActions">
+            <button class="proceedPayBtn" (click)="addMoneyToWallet($event)" [disabled]="parsedRechargeAmt <= 0">
+                <span>Proceed to Pay {{ rechargeAmt }}</span>
+                <span class="material-icons-round">arrow_forward</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Ledger Information Modal -->
+<div class="ledgerInfoModal" *ngIf="showLedgerModal" [@fadeInOut]>
+    <div class="modalBackdrop" (click)="toggleLedgerModal(false)"></div>
+    <div class="ledgerInfoCard">
+        <div class="infoIconCircle">
+            <span class="material-icons-round">event_repeat</span>
+        </div>
+        <h3 class="infoModalTitle">What is Ledger Balance?</h3>
+        
+        <div class="infoModalBody">
+            <p>
+                <strong>Ledger Balance</strong> is the amount automatically set aside in your Thinkspot wallet to guarantee uninterrupted daily deliveries for your milk, vegetables, and recurring subscriptions.
+            </p>
+            <div class="infoHighlightBox">
+                <div class="infoItem">
+                    <span class="material-icons-round checkIcon">check_circle</span>
+                    <span><strong>Available Balance:</strong> Ready for your instant store orders.</span>
+                </div>
+                <div class="infoItem">
+                    <span class="material-icons-round checkIcon">check_circle</span>
+                    <span><strong>Ledger Balance:</strong> Kept reserved for your upcoming scheduled subscriptions.</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="closeInfoBtn" (click)="toggleLedgerModal(false)">
+            Got it, thanks!
+        </button>
     </div>
 </div>

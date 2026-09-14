@@ -1,88 +1,216 @@
-<div *ngIf="type !== 'DELETE';else other_content">
+<div *ngIf="type !== 'DELETE'; else delete_modal_content">
   <div class="popup_parent" [@fadeInOut] *ngIf="!animationDoneFlg">
-    <div class="popup_cont" *ngIf="addressShowFlg" [@translateEffect]>
-      <div>
-        <div id="loading1" *ngIf="detect_loc_loader_flg">
-          <span class="loader1"></span>
-          &nbsp; Fetching location details...
+    <div class="popup_cont addressModalCont" *ngIf="addressShowFlg" [@translateEffect]>
+      
+      <!-- Top Handle Bar -->
+      <div class="sheetHandleBar" (click)="closeAction()"></div>
+
+      <!-- Header -->
+      <div class="modalHeaderRow">
+        <div class="headerTitleCol">
+          <div class="titleIconRow">
+            <span class="material-icons-round modalTitleIcon">
+              {{ type === 'INSERT' ? 'add_location_alt' : 'edit_location_alt' }}
+            </span>
+            <h3 class="modalHeading">{{ title || (type === 'INSERT' ? 'Add New Address' : 'Edit Address') }}</h3>
+          </div>
+          <p class="modalSubHeading">Enter your complete delivery address details</p>
         </div>
+        <button class="modalCloseBtn" (click)="closeAction()" title="Close">
+          <span class="material-icons-round">close</span>
+        </button>
+      </div>
 
-        <div class="addressCont">
-
-          <div style="margin-bottom: 36px;" class="font-14">{{title}}</div>
-          <form [formGroup]="addressGroup">
-
-            <div class="fieldCont">
-              <label for="title">Title</label>
-              <input id="title" type="text" formControlName="title" class="primaryField"
-                [ngClass]="{'error': !addressGroup.get('title').valid}">
-            </div>
-
-            <div class="fieldCont">
-              <label for="name">Name</label>
-              <input id="name" type="text" formControlName="name" class="primaryField"
-                [ngClass]="{'error': !addressGroup.get('name').valid}">
-            </div>
-
-            <div class="fieldCont">
-              <label for="name">Address</label>
-              <textarea id="address" type="text" formControlName="address" class="primaryField" rows="3"
-                style="text-indent: 0;" [ngClass]="{'error': !addressGroup.get('address').valid}"></textarea>
-            </div>
-
-            <div class="fieldCont">
-              <label for="name">Pincode</label>
-              <input id="pincode" type="text" formControlName="pincode" class="primaryField" style="width: 100px;"
-                [ngClass]="{'error': !addressGroup.get('pincode').valid}">
-            </div>
-
-            <div class="fieldCont">
-              <label for="altMobile">Alternate mobile</label>
-              <input id="altMobile" type="text" formControlName="altMobile" class="primaryField"
-                [ngClass]="{'error': !addressGroup.get('altMobile').valid}">
-            </div>
-
-            <div (click)="detect_my_location($event)" style="position:relative; margin-top: 12px; margin-bottom: 12px;"
-              *ngIf="!detect_loc_loader_flg">
-              <span class="material-icons gps_icon" style="width: 20px; height: 17px;">
-                gps_fixed
-              </span>
-              <span class="gps_detect">Detect my current location.</span>
-            </div>
-
-            <div *ngIf="out_of_range" class="out_of_range" style="top:-6px; margin-bottom:6px;">We are not yet in your
-              area.
-            </div>
-
-            <button class="tnkspt_primary_btn" [disabled]="!valid_addr_flg || detect_loc_loader_flg"
-              (click)="udateAddress($event)">Save</button>
-          </form>
+      <!-- Location Auto-detect GPS Banner -->
+      <div class="gpsBannerCard" (click)="detect_my_location($event)" [class.loading]="detect_loc_loader_flg">
+        <div class="gpsIconCircle">
+          <span class="material-icons-round" *ngIf="!detect_loc_loader_flg">my_location</span>
+          <span class="loader1" *ngIf="detect_loc_loader_flg"></span>
         </div>
+        <div class="gpsTextCol">
+          <span class="gpsMainText">{{ detect_loc_loader_flg ? 'Fetching location...' : 'Use Current Location' }}</span>
+          <span class="gpsSubText">{{ detect_loc_loader_flg ? 'Detecting pincode via GPS' : 'Auto-detect your pincode & area' }}</span>
+        </div>
+        <span class="material-icons-round gpsArrowIcon" *ngIf="!detect_loc_loader_flg">keyboard_arrow_right</span>
+      </div>
+
+      <div class="addressFormCont">
+        <form [formGroup]="addressGroup">
+
+          <!-- Address Category Chips -->
+          <div class="categoryPresets">
+            <label class="fieldLabel">Address Label</label>
+            <div class="chipsGroup">
+              <button 
+                type="button" 
+                class="categoryChip" 
+                [class.active]="isPresetActive('My Home')" 
+                (click)="setTitlePreset('My Home')">
+                <span class="material-icons-round">home</span>
+                <span>Home</span>
+              </button>
+
+              <button 
+                type="button" 
+                class="categoryChip" 
+                [class.active]="isPresetActive('Work') || isPresetActive('Office')" 
+                (click)="setTitlePreset('Work')">
+                <span class="material-icons-round">work</span>
+                <span>Work</span>
+              </button>
+
+              <button 
+                type="button" 
+                class="categoryChip" 
+                [class.active]="isPresetActive('Other')" 
+                (click)="setTitlePreset('Other')">
+                <span class="material-icons-round">place</span>
+                <span>Other</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Title Input -->
+          <div class="modernFieldCont">
+            <label for="addr-title" class="fieldLabel">Custom Title</label>
+            <div class="inputWrapper">
+              <span class="material-icons-round inputPrefixIcon">label</span>
+              <input 
+                id="addr-title" 
+                type="text" 
+                formControlName="title" 
+                placeholder="e.g. My Home, Parents Home, Office"
+                class="modernInput"
+                [ngClass]="{'error': !addressGroup.get('title').valid && addressGroup.get('title').touched}"
+              />
+            </div>
+          </div>
+
+          <!-- Name Input -->
+          <div class="modernFieldCont">
+            <label for="addr-name" class="fieldLabel">Recipient Name *</label>
+            <div class="inputWrapper">
+              <span class="material-icons-round inputPrefixIcon">person</span>
+              <input 
+                id="addr-name" 
+                type="text" 
+                formControlName="name" 
+                placeholder="Name of person receiving orders"
+                class="modernInput"
+                [ngClass]="{'error': !addressGroup.get('name').valid && addressGroup.get('name').touched}"
+              />
+            </div>
+          </div>
+
+          <!-- Address Textarea -->
+          <div class="modernFieldCont">
+            <label for="addr-address" class="fieldLabel">House / Flat No, Street, Landmark *</label>
+            <div class="inputWrapper textareaWrapper">
+              <span class="material-icons-round inputPrefixIcon textareaIcon">home_work</span>
+              <textarea 
+                id="addr-address" 
+                formControlName="address" 
+                rows="3" 
+                placeholder="Complete street address & landmark"
+                class="modernTextarea"
+                [ngClass]="{'error': !addressGroup.get('address').valid && addressGroup.get('address').touched}">
+              </textarea>
+            </div>
+          </div>
+
+          <!-- Pincode & Alternate Mobile Grid -->
+          <div class="fieldsRow">
+            <div class="modernFieldCont halfField">
+              <label for="addr-pincode" class="fieldLabel">Pincode *</label>
+              <div class="inputWrapper">
+                <span class="material-icons-round inputPrefixIcon">pin_drop</span>
+                <input 
+                  id="addr-pincode" 
+                  type="text" 
+                  formControlName="pincode" 
+                  placeholder="6 digits"
+                  maxlength="6"
+                  class="modernInput"
+                  [ngClass]="{'error': !addressGroup.get('pincode').valid && addressGroup.get('pincode').touched}"
+                />
+              </div>
+            </div>
+
+            <div class="modernFieldCont halfField">
+              <label for="addr-altMobile" class="fieldLabel">Alt. Mobile (Optional)</label>
+              <div class="inputWrapper">
+                <span class="material-icons-round inputPrefixIcon">phone</span>
+                <input 
+                  id="addr-altMobile" 
+                  type="text" 
+                  formControlName="altMobile" 
+                  placeholder="10 digits"
+                  maxlength="10"
+                  class="modernInput"
+                  [ngClass]="{'error': !addressGroup.get('altMobile').valid && addressGroup.get('altMobile').touched}"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Out of range alert -->
+          <div *ngIf="out_of_range" class="outOfRangeAlert">
+            <span class="material-icons-round alertIcon">info</span>
+            <span>We are not yet delivering in this pincode area.</span>
+          </div>
+
+          <!-- Submit / Action Button -->
+          <div class="formActionRow">
+            <button 
+              class="saveAddressBtn" 
+              [disabled]="!valid_addr_flg || detect_loc_loader_flg"
+              (click)="udateAddress($event)">
+              <span class="material-icons-round">check_circle</span>
+              <span>Save Delivery Address</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </div>
 
-<ng-template #other_content>
+<!-- Delete Confirmation Modal -->
+<ng-template #delete_modal_content>
   <div class="popup_parent" [@fadeInOut] *ngIf="!animationDoneFlg">
-    <div class="popup_cont" *ngIf="addressShowFlg" [@translateEffect]>
-      <div class="addressCont">
-        <div style="margin-bottom: 36px;" class="font-14">The address below will be deleted from your account. Can we
-          proceed?</div>
+    <div class="popup_cont addressModalCont deleteModalCont" *ngIf="addressShowFlg" [@translateEffect]>
+      
+      <div class="sheetHandleBar" (click)="deleteCancelAction()"></div>
 
-        <div class="addressTitle">{{address.title}}
+      <div class="deleteModalCard">
+        <div class="deleteIconCircle">
+          <span class="material-icons-round">delete_forever</span>
         </div>
-        <div class="addressTxt">{{address.name}}</div>
-        <div class="addressTxt">{{address.address}}</div>
-        <div class="addressPincode">{{address.pincode}}</div>
-      </div>
 
-      <div class="flex-box" style="position: absolute;
-      bottom: 20px;
-      width: 88%;
-      top:auto;">
-        <div class="tnkspt_secondary_btn edit-btn" (click)="deleteCancelAction()">Cancel</div>
-        <div class="tnkspt_primary_btn deliver-btn" (click)="deleteAction()">Delete address</div>
+        <h3 class="deleteHeading">Delete Address?</h3>
+        <p class="deleteSubText">Are you sure you want to remove this delivery address from your account?</p>
+
+        <!-- Address summary preview -->
+        <div class="deleteAddressPreview" *ngIf="address">
+          <div class="previewTitle">
+            <span class="material-icons-round previewIcon">location_on</span>
+            <span>{{ address.title || 'Saved Address' }}</span>
+          </div>
+          <div class="previewName">{{ address.name }}</div>
+          <div class="previewStreet">{{ address.address }}</div>
+          <div class="previewPincode">PIN: {{ address.pincode }}</div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="deleteActionsGrid">
+          <button class="deleteCancelBtn" (click)="deleteCancelAction()">
+            Cancel
+          </button>
+          <button class="deleteConfirmBtn" (click)="deleteAction()">
+            <span class="material-icons-round">delete</span>
+            <span>Delete Address</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

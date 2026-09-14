@@ -1,379 +1,539 @@
-<div class="clearfix"></div>
-<div class="orders-cont">
-    <div class="tab">
-        <button class="tablinks" [class.active]="activeTab === 'Daily'"
-            (click)="openTab($event, 'Daily')">Daily</button>
-        <button class="tablinks" (click)="openTab($event, 'Subscribed')"
-            [class.active]="activeTab === 'Subscribed'">Subscribed</button>
+<div class="orders-page-wrapper">
+    <!-- Toast Notification Banner -->
+    <div class="toast-floating-banner" *ngIf="toastNotification.show" [ngClass]="'toast-' + toastNotification.type">
+        <div class="toast-content">
+            <span class="material-icons toast-icon">
+                {{ toastNotification.type === 'success' ? 'check_circle' : (toastNotification.type === 'error' ? 'error' : 'info') }}
+            </span>
+            <span class="toast-text">{{ toastNotification.message }}</span>
+        </div>
+        <button class="toast-close-btn" (click)="toastNotification.show = false">
+            <span class="material-icons size-16">close</span>
+        </button>
     </div>
 
-    <!-- Tab content -->
+    <!-- Page Header -->
+    <div class="orders-header">
+        <div class="header-text">
+            <h1 class="page-title">My Orders</h1>
+            <p class="page-subtitle">Track your fresh deliveries, view item breakdowns, and manage subscriptions</p>
+        </div>
+    </div>
+
+    <!-- Segmented Tab Navigation -->
+    <div class="tab-nav-container">
+        <div class="segmented-tabs">
+            <button class="tab-btn" [class.active]="activeTab === 'Daily'" (click)="openTab($event, 'Daily')">
+                <span class="material-icons">shopping_bag</span>
+                <span class="tab-text">Daily Orders</span>
+                <span class="tab-badge" *ngIf="upcomingOrders.length > 0">{{ upcomingOrders.length }}</span>
+            </button>
+            <button class="tab-btn" [class.active]="activeTab === 'Subscribed'" (click)="openTab($event, 'Subscribed')">
+                <span class="material-icons">event_repeat</span>
+                <span class="tab-text">Subscribed Plans</span>
+                <span class="tab-badge" *ngIf="subscriptionOrdersLength > 0">{{ subscriptionOrdersLength }}</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- TAB 1: DAILY ORDERS -->
     <div id="Daily" class="tabcontent">
-        <div class="active-orders" *ngFor="let item of upcomingOrders">
-
-            <!-- <div class="clearfix">
-                <div class="float-start order-id">
-                    <div>#{{item.order_id}}</div>
-                    <div class="label">{{item.items_count}} Items</div>
-                </div>
-                <div class="float-end">
-                    <div class="placed-status">Order placed</div>
-                </div>
+        <!-- 1. UPCOMING / ACTIVE ORDERS -->
+        <div class="section-container" *ngIf="upcomingOrders && upcomingOrders.length > 0">
+            <div class="section-heading">
+                <span class="heading-icon active-icon"><span class="material-icons">local_shipping</span></span>
+                <span class="heading-title">Active Deliveries</span>
+                <span class="heading-count">{{ upcomingOrders.length }} Active</span>
             </div>
 
-            <div class="order-info">
-                <div class="clearfix">
-                    <div class="contents">
-                        <div class="float-start order-id">
-                            <div class="label">Estimated delivery</div>
-                            <div class="info">{{item.delivery_date | date:'EEEE, MMM d'}}</div>
+            <div class="orders-list">
+                <div class="order-card active-order-card" *ngFor="let item of upcomingOrders" [class.is-expanded]="item.expanded">
+                    <!-- Top Card Bar -->
+                    <div class="card-top-bar">
+                        <div class="order-id-group">
+                            <span class="order-id-pill" [title]="'Order ID: ' + item.order_id">
+                                <span class="material-icons size-14 id-tag-icon">tag</span>
+                                <span class="order-id-short">{{ formatShortId(item.order_id) }}</span>
+                            </span>
+                            <button class="copy-id-btn" (click)="copyOrderId(item.order_id, $event)" [title]="'Copy Full Order ID: ' + item.order_id">
+                                <span class="material-icons">{{ copiedOrderId === item.order_id ? 'check' : 'content_copy' }}</span>
+                                <span class="copy-tooltip" *ngIf="copiedOrderId === item.order_id">Copied ID!</span>
+                            </button>
                         </div>
-                        <div class="float-end">
-                            <div class="label">Order total</div>
-                            <div class="info"></div>
+                        <div class="order-status-badge" [ngClass]="getStatusBadge(item.status).class">
+                            <span class="status-dot"></span>
+                            <span class="material-icons size-14">{{ getStatusBadge(item.status).icon }}</span>
+                            <span>{{ getStatusBadge(item.status).label }}</span>
                         </div>
-                        <div class="clearfix"></div>
-                        <div style="margin-top: 24px;">{{item.address}}</div>
                     </div>
-                </div>
-                <div class="flex-box">
-                    <div class="tnkspt_secondary_btn cancel-btn" (click)="orderCancelAction(item)">Cancel</div>
-                    <div class="tnkspt_primary_btn view-btn" (click)="orderViewAction(item)">View items</div>
-                </div>
-            </div> -->
 
-            <div class="flex-container">
-                <div class="flex-item first-col order-img">
-                    <img [src]="'assets/orders/orders_veg.png'">
-                </div>
-                <div class="flex-item second-column">
-                    <div>Order #{{item.order_id}}</div>
-                    <div>Placed on {{safeDate(item.created_at) | date:'EEEE, MMM d'}}</div>
-                    <div>Items: {{ item.products?.length || item.itemsList?.length || 1 }} &nbsp;&nbsp;&nbsp;&nbsp;
-                        Total: ₹{{item.order_total}}</div>
-                </div>
-                <div class="flex-item last-column" (click)="orderViewAction(item)" style="cursor: pointer;">
-                    <img [src]="'assets/orders/down_arrow.png'"
-                        [style.transform]="item.expanded ? 'rotate(180deg)' : 'rotate(0deg)'"
-                        style="transition: transform 0.2s ease-in-out;" />
-                </div>
-            </div>
-            <div *ngIf="item.expanded"
-                style="padding: 12px 16px; background: #fafafa; border-radius: 8px; margin-top: 10px;">
-                <hr style="margin: 8px 0; border: none; border-top: 1px solid #e2e8f0;" />
-                <div *ngIf="item.products && item.products.length > 0; else loadingOrRawItems">
-                    <div *ngFor="let pro of item.products"
-                        style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)"
-                                style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;"
-                                [alt]="pro.name || pro.product_name || 'Product'" />
-                            <div>
-                                <div
-                                    style="font-weight: 600; font-size: 14px; color: #2d3748; display: flex; align-items: center; gap: 6px;">
-                                    <span>{{pro.name || pro.product_name || 'Product Item'}}</span>
-                                    <span *ngIf="pro.is_subscription"
-                                        style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600;">Subscription</span>
+                    <!-- Delivery ETA Highlight Banner -->
+                    <div class="delivery-eta-banner">
+                        <div class="eta-left">
+                            <div class="eta-icon-wrap">
+                                <span class="material-icons">schedule</span>
+                            </div>
+                            <div class="eta-text">
+                                <div class="eta-date">{{ safeDate(item.delivery_date) | date:'EEEE, MMM d, y' }}</div>
+                                <div class="eta-slot">Estimated 8:00 AM – 10:00 AM Delivery</div>
+                            </div>
+                        </div>
+                        <div class="eta-mode-pill">
+                            <span class="material-icons">{{ getDeliveryModeIcon(item.delivery_mode) }}</span>
+                            <span>{{ getDeliveryModeText(item.delivery_mode) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Order Summary Row -->
+                    <div class="card-summary-row" (click)="orderViewAction(item)">
+                        <div class="summary-left">
+                            <div class="placed-date">Placed on {{ safeDate(item.created_at) | date:'MMM d, y • h:mm a' }}</div>
+                            <div class="items-meta">
+                                <span class="meta-item-count">
+                                    <span class="material-icons size-16">inventory_2</span>
+                                    {{ item.products?.length || item.itemsList?.length || 1 }} Item{{ (item.products?.length || item.itemsList?.length || 1) === 1 ? '' : 's' }}
+                                </span>
+                                <span class="meta-dot">&bull;</span>
+                                <span class="meta-payment-chip" [class.cod]="item.payment_type === 'COD'" [class.prepaid]="item.payment_type !== 'COD'">
+                                    <span class="material-icons size-14">{{ item.payment_type === 'COD' ? 'payments' : 'account_balance_wallet' }}</span>
+                                    {{ item.payment_type === 'COD' ? 'Cash on Delivery' : 'Prepaid / Wallet' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="summary-right">
+                            <div class="total-label">Total Amount</div>
+                            <div class="total-val">₹{{ item.order_total | number }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Card Expand/Collapse Header Button -->
+                    <div class="card-action-bar">
+                        <button class="expand-btn" (click)="orderViewAction(item)">
+                            <span>{{ item.expanded ? 'Hide Order Breakdown' : 'View Order Breakdown' }}</span>
+                            <span class="material-icons chevron-icon" [class.rotated]="item.expanded">expand_more</span>
+                        </button>
+                        <button class="cancel-order-btn" *ngIf="item.status === 'PLACED'" (click)="orderCancelAction(item)">
+                            <span class="material-icons size-16">cancel</span>
+                            <span>Cancel Order</span>
+                        </button>
+                    </div>
+
+                    <!-- Expanded Details Section -->
+                    <div class="order-expanded-content" *ngIf="item.expanded">
+                        <div class="expanded-divider"></div>
+
+                        <!-- Products List -->
+                        <div class="items-list-container">
+                            <div class="items-header-title">Items Ordered</div>
+
+                            <div *ngIf="item.products && item.products.length > 0; else loadingOrRawItems">
+                                <div class="item-product-row" *ngFor="let pro of item.products" [class.is-item-cancelled]="pro.item_status === 'cancelled' || pro.subsStatus === 'cancelled'">
+                                    <div class="item-product-left">
+                                        <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)"
+                                            class="item-product-img" [alt]="pro.name || pro.product_name || 'Product'" />
+                                        <div class="item-product-details">
+                                            <div class="item-product-name">
+                                                <span>{{ pro.name || pro.product_name || 'Product Item' }}</span>
+                                                <span *ngIf="pro.is_subscription" class="sub-badge">Subscription</span>
+                                                <span *ngIf="pro.item_status === 'cancelled' || pro.subsStatus === 'cancelled'" class="item-cancelled-badge">
+                                                    <span class="material-icons size-12">block</span> Cancelled
+                                                </span>
+                                            </div>
+                                            <div class="item-product-spec">
+                                                <span>Qty: {{ getItemTotalQty(pro) }} {{ pro.weight ? '(' + pro.weight + ')' : '' }}</span>
+                                                <span *ngIf="getItemDaysCount(pro) > 1" class="item-days-badge">
+                                                    &bull; {{ getItemDaysCount(pro) }} Days
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="item-product-right">
+                                        <div class="item-product-price" [class.price-cancelled]="pro.item_status === 'cancelled' || pro.subsStatus === 'cancelled'">
+                                            ₹{{ getItemTotalPrice(pro) | number }}
+                                        </div>
+                                        <!-- Individual Item Cancel Option -->
+                                        <div class="item-action-area" *ngIf="(item.status === 'PLACED' || item.status === 'PACKED')">
+                                            <button *ngIf="pro.item_status !== 'cancelled' && pro.subsStatus !== 'cancelled'" 
+                                                    class="cancel-single-item-btn" 
+                                                    (click)="promptCancelItem(item, pro, $event)"
+                                                    title="Cancel this item">
+                                                <span class="material-icons size-12">remove_circle_outline</span>
+                                                <span>Cancel Item</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div style="font-size: 12px; color: #718096;">
-                                    Qty: {{ getItemTotalQty(pro) }} {{pro.weight ? '(' + pro.weight + ')' : ''}}
-                                    <span *ngIf="getItemDaysCount(pro) > 1" style="font-weight: 500; color: #4f46e5;">
-                                        &bull; {{getItemDaysCount(pro)}} Days</span>
+                            </div>
+
+                            <ng-template #loadingOrRawItems>
+                                <div *ngIf="item.itemsList && item.itemsList.length > 0; else loadingItems">
+                                    <div class="item-product-row" *ngFor="let pro of item.itemsList" [class.is-item-cancelled]="pro.item_status === 'cancelled' || pro.subsStatus === 'cancelled'">
+                                        <div class="item-product-left">
+                                            <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)"
+                                                class="item-product-img" [alt]="pro.product_name || 'Product'" />
+                                            <div class="item-product-details">
+                                                <div class="item-product-name">
+                                                    <span>{{ pro.product_name || pro.productID || 'Product Item' }}</span>
+                                                    <span *ngIf="pro.is_subscription" class="sub-badge">Subscription</span>
+                                                    <span *ngIf="pro.item_status === 'cancelled' || pro.subsStatus === 'cancelled'" class="item-cancelled-badge">
+                                                        <span class="material-icons size-12">block</span> Cancelled
+                                                    </span>
+                                                </div>
+                                                <div class="item-product-spec">
+                                                    <span>Qty: {{ getItemTotalQty(pro) }} {{ pro.weight ? '(' + pro.weight + ')' : '' }}</span>
+                                                    <span *ngIf="getItemDaysCount(pro) > 1" class="item-days-badge">
+                                                        &bull; {{ getItemDaysCount(pro) }} Days
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="item-product-right">
+                                            <div class="item-product-price" [class.price-cancelled]="pro.item_status === 'cancelled' || pro.subsStatus === 'cancelled'">
+                                                ₹{{ getItemTotalPrice(pro) | number }}
+                                            </div>
+                                            <div class="item-action-area" *ngIf="(item.status === 'PLACED' || item.status === 'PACKED')">
+                                                <button *ngIf="pro.item_status !== 'cancelled' && pro.subsStatus !== 'cancelled'" 
+                                                        class="cancel-single-item-btn" 
+                                                        (click)="promptCancelItem(item, pro, $event)"
+                                                        title="Cancel this item">
+                                                    <span class="material-icons size-12">remove_circle_outline</span>
+                                                    <span>Cancel Item</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <ng-template #loadingItems>
+                                    <div class="items-loading-box">
+                                        <span class="material-icons rotating-icon">sync</span>
+                                        <span>Loading ordered items...</span>
+                                    </div>
+                                </ng-template>
+                            </ng-template>
+                        </div>
+
+                        <!-- Delivery & Special Request Details -->
+                        <div class="expanded-info-grid">
+                            <div class="info-card address-card" *ngIf="item.address">
+                                <div class="info-card-header">
+                                    <span class="material-icons">location_on</span>
+                                    <span>Delivery Address</span>
+                                </div>
+                                <div class="info-card-body">{{ item.address }}</div>
+                            </div>
+
+                            <div class="info-card instructions-card">
+                                <div class="info-card-header">
+                                    <span class="material-icons">notes</span>
+                                    <span>Special Requests & Notes</span>
+                                </div>
+                                <div class="info-card-body">
+                                    {{ (item.delivery_inst && item.delivery_inst !== 'undefined' && item.delivery_inst !== 'null' && item.delivery_inst !== '') ? item.delivery_inst : 'No special instructions provided' }}
                                 </div>
                             </div>
                         </div>
-                        <div style="font-weight: 600; font-size: 14px; color: #1a202c;">₹{{ getItemTotalPrice(pro) |
-                            number }}</div>
-                    </div>
-                </div>
-                <ng-template #loadingOrRawItems>
-                    <div *ngIf="item.itemsList && item.itemsList.length > 0; else loadingItems">
-                        <div *ngFor="let pro of item.itemsList"
-                            style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)"
-                                    style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;"
-                                    [alt]="pro.product_name || 'Product'" />
-                                <div>
-                                    <div
-                                        style="font-weight: 600; font-size: 14px; color: #2d3748; display: flex; align-items: center; gap: 6px;">
-                                        <span>{{pro.product_name || pro.productID || 'Product Item'}}</span>
-                                        <span *ngIf="pro.is_subscription"
-                                            style="background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600;">Subscription</span>
-                                    </div>
-                                    <div style="font-size: 12px; color: #718096;">
-                                        Qty: {{ getItemTotalQty(pro) }} {{pro.weight ? '(' + pro.weight + ')' : ''}}
-                                        <span *ngIf="getItemDaysCount(pro) > 1"
-                                            style="font-weight: 500; color: #4f46e5;"> &bull; {{getItemDaysCount(pro)}}
-                                            Days</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="font-weight: 600; font-size: 14px; color: #1a202c;">₹{{ getItemTotalPrice(pro) |
-                                number }}</div>
-                        </div>
-                    </div>
-                    <ng-template #loadingItems>
-                        <div style="padding: 12px; color: #718096; font-size: 13px;">Loading order items...</div>
-                    </ng-template>
-                </ng-template>
 
-                <!-- Delivery Details & Instructions (Below Ordered Items) -->
-                <div
-                    style="margin-top: 14px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: 13px; color: #4a5568;">
-                    <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="font-weight: 600; color: #2d3748;">📅 Delivery Date:</span>
-                        <span style="font-weight: 500; color: #1a202c;">{{ safeDate(item.delivery_date) | date:'EEEE,
-                            MMM d, y' }}</span>
-                    </div>
-                    <div
-                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                        <span style="font-weight: 600; color: #2d3748;">🚚 Mode of Delivery:</span>
-                        <span style="font-weight: 500; color: #1a202c;">{{ getDeliveryModeText(item.delivery_mode)
-                            }}</span>
-                    </div>
-                    <div
-                        style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2px;">
-                        <span style="font-weight: 600; color: #2d3748; min-width: 140px;">📝 Special
-                            Instructions:</span>
-                        <span style="font-weight: 500; color: #1a202c; text-align: right;">{{ (item.delivery_inst &&
-                            item.delivery_inst !== 'undefined' && item.delivery_inst !== 'null') ? item.delivery_inst :
-                            'None' }}</span>
+                        <!-- Payment Breakdown Summary -->
+                        <div class="expanded-payment-bar">
+                            <div class="payment-bar-item">
+                                <span class="p-label">Payment Method:</span>
+                                <span class="p-val" [class.cod-text]="item.payment_type === 'COD'">
+                                    {{ item.payment_type === 'COD' ? 'Cash on Delivery (COD)' : (item.payment_type || 'Prepaid') }}
+                                </span>
+                            </div>
+                            <div class="payment-bar-item" *ngIf="item.refund_amount > 0">
+                                <span class="p-label">Refunded:</span>
+                                <span class="p-refund">₹{{ item.refund_amount | number }}</span>
+                            </div>
+                            <div class="payment-bar-item">
+                                <span class="p-label">{{ item.payment_type === 'COD' ? 'Payable on Delivery:' : 'Paid Amount:' }}</span>
+                                <span class="p-total">₹{{ item.order_total | number }}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="past-orders-section" *ngIf="pastOrders.length > 0; else noOrders">
-            <div class="past-order-label">
-                <span>📦 Past Orders</span>
+        <!-- 2. PAST ORDERS -->
+        <div class="section-container past-orders-container" *ngIf="pastOrders && pastOrders.length > 0">
+            <div class="section-heading">
+                <span class="heading-icon past-icon"><span class="material-icons">history</span></span>
+                <span class="heading-title">Past Orders</span>
+                <span class="heading-count">{{ pastOrders.length }} Orders</span>
             </div>
 
-            <div class="past-order-card" *ngFor="let item of pastOrders">
-                <!-- DELIVERED ORDER CARD -->
-                <div *ngIf="item.status==='DELIVERED'">
-                    <div class="past-order-header">
-                        <div class="order-meta">
-                            <div class="meta-date">{{safeDate(item.delivered_at) | date:'MMM d, h:mm a'}} &bull; {{item.items_count || item.products?.length || 1}} Items</div>
-                            <div class="meta-id">#{{item.order_id}}</div>
-                        </div>
-                        <div class="order-status-price">
-                            <span class="status-badge delivered">Delivered</span>
-                            <div class="total-price">₹{{item.order_total}}</div>
-                        </div>
-                    </div>
-
-                    <div class="past-order-address" *ngIf="item.address">{{item.address}}</div>
-
-                    <!-- Refund Alert Banner -->
-                    <div *ngIf="item.refund_amount > 0"
-                        style="margin-top: 10px; padding: 8px 12px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; font-size: 12px; color: #065f46; display: flex; align-items: center; gap: 6px;">
-                        <span>💰 <strong>₹{{item.refund_amount | number}} Refunded to Wallet</strong> ({{item.refund_notes || 'Missing items refund'}})</span>
-                    </div>
-
-                    <!-- Expanded Items List in Delivered Orders -->
-                    <div *ngIf="item.expanded"
-                        style="padding: 12px 16px; background: #f8fafc; border-radius: 8px; margin-top: 12px; border: 1px solid #e2e8f0;">
-                        <div *ngIf="item.products && item.products.length > 0; else loadingDeliveredItems">
-                            <div *ngFor="let pro of item.products"
-                                style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)"
-                                        style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;"
-                                        [alt]="pro.name || pro.product_name || 'Product'" />
-                                    <div>
-                                        <div style="font-weight: 600; font-size: 14px; color: #2d3748; display: flex; align-items: center; gap: 6px;">
-                                            <span>{{pro.name || pro.product_name || 'Product Item'}}</span>
-                                            <span *ngIf="pro.refund_amount > 0 || pro.item_status === 'missing'"
-                                                style="background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 700;">Refunded (x{{pro.missing_qty || 1}})</span>
-                                        </div>
-                                        <div style="font-size: 12px; color: #718096;">
-                                            Qty: {{ getItemTotalQty(pro) }} {{pro.weight ? '(' + pro.weight + ')' : ''}}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div style="font-weight: 600; font-size: 14px; color: #1a202c;">₹{{ getItemTotalPrice(pro) | number }}</div>
+            <div class="orders-list">
+                <div class="order-card past-order-card" *ngFor="let item of pastOrders" [class.is-expanded]="item.expanded">
+                    <!-- DELIVERED ORDER CARD -->
+                    <ng-container *ngIf="item.status === 'DELIVERED'">
+                        <div class="card-top-bar">
+                            <div class="order-id-group">
+                                <span class="order-id-pill" [title]="'Order ID: ' + item.order_id">
+                                    <span class="material-icons size-14 id-tag-icon">tag</span>
+                                    <span class="order-id-short">{{ formatShortId(item.order_id) }}</span>
+                                </span>
+                                <button class="copy-id-btn" (click)="copyOrderId(item.order_id, $event)" [title]="'Copy Full Order ID: ' + item.order_id">
+                                    <span class="material-icons">{{ copiedOrderId === item.order_id ? 'check' : 'content_copy' }}</span>
+                                </button>
+                            </div>
+                            <div class="order-status-badge status-delivered">
+                                <span class="material-icons size-14">check_circle</span>
+                                <span>Delivered</span>
                             </div>
                         </div>
-                        <ng-template #loadingDeliveredItems>
-                            <div style="padding: 10px; color: #718096; font-size: 13px;">Loading order items...</div>
-                        </ng-template>
-                    </div>
 
-                    <div class="past-order-actions">
-                        <div class="action-btn secondary" (click)="pastOrderViewAction(item)">{{ item.expanded ? 'Hide items' : 'View items' }}</div>
-                        <div class="action-btn primary" (click)="orderAgainAction(item)">Order again</div>
-                    </div>
-                </div>
-
-                <!-- UNDELIVERED ORDER CARD -->
-                <div *ngIf="item.status==='UNDELIVERED'">
-                    <div class="past-order-header">
-                        <div class="order-meta">
-                            <div class="meta-date">{{item.items_count || 1}} Items</div>
-                            <div class="meta-id">#{{item.order_id}}</div>
-                        </div>
-                        <div class="order-status-price">
-                            <span class="status-badge undelivered">Undelivered</span>
-                            <div class="total-price">₹{{item.order_total}}</div>
-                        </div>
-                    </div>
-
-                    <div style="margin-top: 10px; font-size: 12px; color: #dc2626;">
-                        <strong>Reason:</strong> {{ item.undelivered_reason || 'Customer unavailable' }}
-                    </div>
-                    <div *ngIf="item.refund_amount > 0" style="margin-top: 6px; font-size: 12px; color: #047857;">
-                        💰 ₹{{ item.refund_amount | number }} refunded to your wallet.
-                    </div>
-                    <div class="past-order-address" *ngIf="item.address">{{item.address}}</div>
-
-                    <!-- Expanded Items List in Undelivered Orders -->
-                    <div *ngIf="item.expanded"
-                        style="padding: 12px 16px; background: #f8fafc; border-radius: 8px; margin-top: 12px; border: 1px solid #e2e8f0;">
-                        <div *ngIf="item.products && item.products.length > 0; else loadingUndeliveredItems">
-                            <div *ngFor="let pro of item.products"
-                                style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)"
-                                        style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;"
-                                        [alt]="pro.name || pro.product_name || 'Product'" />
-                                    <div>
-                                        <div style="font-weight: 600; font-size: 14px; color: #2d3748; display: flex; align-items: center; gap: 6px;">
-                                            <span>{{pro.name || pro.product_name || 'Product Item'}}</span>
-                                        </div>
-                                        <div style="font-size: 12px; color: #718096;">
-                                            Qty: {{ getItemTotalQty(pro) }} {{pro.weight ? '(' + pro.weight + ')' : ''}}
-                                        </div>
-                                    </div>
+                        <div class="past-meta-row">
+                            <div class="meta-left">
+                                <div class="meta-delivered-time">
+                                    <span class="material-icons size-14">event_available</span>
+                                    Delivered on {{ safeDate(item.delivered_at) | date:'EEEE, MMM d, y • h:mm a' }}
                                 </div>
-                                <div style="font-weight: 600; font-size: 14px; color: #1a202c;">₹{{ getItemTotalPrice(pro) | number }}</div>
+                                <div class="meta-items-count">
+                                    {{ item.items_count || item.products?.length || 1 }} Item{{ (item.items_count || item.products?.length || 1) === 1 ? '' : 's' }}
+                                    &bull;
+                                    <span class="meta-payment-chip" [class.cod]="item.payment_type === 'COD'" [class.prepaid]="item.payment_type !== 'COD'">
+                                        {{ item.payment_type === 'COD' ? 'COD' : 'Prepaid' }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="meta-right">
+                                <span class="meta-price">₹{{ item.order_total | number }}</span>
                             </div>
                         </div>
-                        <ng-template #loadingUndeliveredItems>
-                            <div style="padding: 10px; color: #718096; font-size: 13px;">Loading order items...</div>
-                        </ng-template>
-                    </div>
 
-                    <div class="past-order-actions">
-                        <div class="action-btn secondary" (click)="pastOrderViewAction(item)">{{ item.expanded ? 'Hide items' : 'View items' }}</div>
-                        <div class="action-btn primary" (click)="orderAgainAction(item)">Order again</div>
-                    </div>
-                </div>
-
-                <!-- CANCELLED ORDER CARD -->
-                <div *ngIf="item.status==='CANCELLED'">
-                    <div class="past-order-header">
-                        <div class="order-meta">
-                            <div class="meta-date">{{item.items_count || 1}} Items</div>
-                            <div class="meta-id">#{{item.order_id}}</div>
+                        <!-- Refund Banner if any -->
+                        <div class="refund-alert-box" *ngIf="item.refund_amount > 0">
+                            <span class="material-icons">account_balance_wallet</span>
+                            <span><strong>₹{{ item.refund_amount | number }} Refunded to Wallet</strong> ({{ item.refund_notes || 'Items adjusted refund' }})</span>
                         </div>
-                        <div class="order-status-price">
-                            <span class="status-badge cancelled">Cancelled</span>
-                            <div class="total-price">₹{{item.order_total}}</div>
+
+                        <!-- Address if present -->
+                        <div class="past-order-address-text" *ngIf="item.address">
+                            <span class="material-icons size-14">place</span> {{ item.address }}
                         </div>
-                    </div>
 
-                    <div class="past-order-address" *ngIf="item.address">{{item.address}}</div>
+                        <!-- Expanded Product List -->
+                        <div class="order-expanded-content" *ngIf="item.expanded">
+                            <div class="expanded-divider"></div>
 
-                    <!-- Expanded Items List in Cancelled Orders -->
-                    <div *ngIf="item.expanded"
-                        style="padding: 12px 16px; background: #f8fafc; border-radius: 8px; margin-top: 12px; border: 1px solid #e2e8f0;">
-                        <div *ngIf="item.products && item.products.length > 0; else loadingCancelledItems">
-                            <div *ngFor="let pro of item.products"
-                                style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
-                                <div style="display: flex; align-items: center; gap: 12px;">
-                                    <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)"
-                                        style="width: 40px; height: 40px; object-fit: contain; border-radius: 6px;"
-                                        [alt]="pro.name || pro.product_name || 'Product'" />
-                                    <div>
-                                        <div style="font-weight: 600; font-size: 14px; color: #2d3748; display: flex; align-items: center; gap: 6px;">
-                                            <span>{{pro.name || pro.product_name || 'Product Item'}}</span>
+                            <div class="items-list-container">
+                                <div *ngIf="item.products && item.products.length > 0; else loadingDeliveredItems">
+                                    <div class="item-product-row" *ngFor="let pro of item.products">
+                                        <div class="item-product-left">
+                                            <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)"
+                                                class="item-product-img" [alt]="pro.name || pro.product_name || 'Product'" />
+                                            <div class="item-product-details">
+                                                <div class="item-product-name">
+                                                    <span>{{ pro.name || pro.product_name || 'Product Item' }}</span>
+                                                    <span *ngIf="pro.refund_amount > 0 || pro.item_status === 'missing' || pro.item_status === 'cancelled'" class="refund-item-badge">
+                                                        Refunded / Cancelled (x{{ pro.missing_qty || 1 }})
+                                                    </span>
+                                                </div>
+                                                <div class="item-product-spec">
+                                                    Qty: {{ getItemTotalQty(pro) }} {{ pro.weight ? '(' + pro.weight + ')' : '' }}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div style="font-size: 12px; color: #718096;">
-                                            Qty: {{ getItemTotalQty(pro) }} {{pro.weight ? '(' + pro.weight + ')' : ''}}
-                                        </div>
+                                        <div class="item-product-price">₹{{ getItemTotalPrice(pro) | number }}</div>
                                     </div>
                                 </div>
-                                <div style="font-weight: 600; font-size: 14px; color: #1a202c;">₹{{ getItemTotalPrice(pro) | number }}</div>
+                                <ng-template #loadingDeliveredItems>
+                                    <div class="items-loading-box">
+                                        <span class="material-icons rotating-icon">sync</span>
+                                        <span>Loading items...</span>
+                                    </div>
+                                </ng-template>
                             </div>
                         </div>
-                        <ng-template #loadingCancelledItems>
-                            <div style="padding: 10px; color: #718096; font-size: 13px;">Loading order items...</div>
-                        </ng-template>
-                    </div>
 
-                    <div class="past-order-actions">
-                        <div class="action-btn secondary" (click)="pastOrderViewAction(item)">{{ item.expanded ? 'Hide items' : 'View items' }}</div>
-                        <div class="action-btn primary" (click)="orderAgainAction(item)">Order again</div>
-                    </div>
+                        <!-- Past Order Action Buttons -->
+                        <div class="past-card-actions">
+                            <button class="past-btn view-btn" (click)="pastOrderViewAction(item)">
+                                <span class="material-icons size-16">{{ item.expanded ? 'unfold_less' : 'unfold_more' }}</span>
+                                <span>{{ item.expanded ? 'Hide Items' : 'View Items' }}</span>
+                            </button>
+                            <button class="past-btn reorder-btn" (click)="orderAgainAction(item)">
+                                <span class="material-icons size-16">replay</span>
+                                <span>Order Again</span>
+                            </button>
+                        </div>
+                    </ng-container>
+
+                    <!-- UNDELIVERED ORDER CARD -->
+                    <ng-container *ngIf="item.status === 'UNDELIVERED'">
+                        <div class="card-top-bar">
+                            <div class="order-id-group">
+                                <span class="order-id-pill" [title]="'Order ID: ' + item.order_id">
+                                    <span class="material-icons size-14 id-tag-icon">tag</span>
+                                    <span class="order-id-short">{{ formatShortId(item.order_id) }}</span>
+                                </span>
+                                <button class="copy-id-btn" (click)="copyOrderId(item.order_id, $event)" [title]="'Copy Full Order ID: ' + item.order_id">
+                                    <span class="material-icons">{{ copiedOrderId === item.order_id ? 'check' : 'content_copy' }}</span>
+                                </button>
+                            </div>
+                            <div class="order-status-badge status-undelivered">
+                                <span class="material-icons size-14">error_outline</span>
+                                <span>Undelivered</span>
+                            </div>
+                        </div>
+                        <div class="past-meta-row">
+                            <div class="meta-left">
+                                <div class="undelivered-reason-box">
+                                    <strong>Reason:</strong> {{ item.undelivered_reason || 'Customer unavailable during delivery attempt' }}
+                                </div>
+                                <div *ngIf="item.refund_amount > 0" class="refund-sub-text">
+                                    💰 ₹{{ item.refund_amount | number }} refunded to your wallet.
+                                </div>
+                            </div>
+                            <div class="meta-right">
+                                <span class="meta-price">₹{{ item.order_total | number }}</span>
+                            </div>
+                        </div>
+                        <div class="past-card-actions">
+                            <button class="past-btn view-btn" (click)="pastOrderViewAction(item)">
+                                <span>{{ item.expanded ? 'Hide Items' : 'View Items' }}</span>
+                            </button>
+                            <button class="past-btn reorder-btn" (click)="orderAgainAction(item)">
+                                <span>Reorder Items</span>
+                            </button>
+                        </div>
+                    </ng-container>
+
+                    <!-- CANCELLED ORDER CARD -->
+                    <ng-container *ngIf="item.status === 'CANCELLED'">
+                        <div class="card-top-bar">
+                            <div class="order-id-group">
+                                <span class="order-id-pill" [title]="'Order ID: ' + item.order_id">
+                                    <span class="material-icons size-14 id-tag-icon">tag</span>
+                                    <span class="order-id-short">{{ formatShortId(item.order_id) }}</span>
+                                </span>
+                                <button class="copy-id-btn" (click)="copyOrderId(item.order_id, $event)" [title]="'Copy Full Order ID: ' + item.order_id">
+                                    <span class="material-icons">{{ copiedOrderId === item.order_id ? 'check' : 'content_copy' }}</span>
+                                </button>
+                            </div>
+                            <div class="order-status-badge status-cancelled">
+                                <span class="material-icons size-14">cancel</span>
+                                <span>Cancelled</span>
+                            </div>
+                        </div>
+                        <div class="past-meta-row">
+                            <div class="meta-left">
+                                <div class="cancelled-meta-text">Placed on {{ safeDate(item.created_at) | date:'MMM d, y' }} &bull; {{ item.items_count || 1 }} Items</div>
+                                <div *ngIf="item.refund_amount > 0" class="refund-sub-text" style="margin-top: 4px;">
+                                    💰 ₹{{ item.refund_amount | number }} refunded to wallet.
+                                </div>
+                            </div>
+                            <div class="meta-right">
+                                <span class="meta-price">₹{{ item.order_total | number }}</span>
+                            </div>
+                        </div>
+                        <div class="past-card-actions">
+                            <button class="past-btn view-btn" (click)="pastOrderViewAction(item)">
+                                <span>{{ item.expanded ? 'Hide Items' : 'View Items' }}</span>
+                            </button>
+                            <button class="past-btn reorder-btn" (click)="orderAgainAction(item)">
+                                <span>Reorder</span>
+                            </button>
+                        </div>
+                    </ng-container>
                 </div>
             </div>
         </div>
-        <ng-template #noOrders>
-            <div style="margin-top: 24px; text-indent: 12px; padding-bottom: 24px; color: #64748b;">
-                No past orders found!
+
+        <!-- 3. EMPTY STATE (When no upcoming and no past orders exist) -->
+        <div class="empty-orders-state" *ngIf="(!upcomingOrders || upcomingOrders.length === 0) && (!pastOrders || pastOrders.length === 0)">
+            <div class="empty-icon-card">
+                <span class="material-icons empty-bag-icon">shopping_bag</span>
             </div>
-        </ng-template>
+            <h3 class="empty-title">No Orders Placed Yet</h3>
+            <p class="empty-desc">Discover our fresh, farm-direct vegetables, fruits, staples, and cold-pressed oils delivered right to your doorstep every morning!</p>
+            <button class="shop-now-cta-btn" (click)="shopNow()">
+                <span class="material-icons">storefront</span>
+                <span>Browse Fresh Products</span>
+            </button>
+        </div>
     </div>
 
-    <div id="Subscribed" class="tabcontent">
-        <div *ngIf="activeTab ==='Subscribed'" style="margin-bottom: 36px;">
-            <div style="margin-top: 24px; text-indent: 12px;" *ngIf="subscriptionOrdersLength === 0">
-                No active subscriptions found!
+    <!-- TAB 2: SUBSCRIBED PLANS -->
+    <div id="Subscribed" class="tabcontent" style="display: none;">
+        <div *ngIf="activeTab === 'Subscribed'" class="subscribed-tab-wrapper">
+            <div *ngIf="subscriptionOrdersLength === 0" class="empty-orders-state">
+                <div class="empty-icon-card subs-icon-card">
+                    <span class="material-icons empty-bag-icon">event_repeat</span>
+                </div>
+                <h3 class="empty-title">No Active Subscriptions</h3>
+                <p class="empty-desc">Set up daily, alternate-day, or custom delivery schedules for fresh milk, veggies, greens, and essentials with zero delivery hassle!</p>
+                <button class="shop-now-cta-btn" (click)="shopNow()">
+                    <span class="material-icons">add_shopping_cart</span>
+                    <span>Explore Subscription Items</span>
+                </button>
             </div>
             <app-subscription-view [subsData]="subscriptionOrders"></app-subscription-view>
         </div>
     </div>
 </div>
 
-<!-- <div class="popup_parent" *ngIf="orderViewFlag">
-    <div class="popup_cont">
-        <div class="close-btn-cont" (click)="alertClose()"><img src="assets/general/close.png" /> </div>
-
-        <div *ngIf="subscribedProducts.length > 0"><b>Items</b></div>
-        <div *ngFor="let product of products" class="row product-cont">
-            <div class="col-4">
-                <div style="text-align: center; margin-top: -4px;">
-                    <img [src]="product['img_url']" class="product_thumb" [alt]="product['name']">
-                </div>
-            </div>
-            <div class="col-8">
-                <div class="pName"> <span>{{product['name']}}</span></div>
-
-                <div class="product_weight">{{product["weight"]}} {{product["unit_name"]}} x {{product["units"]}}</div>
-                <div class="price" *ngIf="!product['disable']">₹ {{ this.product['price'] | number}}</div>
-            </div>
+<!-- Cancel Full Order Confirmation Modal -->
+<div class="popup_parent cancel-popup-modal" *ngIf="orderCancelFlag">
+    <div class="cancel-modal-card">
+        <div class="cancel-modal-icon">
+            <span class="material-icons">help_outline</span>
         </div>
-        <div class="clearfix"></div>
+        <h3 class="cancel-modal-title">Cancel Order?</h3>
+        <p class="cancel-modal-msg">
+            Are you sure you want to cancel order <strong>{{ targetOrder?.order_id }}</strong>?
+        </p>
+        
+        <!-- Refund / Payment context notice -->
+        <div class="modal-notice-box" [class.prepaid-notice]="targetOrder?.payment_type !== 'COD'" [class.cod-notice]="targetOrder?.payment_type === 'COD'">
+            <span class="material-icons size-16">{{ targetOrder?.payment_type === 'COD' ? 'info' : 'account_balance_wallet' }}</span>
+            <span *ngIf="targetOrder?.payment_type !== 'COD'">
+                <strong>₹{{ targetOrder?.order_total | number }}</strong> will be immediately credited to your wallet balance.
+            </span>
+            <span *ngIf="targetOrder?.payment_type === 'COD'">
+                Since this is <strong>Cash on Delivery</strong>, no wallet refund is needed. The delivery will be cancelled.
+            </span>
+        </div>
 
-        <div *ngIf="subscribedProducts.length > 0"><b>Subscribed Items</b></div>
-        <div *ngFor="let product of subscribedProducts" class="row product-cont">
-            <div class="col-4">
-                <div style="text-align: center; margin-top: -4px;">
-                    <img [src]="product['img_url']" class="product_thumb" [alt]="product['name']">
-                </div>
-            </div>
-            <div class="col-8">
-                <div class="pName"> <span>{{product['name']}}</span></div>
-                <div class="price" *ngIf="!product['disable']">₹ {{ this.product['price'] | number}}</div>
-                <div class="tnkspt_secondary_btn"
-                    style="width: 100px; height: 24px; line-height: 24px; font-size: 12px; margin-top: 6px;">View Dates
-                </div>
-            </div>
+        <div class="cancel-modal-actions">
+            <button class="modal-btn back-btn" [disabled]="isCancelling" (click)="alertClose()">Keep Order</button>
+            <button class="modal-btn confirm-cancel-btn" [disabled]="isCancelling" (click)="orderCancelConfirmAction()">
+                <span *ngIf="!isCancelling">Yes, Cancel Order</span>
+                <span *ngIf="isCancelling">Cancelling...</span>
+            </button>
         </div>
     </div>
-</div> -->
+</div>
 
+<!-- Cancel Individual Item Confirmation Modal -->
+<div class="popup_parent cancel-popup-modal" *ngIf="itemCancelFlag">
+    <div class="cancel-modal-card">
+        <div class="cancel-modal-icon item-modal-icon">
+            <span class="material-icons">remove_shopping_cart</span>
+        </div>
+        <h3 class="cancel-modal-title">Cancel This Item?</h3>
+        <p class="cancel-modal-msg">
+            Are you sure you want to cancel <strong>{{ targetItemToCancel?.name || targetItemToCancel?.product_name || 'this item' }}</strong> from your order?
+        </p>
 
-<div class="popup_parent canel-popup" *ngIf="orderCancelFlag">
-    <div class="popup_cont">
-        <p>Are you sure to cancel the order <b>#{{targetOrder.order_id}}</b>?</p>
-        <div class="clearfix"></div>
+        <!-- Refund / Payment Notice -->
+        <div class="modal-notice-box" [class.prepaid-notice]="targetItemOrder?.payment_type !== 'COD'" [class.cod-notice]="targetItemOrder?.payment_type === 'COD'">
+            <span class="material-icons size-16">{{ targetItemOrder?.payment_type === 'COD' ? 'payments' : 'account_balance_wallet' }}</span>
+            <span *ngIf="targetItemOrder?.payment_type !== 'COD'">
+                <strong>₹{{ getItemTotalPrice(targetItemToCancel) | number }}</strong> will be credited directly to your wallet balance.
+            </span>
+            <span *ngIf="targetItemOrder?.payment_type === 'COD'">
+                Payable amount at delivery will be reduced by <strong>₹{{ getItemTotalPrice(targetItemToCancel) | number }}</strong>. No wallet refund for COD orders.
+            </span>
+        </div>
 
-        <div class="flex-box">
-            <div class="tnkspt_secondary_btn cancel-btn" (click)="alertClose()">Back</div>
-            <div class="tnkspt_primary_btn view-btn" (click)="orderCancelConfirmAction()">Okay</div>
+        <div class="cancel-modal-actions">
+            <button class="modal-btn back-btn" [disabled]="isCancelling" (click)="alertClose()">Keep Item</button>
+            <button class="modal-btn confirm-cancel-btn" [disabled]="isCancelling" (click)="confirmCancelItem()">
+                <span *ngIf="!isCancelling">Yes, Cancel Item</span>
+                <span *ngIf="isCancelling">Cancelling...</span>
+            </button>
         </div>
     </div>
 </div>

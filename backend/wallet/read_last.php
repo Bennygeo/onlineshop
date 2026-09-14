@@ -8,6 +8,8 @@ if (!$mobile || !$pdo) {
 }
 
 try {
+    syncWalletAndRazorpayTables($pdo);
+
     try {
         $pdo->exec("ALTER TABLE wallets ADD COLUMN status VARCHAR(20) DEFAULT 'authorized'");
     } catch (Exception $e) {}
@@ -18,7 +20,18 @@ try {
     $rows = $stmt->fetchAll();
 
     if (empty($rows)) {
-        sendJson([]);
+        sendJson([[
+            'id' => '0',
+            'mobile' => (string)$mobile,
+            'type' => 'Credit',
+            'amount' => 0,
+            'total' => 0,
+            'timestamp' => time() * 1000,
+            'created_at' => date('Y-m-d H:i:s'),
+            'description' => 'Initial Balance',
+            'trxn_id' => 'TXN_0',
+            'status' => 'authorized'
+        ]]);
         exit;
     }
 
@@ -26,7 +39,7 @@ try {
     $lastTxObj = null;
 
     foreach ($rows as $row) {
-        $amt = (float)$row['amount'];
+        $amt = round((float)$row['amount']);
         $type = (strtoupper($row['type']) === 'DEBIT') ? 'Debit' : 'Credit';
         $status = strtolower($row['status'] ?: 'authorized');
 
@@ -37,6 +50,8 @@ try {
                 $runningTotal -= $amt;
             }
         }
+
+        $runningTotal = round($runningTotal);
 
         $lastTxObj = [
             'id' => (string)$row['id'],

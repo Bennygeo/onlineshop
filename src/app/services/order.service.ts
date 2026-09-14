@@ -131,15 +131,20 @@ export class OrderService {
 
 
   cancelOrder(order: any) {
-    this.apiS.postApi("orders/cancel_order.php", {
-      "data": JSON.stringify(order)
-    }).subscribe({
-      next: (res: any) => {
-        this.orderCancelEvent.next(res);
-      },
-      error: (err: Error) => {
-        alert("Read product error!");
-      }
+    return this.apiS.postApi("orders/cancel_order.php", {
+      "details": JSON.stringify(order)
+    });
+  }
+
+  cancelOrderItem(orderId: string, item: any): Observable<any> {
+    return this.apiS.postApi("orders/cancel_order_item.php", {
+      "details": JSON.stringify({
+        order_id: orderId,
+        order_item_id: item.order_item_id || item.id,
+        product_id: item.productID || item.product_id || item.id,
+        product_name: item.name || item.product_name,
+        id: item.order_item_id || item.id
+      })
     });
   }
 

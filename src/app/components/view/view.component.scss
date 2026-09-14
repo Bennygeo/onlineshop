@@ -1,236 +1,569 @@
 @import "../../../assets/styles/global-constants.scss";
 
-.baseCont {
+.home-view-wrapper {
     position: relative;
-    margin: 0;
-    padding: 0;
-    left: 0;
-    top: 0;
-    background-color: $teal-100;
-    width: 100vw;
-    height: 40vh;
-
-    #featureCont {
-        background-color: white;
-        border-radius: 32px 32px 0 0;
-
-        .seeAll {
-            font-size: $font-xs;
-            margin: 0px 23px 0px 0px;
-            text-align: right;
-            color: $title-txt-clr;
-        }
-
-        .search-title {
-            font-family: $inter;
-            color: $title-txt-clr;
-            font-size: $font-l;
-            padding: 34px 29px 24px 29px;
-            font-weight: 600;
-        }
-        .tnkspt-because-title {
-            font-family: $inter;
-            color: $title-txt-clr;
-            font-size: $font-l;
-            padding: 34px 29px 9px 34px;
-            font-weight: 600;
-        }
-    }
-
-    .welcomeCont {
-        margin: 0px 24px 12px 24px;
-        margin-bottom: 24px;
-
-        .userName {
-            font-family: $inter;
-            color: #fff;
-            font-size: $font-s;
-            margin-bottom: 9px;
-            padding-top: 24px;
-        }
-
-        .wishes {
-            color: #fff;
-            font-size: 20px;
-            font-weight: 400;
-        }
-    }
+    width: 100%;
+    min-height: 100vh;
+    background: #f8fafc;
+    font-family: $inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1e293b;
+    padding-bottom: 12px;
+    overflow-x: hidden;
+    top: -1px;
 }
 
-.categoryItems {
+/* ----------------------------------------------------
+   1. TOP IMMERSIVE HEADER (Teal Brand Canvas)
+---------------------------------------------------- */
+.home-top-header {
+    background: linear-gradient(135deg, $teal-100 0%, #0f766e 60%, #115e59 100%);
+    color: #ffffff;
+    padding: 16px 16px 40px 16px;
     position: relative;
-    height: 110px;
-    -webkit-box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.05);
-    -moz-box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.05);
-    box-shadow: 0px 15px 25px 0px rgba(0, 0, 0, 0.05);
-    border-radius: $border-radius-xxl;
 
-    .imgBg {
-        position: relative;
-        top: 12px;
-        text-align: center;
+    .header-inner-container {
+        max-width: 900px;
+        margin: 0 auto;
     }
 
-    .card-body {
-        .card-title {
-            font-size: $font-xs;
-            color: $title-txt-clr;
-            width: 90%;
-            display: inline-block;
-            white-space: nowrap;
-            overflow: hidden !important;
-            text-overflow: ellipsis;
-            margin-left: 5%;
-            font-family: $inter;
-            text-align: center;
+    /* Top Utility Row (Location & Wallet) */
+    .top-utility-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+
+        .location-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            max-width: 65%;
+
+            .loc-icon {
+                font-size: 16px;
+                color: #a7f3d0;
+                flex-shrink: 0;
+            }
+
+            .loc-text {
+                font-size: 12px;
+                font-weight: 600;
+                color: #ffffff;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .loc-arrow {
+                font-size: 16px;
+                color: rgba(255, 255, 255, 0.8);
+                flex-shrink: 0;
+            }
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.26);
+                transform: translateY(-1px);
+            }
+        }
+
+        .wallet-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 6px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            .wallet-icon {
+                font-size: 16px;
+                color: #fde68a;
+            }
+
+            .wallet-balance {
+                font-size: 13px;
+                font-weight: 700;
+                color: #ffffff;
+            }
+
+            .wallet-add-icon {
+                font-size: 15px;
+                color: #a7f3d0;
+            }
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.26);
+                transform: translateY(-1px);
+            }
         }
     }
-}
 
-.recent-group > .row {
-    display: block;
-    overflow-x: auto;
-    overflow-y: hidden;
-    white-space: nowrap;
-    margin: 0px;
-    padding: 0px;
-    min-height: 156px;
-    .col-4 {
-        display: inline-block;
-        color: #fff;
-        padding: 9px;
-        min-width: 12% !important;
-        height: 150px;
-        margin: 0;
+    /* Welcome Section */
+    .welcome-section {
+        margin-bottom: 18px;
 
-        &:first-child {
-            margin-left: 15px;
+        .user-greeting {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .greeting-time-icon {
+                font-size: 22px;
+                color: #fde68a;
+            }
+
+            .greeting-text {
+                font-size: 22px;
+                font-weight: 800;
+                letter-spacing: -0.4px;
+                color: #ffffff;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.12);
+            }
         }
 
-        &:last-child {
-            margin-right: 15px;
-        }
-    }
-    .col-3 {
-        display: inline-block;
-        color: #fff;
-        padding: 3px;
-        height: auto;
-        margin: 0;
-
-        &:first-child {
-            margin-left: 23px;
-        }
-
-        &:last-child {
-            margin-right: 23px;
-        }
-    }
-    .col-10 {
-        display: inline-block;
-        color: #fff;
-        padding: 3px;
-        min-width: 12% !important;
-
-        &:first-child {
-            margin-left: 21px;
-        }
-
-        &:last-child {
-            margin-right: 21px;
-        }
-    }
-}
-
-.categoryItems_1 {
-    @include center-column;
-    margin-top: 3px;
-    margin-right: 3px;
-    margin-left: 3px;
-    padding-top: 15px !important;
-    background: none;
-    background-color: #fff;
-    border: none;
-    border: 1px solid #eee;
-    height: 138px !important;
-    border-radius: 12px;
-    text-align: center;
-    text-wrap: balance;
-    width: auto;
-
-    div {
-        h3 {
-            color: $para-txt-clr;
-            font-size: $font-xxxl;
-            font-weight: 600;
-            margin: 0;
-            text-align: center;
-            margin-top: -6px;
-            margin-bottom: 6px;
-        }
-        p {
-            color: $para-txt-clr;
-            font-size: $font-s;
-        }
-    }
-}
-
-.categoryItems_2 {
-    @include center-column;
-    margin-top: 12px;
-    margin-right: 3px;
-    margin-left: 3px;
-    background: none;
-    background-color: #fff;
-    border: none;
-    height: 176px !important;
-    border-radius: 12px;
-    -webkit-box-shadow: 1px -6px 18px 0px rgba(0, 0, 0, 0.05);
-    -moz-box-shadow: 1px -6px 18px 0px rgba(0, 0, 0, 0.05);
-    box-shadow: 1px -6px 18px 0px rgba(0, 0, 0, 0.05);
-
-    .p_info {
-        width: 98%;
-
-        .card-title-plain {
-            font-size: $font-xs;
-            white-space: normal;
-            width: 96%;
-            font-family: $inter;
-            margin: 0;
-            margin-left: 2%;
-            color: $para-txt-clr;
+        .greeting-tagline {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-top: 4px;
+            margin-left: 30px;
             font-weight: 500;
-            line-height: 18px;
+        }
+    }
+
+    /* Interactive Search Trigger */
+    .search-bar-trigger {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+        transition: all 0.25s ease;
+
+        .search-icon {
+            font-size: 20px;
+            color: $teal-100;
+            flex-shrink: 0;
         }
 
-        .price {
-            font-family: $inter;
-            color: $para-txt-clr;
-            font-size: $font-m;
-            font-weight: 600;
+        .search-placeholder {
+            font-size: 13px;
+            color: #94a3b8;
+            font-weight: 500;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        & > p {
-            margin: 0;
-            padding: 6px 0 6px 0;
+        .search-action-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #f0fdfa;
+            color: $teal-100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+
+            .search-action-badge {
+                background: $teal-100;
+                color: #ffffff;
+            }
         }
     }
 }
 
-//overriding exising class value from addresses-component
-::ng-deep .address-cont {
-    height: calc(100% - 48px) !important;
+/* ----------------------------------------------------
+   2. MAIN BODY CONTENT (White Sheet with curved top)
+---------------------------------------------------- */
+.home-main-content {
+    background: #f8fafc;
+    border-radius: 28px 28px 0 0;
+    margin-top: -24px;
+    position: relative;
+    z-index: 10;
+    padding: 20px 16px 12px 16px;
+
+    .content-inner-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
 }
 
-// Hero 4-Slide Banner Carousel Styling
+/* ----------------------------------------------------
+   3. ACTIVE DELIVERY TRACKER WIDGET
+---------------------------------------------------- */
+.active-tracker-widget {
+    background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    border: 1.5px solid #a7f3d0;
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.08);
+    transition: all 0.25s ease;
+
+    .tracker-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .truck-icon-wrap {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: #dcfce7;
+            color: #059669;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+
+            .truck-icon {
+                font-size: 22px;
+            }
+
+            .live-pulse-dot {
+                position: absolute;
+                top: -2px;
+                right: -2px;
+                width: 10px;
+                height: 10px;
+                background: #10b981;
+                border: 2px solid #ffffff;
+                border-radius: 50%;
+                animation: pulseLive 1.5s infinite;
+            }
+        }
+
+        .tracker-text {
+            .tracker-eta {
+                .eta-title {
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #065f46;
+                }
+
+                .eta-slot {
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #047857;
+                }
+            }
+
+            .tracker-order-id {
+                font-size: 11px;
+                color: #64748b;
+                margin-top: 2px;
+
+                .tracker-status-tag {
+                    color: #059669;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
+            }
+        }
+    }
+
+    .tracker-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #059669;
+        color: #ffffff;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+        transition: transform 0.2s ease;
+    }
+
+    &:hover {
+        border-color: #34d399;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(5, 150, 105, 0.15);
+
+        .tracker-action {
+            transform: scale(1.04);
+        }
+    }
+}
+
+@keyframes pulseLive {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.4);
+        opacity: 0.5;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ----------------------------------------------------
+   4. FRESH GROCERY PERKS STRIP
+---------------------------------------------------- */
+.grocery-perks-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+
+    @media (max-width: 640px) {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .perk-item {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+        transition: all 0.2s ease;
+
+        .perk-icon-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: #f0fdfa;
+            color: $teal-100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+
+            .material-icons {
+                font-size: 18px;
+            }
+        }
+
+        .perk-info {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+
+            .perk-title {
+                font-size: 11px;
+                font-weight: 700;
+                color: #0f172a;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .perk-desc {
+                font-size: 10px;
+                color: #64748b;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+
+        &:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+    }
+}
+
+/* ----------------------------------------------------
+   5. SECTION BLOCKS & HEADINGS
+---------------------------------------------------- */
+.section-block {
+    margin-bottom: 24px;
+
+    .section-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+
+        .section-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .section-title-icon {
+                font-size: 20px;
+                color: $teal-100;
+
+                &.fresh-icon {
+                    color: #059669;
+                }
+
+                &.reorder-icon {
+                    color: #d97706;
+                }
+
+                &.batter-icon {
+                    color: #c2410c;
+                }
+            }
+
+            .section-title {
+                font-size: 17px;
+                font-weight: 800;
+                color: #0f172a;
+                margin: 0;
+                letter-spacing: -0.3px;
+            }
+
+            .section-subtitle {
+                font-size: 11px;
+                color: #64748b;
+                margin: 2px 0 0 0;
+            }
+        }
+
+        .see-all-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: 700;
+            color: $teal-100;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+
+            &:hover {
+                color: #0f766e;
+                transform: translateX(2px);
+            }
+        }
+    }
+}
+
+/* ----------------------------------------------------
+   6. CATEGORIES SCROLL / CAROUSEL
+---------------------------------------------------- */
+.categories-scroll-wrapper {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 4px 2px 10px 2px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+
+    &::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    .category-card {
+        flex: 0 0 auto;
+        width: 82px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+
+        .cat-img-box {
+            width: 70px;
+            height: 70px;
+            border-radius: 18px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            transition: all 0.25s ease;
+
+            .cat-img {
+                width: 48px;
+                height: 48px;
+                object-fit: contain;
+                transition: transform 0.25s ease;
+            }
+        }
+
+        .cat-name {
+            font-size: 12px;
+            font-weight: 600;
+            color: #334155;
+            text-align: center;
+            line-height: 1.2;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        &:hover {
+            transform: translateY(-3px);
+
+            .cat-img-box {
+                border-color: #99f6e4;
+                box-shadow: 0 8px 18px rgba(13, 148, 136, 0.12);
+
+                .cat-img {
+                    transform: scale(1.1);
+                }
+            }
+
+            .cat-name {
+                color: $teal-100;
+            }
+        }
+    }
+}
+
+/* ----------------------------------------------------
+   7. FEATURED HERO PROMO CAROUSEL
+---------------------------------------------------- */
 .hero-banner-container {
     position: relative;
-    width: 92%;
-    margin: 16px auto 24px;
+    width: 100%;
+    margin: 8px 0 24px 0;
     border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 
     .banner-carousel {
         display: flex;
@@ -318,8 +651,8 @@
                 justify-content: center;
 
                 .slide-img {
-                    width: 72px;
-                    height: 72px;
+                    width: 76px;
+                    height: 76px;
                     object-fit: contain;
                     filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.25));
                     animation: floatImg 4s ease-in-out infinite alternate;
@@ -350,8 +683,13 @@
             background: rgba(0, 0, 0, 0.5);
         }
 
-        &.prev { left: 8px; }
-        &.next { right: 8px; }
+        &.prev {
+            left: 8px;
+        }
+
+        &.next {
+            right: 8px;
+        }
 
         .material-icons {
             font-size: 18px;
@@ -386,6 +724,225 @@
 }
 
 @keyframes floatImg {
-    0% { transform: translateY(0); }
-    100% { transform: translateY(-6px); }
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(-6px);
+    }
+}
+
+/* ----------------------------------------------------
+   8. PRODUCT CARDS & HORIZONTAL SCROLL GRIDS
+---------------------------------------------------- */
+.products-grid-scroll {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding: 6px 2px 14px 2px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+
+    &::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+
+    .product-item-card {
+        flex: 0 0 auto;
+        width: 156px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        transition: all 0.25s ease;
+
+        .prod-badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 6px;
+            text-transform: uppercase;
+
+            &.reorder-badge {
+                background: #fef3c7;
+                color: #92400e;
+                border-color: #fde68a;
+            }
+
+            &.batter-badge {
+                background: #ffedd5;
+                color: #9a3412;
+                border-color: #fed7aa;
+            }
+        }
+
+        .prod-img-box {
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 12px 0 8px 0;
+
+            .prod-img {
+                max-width: 80px;
+                max-height: 80px;
+                object-fit: contain;
+                transition: transform 0.25s ease;
+            }
+        }
+
+        .prod-details {
+            margin-bottom: 10px;
+
+            .prod-name {
+                font-size: 13px;
+                font-weight: 700;
+                color: #0f172a;
+                margin: 0 0 2px 0;
+                line-height: 1.3;
+                height: 34px;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+
+            .prod-weight {
+                font-size: 11px;
+                color: #64748b;
+                margin-bottom: 6px;
+            }
+
+            .prod-price-row {
+                .price-val {
+                    font-size: 15px;
+                    font-weight: 800;
+                    color: #0f766e;
+                }
+            }
+        }
+
+        .prod-action-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .not-avail-tag {
+                font-size: 11px;
+                color: #dc2626;
+                font-weight: 700;
+                background: #fee2e2;
+                padding: 4px 10px;
+                border-radius: 6px;
+            }
+        }
+
+        &:hover {
+            border-color: #cbd5e1;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+
+            .prod-img-box .prod-img {
+                transform: scale(1.08);
+            }
+        }
+    }
+}
+
+/* ----------------------------------------------------
+   9. FRESHNESS PROMISE TRUST CARDS
+---------------------------------------------------- */
+.freshness-promise-block {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 20px 16px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+
+    .promise-heading {
+        font-size: 15px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 16px 0;
+        text-align: center;
+        letter-spacing: -0.2px;
+    }
+
+    .promise-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+
+        @media (max-width: 600px) {
+            grid-template-columns: 1fr;
+        }
+
+        .promise-card {
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 14px;
+            padding: 14px 12px;
+            text-align: center;
+
+            .promise-icon-wrap {
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+                background: #ecfdf5;
+                color: #059669;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 10px auto;
+
+                .material-icons {
+                    font-size: 22px;
+                }
+            }
+
+            .promise-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: #0f172a;
+                margin: 0 0 4px 0;
+            }
+
+            .promise-desc {
+                font-size: 11px;
+                color: #64748b;
+                margin: 0;
+                line-height: 1.4;
+            }
+        }
+    }
+}
+
+.bottom-spacer {
+    height: 52px;
+}
+
+.size-14 {
+    font-size: 14px !important;
+}
+
+.size-16 {
+    font-size: 16px !important;
 }

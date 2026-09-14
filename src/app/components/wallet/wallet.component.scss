@@ -1,189 +1,970 @@
 @import "../../../assets/styles/global-constants.scss";
 
 .walletContainer {
-    margin-top: 40px;
-    color: white;
-    letter-spacing: 1px;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 12px 12px 40px 12px;
+    color: #1e293b;
+    letter-spacing: normal;
+    font-family: $inter;
 
-    .row {
-        margin: 9px;
-        background-color: $teal-100;
-        border-radius: 16px;
-
-        .balanceBox {
-            padding: 24px;
-
-            .label {
-                color: #f6ffff;
-                font-size: $font-s;
-                font-weight: 400;
-                margin-bottom: 12px;
-            }
-
-            .balance {
-                font-size: 24px;
-                font-weight: 700;
-            }
-        }
-
-        .detailBox {
-            padding: 24px;
-            background-color: #0000001a;
-            border-radius: 0 0 16px 16px;
-
-            .box {
-                width: 50%;
-                position: relative;
-                float: left;
-
-                .label {
-                    color: #f6ffff;
-                    font-size: $font-s;
-                    font-weight: 400;
-                    margin-bottom: 6px;
-                }
-
-                .balanceLedger {
-                    font-size: 16px;
-                    font-weight: 700;
-                }
-
-                &>p {
-                    font-size: 9px;
-                    font-weight: 400;
-                    line-height: normal;
-                    margin-top: 9px;
-                    letter-spacing: 0;
-                    color: #f6ffff;
-                    padding-right: 12px;
-                    line-height: normal;
-                }
-            }
-        }
-    }
-
-    .addWallet {
-        background-color: white;
-        font-size: $font-l;
-        font-weight: 500;
-        color: rgb(50, 210, 173);
+    /* ==========================================================================
+       Fintech Hero Digital Card
+       ========================================================================== */
+    .walletHeroCard {
         position: relative;
-        width: fit-content;
-        padding: 0 12px 0 12px;
-        margin: 0 auto;
-        top: -27px;
-        letter-spacing: 0;
-        -webkit-box-shadow: 1px -6px 18px 0px rgba(50, 210, 173, 0.5);
-        -moz-box-shadow: 1px -6px 18px 0px rgba(50, 210, 173, 0.5);
-        box-shadow: 1px -6px 18px 0px rgba(50, 210, 173, 0.5);
-    }
+        background: linear-gradient(135deg, #097e63 0%, #0c9172 45%, #054e3c 100%);
+        border-radius: 22px;
+        padding: 22px 20px 20px 20px;
+        color: #ffffff;
+        box-shadow: 0 12px 32px -4px rgba(9, 126, 99, 0.38), 0 4px 12px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
 
-    .history {
-        color: #67666d;
-        padding: 12px;
-        font-size: $font-l;
-        font-weight: 500;
-        letter-spacing: 0;
-
-        .historyCont {
-            max-height: 46vh;
-            overflow-y: scroll;
+        &:hover {
+            box-shadow: 0 16px 36px -2px rgba(9, 126, 99, 0.44), 0 6px 16px rgba(0, 0, 0, 0.08);
         }
 
-        .loadMoreCont {
+        .cardAmbientGlow {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+        }
+
+        .cardPattern {
+            position: absolute;
+            bottom: -30px;
+            left: -30px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+            pointer-events: none;
+        }
+
+        .cardHeaderRow {
             display: flex;
             align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+
+            .brandBadge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                background: rgba(255, 255, 255, 0.15);
+                backdrop-filter: blur(6px);
+                padding: 4px 10px;
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+
+                .brandDot {
+                    width: 7px;
+                    height: 7px;
+                    border-radius: 50%;
+                    background: #34d399;
+                    box-shadow: 0 0 8px #34d399;
+                }
+
+                .brandName {
+                    font-size: 11.5px;
+                    font-weight: 600;
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    color: #ffffff;
+                }
+            }
+
+            .contactlessIcon {
+                color: rgba(255, 255, 255, 0.65);
+                display: flex;
+                align-items: center;
+
+                span {
+                    font-size: 24px;
+                }
+            }
+        }
+
+        .mainBalanceSection {
+            margin-bottom: 20px;
+
+            .balanceLabel {
+                display: block;
+                font-size: 12px;
+                font-weight: 500;
+                color: rgba(255, 255, 255, 0.85);
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                margin-bottom: 4px;
+            }
+
+            .balanceAmount {
+                font-size: clamp(30px, 7vw, 38px);
+                font-weight: 800;
+                line-height: 1.1;
+                letter-spacing: -0.5px;
+                color: #ffffff;
+                display: flex;
+                align-items: baseline;
+                gap: 2px;
+
+                .currencySymbol {
+                    font-size: 0.8em;
+                    font-weight: 600;
+                    opacity: 0.9;
+                }
+            }
+        }
+
+        .balanceBreakdownGrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 18px;
+
+            .breakdownCard {
+                background: rgba(0, 0, 0, 0.18);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.16);
+                border-radius: 14px;
+                padding: 12px;
+                transition: all 0.2s ease;
+
+                .cardTop {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    margin-bottom: 6px;
+
+                    .cardIcon {
+                        font-size: 15px;
+                        color: rgba(255, 255, 255, 0.85);
+                    }
+
+                    .breakdownTitle {
+                        font-size: 11.5px;
+                        font-weight: 500;
+                        color: rgba(255, 255, 255, 0.9);
+                        text-transform: uppercase;
+                        letter-spacing: 0.4px;
+                    }
+
+                    .infoIcon {
+                        font-size: 14px;
+                        margin-left: auto;
+                        color: rgba(255, 255, 255, 0.7);
+                        cursor: pointer;
+                        transition: color 0.15s ease, transform 0.15s ease;
+
+                        &:hover {
+                            color: #ffffff;
+                            transform: scale(1.15);
+                        }
+                    }
+                }
+
+                .breakdownValue {
+                    font-size: 17px;
+                    font-weight: 700;
+                    color: #ffffff;
+                    margin-bottom: 2px;
+                }
+
+                .breakdownHint {
+                    font-size: 10px;
+                    color: rgba(255, 255, 255, 0.7);
+                    line-height: 1.25;
+                }
+
+                &.ledgerCard {
+                    cursor: pointer;
+
+                    &:hover {
+                        background: rgba(0, 0, 0, 0.26);
+                        border-color: rgba(255, 255, 255, 0.3);
+                    }
+                }
+            }
+        }
+
+        .heroActionRow {
+            display: flex;
             justify-content: center;
 
-            .loadMore {
-                position: absolute;
-                width: 191px;
-                height: 35px;
-                bottom: 24px;
-                background-color: #fff;
-                color: #e1e2e5;
-                border: 1px solid #e1e2e5;
+            .addMoneyHeroBtn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                width: 100%;
+                padding: 12px 20px;
+                background: #ffffff;
+                color: $teal-100;
+                border: none;
+                border-radius: 14px;
+                font-size: 14.5px;
+                font-weight: 700;
+                cursor: pointer;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+                .btnIcon {
+                    font-size: 19px;
+                    color: $teal-100;
+                }
+
+                &:hover {
+                    background: #f8fafc;
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+                }
+
+                &:active {
+                    transform: translateY(0);
+                }
+            }
+        }
+    }
+
+    /* ==========================================================================
+       History & Activity Section
+       ========================================================================== */
+    .historySection {
+        background: #ffffff;
+        border-radius: 20px;
+        padding: 18px 14px;
+        margin-top: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        border: 1px solid #edf2f7;
+
+        .historyHeader {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            padding: 0 4px;
+
+            .headerLeft {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+
+                .sectionTitle {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    margin: 0;
+                }
+
+                .trxCountBadge {
+                    background: #f1f5f9;
+                    color: #64748b;
+                    font-size: 11px;
+                    font-weight: 600;
+                    padding: 2px 7px;
+                    border-radius: 12px;
+                }
+            }
+
+            .timeFilterToggle {
+                display: inline-flex;
+                background: #f1f5f9;
+                padding: 3px;
+                border-radius: 10px;
+
+                .timeToggleBtn {
+                    background: transparent;
+                    border: none;
+                    font-size: 11.5px;
+                    font-weight: 600;
+                    color: #64748b;
+                    padding: 4px 10px;
+                    border-radius: 7px;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+
+                    &.active {
+                        background: #ffffff;
+                        color: #0f172a;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                    }
+                }
+            }
+        }
+
+        .historyControls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 14px;
+
+            .filterTabs {
+                display: flex;
+                gap: 6px;
+                overflow-x: auto;
+                padding-bottom: 2px;
+
+                &::-webkit-scrollbar {
+                    display: none;
+                }
+
+                .tabBtn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    color: #64748b;
+                    font-size: 12px;
+                    font-weight: 500;
+                    padding: 6px 12px;
+                    border-radius: 10px;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    transition: all 0.15s ease;
+
+                    .tabDot {
+                        width: 6px;
+                        height: 6px;
+                        border-radius: 50%;
+
+                        &.creditDot {
+                            background: #10b981;
+                        }
+
+                        &.debitDot {
+                            background: #64748b;
+                        }
+                    }
+
+                    &:hover {
+                        background: #f1f5f9;
+                        border-color: #cbd5e1;
+                        color: #0f172a;
+                    }
+
+                    &.active {
+                        background: #ecfdf5;
+                        border-color: #a7f3d0;
+                        color: #065f46;
+                        font-weight: 600;
+                    }
+                }
+            }
+
+            .historySearchBox {
+                position: relative;
+                display: flex;
+                align-items: center;
+
+                .searchIcon {
+                    position: absolute;
+                    left: 12px;
+                    font-size: 17px;
+                    color: #94a3b8;
+                    pointer-events: none;
+                }
+
+                .historySearchInput {
+                    width: 100%;
+                    background: #f8fafc;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    padding: 8px 36px 8px 36px;
+                    font-size: 12.5px;
+                    color: #0f172a;
+                    outline: none;
+                    transition: all 0.15s ease;
+
+                    &::placeholder {
+                        color: #94a3b8 !important;
+                    }
+
+                    &:focus {
+                        background: #ffffff;
+                        border-color: $teal-100;
+                        box-shadow: 0 0 0 3px rgba(9, 126, 99, 0.1);
+                    }
+                }
+
+                .clearSearchBtn {
+                    position: absolute;
+                    right: 8px;
+                    background: transparent;
+                    border: none;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 4px;
+
+                    span {
+                        font-size: 16px;
+                    }
+
+                    &:hover {
+                        color: #475569;
+                    }
+                }
+            }
+        }
+
+        .historyListCont {
+            max-height: 52vh;
+            overflow-y: auto;
+            padding-right: 2px;
+
+            &::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: #e2e8f0;
+                border-radius: 4px;
+            }
+        }
+
+        .emptyStateCard {
+            text-align: center;
+            padding: 36px 16px;
+
+            .emptyIconCircle {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: #f1f5f9;
+                color: #94a3b8;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 12px;
+
+                span {
+                    font-size: 28px;
+                }
+            }
+
+            .emptyTitle {
+                font-size: 15px;
+                font-weight: 600;
+                color: #1e293b;
+                margin: 0 0 6px 0;
+            }
+
+            .emptySubtext {
+                font-size: 12.5px;
+                color: #64748b;
+                max-width: 280px;
+                margin: 0 auto 16px auto;
+                line-height: 1.4;
+            }
+
+            .emptyActions {
+                display: flex;
+                justify-content: center;
+                gap: 8px;
+
+                .resetFilterBtn {
+                    background: #f1f5f9;
+                    color: #475569;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 8px 14px;
+                    font-size: 12px;
+                    font-weight: 500;
+                    cursor: pointer;
+
+                    &:hover {
+                        background: #e2e8f0;
+                    }
+                }
+
+                .emptyAddMoneyBtn {
+                    background: $teal-100;
+                    color: #ffffff;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 8px 14px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+
+                    &:hover {
+                        background: darken($teal-100, 5%);
+                    }
+                }
+            }
+        }
+
+        .viewAllFooter {
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #f1f5f9;
+
+            .viewAllBtn {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                color: #334155;
+                font-size: 13px;
+                font-weight: 600;
+                padding: 10px 16px;
+                border-radius: 12px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+
+                span.material-icons-round {
+                    font-size: 18px;
+                    transition: transform 0.15s ease;
+                }
+
+                &:hover {
+                    background: #f1f5f9;
+                    border-color: #cbd5e1;
+                    color: #0f172a;
+
+                    span.material-icons-round {
+                        transform: translateX(2px);
+                    }
+                }
             }
         }
     }
 }
 
-.addWalletCont {
-    position: absolute;
+/* ==========================================================================
+   Add Money Bottom Sheet Modal
+   ========================================================================== */
+.addMoneyModal {
+    position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100%;
-    z-index: 1100;
+    height: 100vh;
+    z-index: 2000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
 
-    .bg {
-        background-color: #00000066;
+    .modalBackdrop {
         position: absolute;
         top: 0;
         left: 0;
-        width: 100vw;
+        width: 100%;
         height: 100%;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(6px);
     }
 
-    .cont {
-        position: absolute;
-        background-color: white;
-        height: 90vh;
-        width: 100vw;
-        top: 10%;
-        border-radius: 32px 32px 0 0;
-        padding: 50px 24px 0 24px;
-    }
+    .modalSheet {
+        position: relative;
+        background: #ffffff;
+        width: 100%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 28px 28px 0 0;
+        padding: 16px 20px 28px 20px;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+        animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 
-    .rcAmount {
-        background-color: #ececec;
-        padding: 26px;
-        font-size: 32px;
-        font-weight: 500;
-        border-radius: 16px;
-        text-align: center;
-
-        input {
-            width: 100%;
-            background: none;
-            outline: none;
+        .sheetHandleBar {
+            width: 40px;
+            height: 4px;
+            background: #cbd5e1;
             border-radius: 10px;
-            padding: 21px 12px 21px 12px;
-            text-indent: 10px;
-            border: none;
+            margin: 0 auto 16px auto;
+            cursor: pointer;
+        }
+
+        .sheetHeader {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 20px;
+
+            .sheetTitle {
+                font-size: 18px;
+                font-weight: 700;
+                color: #0f172a;
+                margin: 0 0 2px 0;
+            }
+
+            .sheetSub {
+                font-size: 12px;
+                color: #64748b;
+                margin: 0;
+            }
+
+            .sheetCloseBtn {
+                background: #f1f5f9;
+                border: none;
+                border-radius: 50%;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #64748b;
+                cursor: pointer;
+                transition: all 0.15s ease;
+
+                span {
+                    font-size: 18px;
+                }
+
+                &:hover {
+                    background: #e2e8f0;
+                    color: #0f172a;
+                }
+            }
+        }
+
+        .amountInputCard {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 18px;
+            transition: all 0.2s ease;
+
+            &:focus-within {
+                background: #ffffff;
+                border-color: $teal-100;
+                box-shadow: 0 0 0 4px rgba(9, 126, 99, 0.12);
+            }
+
+            .inputCurrencyPrefix {
+                font-size: 28px;
+                font-weight: 700;
+                color: #0f172a;
+                line-height: 1;
+            }
+
+            .amountForm {
+                display: inline-block;
+
+                .customAmountInput {
+                    width: 160px;
+                    border: none;
+                    background: transparent;
+                    font-size: 28px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    outline: none;
+                    text-align: left;
+                    padding: 0;
+                    font-family: inherit;
+                }
+            }
+        }
+
+        .quickPillsSection {
+            margin-bottom: 20px;
+
+            .sectionSublabel {
+                display: block;
+                font-size: 11.5px;
+                font-weight: 600;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                margin-bottom: 10px;
+            }
+
+            .pillsGrid {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+
+                .amountPill {
+                    position: relative;
+                    flex: 1 1 calc(20% - 8px);
+                    min-width: 72px;
+                    background: #ffffff;
+                    border: 1.5px solid #e2e8f0;
+                    border-radius: 12px;
+                    padding: 10px 4px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #334155;
+                    cursor: pointer;
+                    text-align: center;
+                    transition: all 0.15s ease;
+
+                    &:hover {
+                        border-color: #cbd5e1;
+                        background: #f8fafc;
+                    }
+
+                    &.active {
+                        border-color: $teal-100;
+                        background: #ecfdf5;
+                        color: #065f46;
+                        box-shadow: 0 2px 8px rgba(9, 126, 99, 0.12);
+                    }
+
+                    .popularBadge {
+                        position: absolute;
+                        top: -7px;
+                        right: 4px;
+                        background: #f59e0b;
+                        color: #ffffff;
+                        font-size: 8.5px;
+                        font-weight: 700;
+                        padding: 1px 4px;
+                        border-radius: 6px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.3px;
+                    }
+                }
+            }
+        }
+
+        .balanceSummaryBox {
+            background: #f8fafc;
+            border: 1px solid #edf2f7;
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+
+            .summaryRow {
+                display: flex;
+                justify-content: space-between;
+                font-size: 12.5px;
+                color: #64748b;
+                margin-bottom: 4px;
+
+                .summaryVal {
+                    font-weight: 600;
+                    color: #334155;
+                }
+
+                &.highlightRow {
+                    margin-bottom: 0;
+                    padding-top: 6px;
+                    border-top: 1px dashed #e2e8f0;
+                    font-weight: 600;
+                    color: #0f172a;
+
+                    .highlightVal {
+                        color: #059669;
+                        font-weight: 700;
+                    }
+                }
+            }
+        }
+
+        .trustSecurityBanner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #64748b;
+            margin-bottom: 20px;
             text-align: center;
 
-            &:focus {
-                border: none;
+            .lockIcon {
+                font-size: 14px;
+                color: #10b981;
             }
+        }
 
-            &.error {
+        .modalActions {
+            .proceedPayBtn {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                background: linear-gradient(135deg, #097e63 0%, #0d9677 100%);
+                color: #ffffff;
                 border: none;
-            }
+                border-radius: 14px;
+                padding: 14px 20px;
+                font-size: 15px;
+                font-weight: 700;
+                cursor: pointer;
+                box-shadow: 0 4px 16px rgba(9, 126, 99, 0.3);
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
-            &.valid {
-                border: none;
+                span.material-icons-round {
+                    font-size: 18px;
+                }
+
+                &:hover:not(:disabled) {
+                    box-shadow: 0 6px 20px rgba(9, 126, 99, 0.45);
+                    transform: translateY(-1px);
+                }
+
+                &:disabled {
+                    background: #cbd5e1;
+                    box-shadow: none;
+                    cursor: not-allowed;
+                }
             }
         }
     }
+}
 
-    .rcOptionCont {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-top: 25px;
+/* ==========================================================================
+   Ledger Info Modal
+   ========================================================================== */
+.ledgerInfoModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 
-        span {
-            padding: 14px;
-            border-radius: 17px;
-            border: 1px solid #adadad;
-            font-size: 12px;
-            font-weight: 400;
+    .modalBackdrop {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(6px);
+    }
+
+    .ledgerInfoCard {
+        position: relative;
+        background: #ffffff;
+        width: 100%;
+        max-width: 420px;
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+        text-align: center;
+        animation: scaleIn 0.2s ease-out;
+
+        .infoIconCircle {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: #ecfdf5;
+            color: $teal-100;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+
+            span {
+                font-size: 26px;
+            }
         }
 
-        .active {
-            border: 1px solid $teal-100;
-            color: $teal-100;
+        .infoModalTitle {
+            font-size: 18px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 12px 0;
+        }
+
+        .infoModalBody {
+            text-align: left;
+            font-size: 13px;
+            color: #475569;
+            line-height: 1.5;
+            margin-bottom: 20px;
+
+            p {
+                margin-top: 0;
+                margin-bottom: 12px;
+            }
+
+            .infoHighlightBox {
+                background: #f8fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 12px;
+                padding: 12px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+
+                .infoItem {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 8px;
+                    font-size: 12px;
+
+                    .checkIcon {
+                        font-size: 16px;
+                        color: #10b981;
+                        margin-top: 2px;
+                    }
+                }
+            }
+        }
+
+        .closeInfoBtn {
+            width: 100%;
+            background: $teal-100;
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s ease;
+
+            &:hover {
+                background: darken($teal-100, 5%);
+            }
+        }
+    }
+}
+
+@keyframes slideUp {
+    0% {
+        transform: translateY(100%);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@media (min-width: 768px) {
+    .addMoneyModal {
+        align-items: center;
+
+        .modalSheet {
+            border-radius: 24px;
+            max-height: 80vh;
         }
     }
 }

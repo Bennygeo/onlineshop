@@ -1,38 +1,134 @@
 <div class="address-cont">
-    <!-- <h4 style="margin-top: 24px;">Delivery addresses</h4> -->
-    <div class="close-btn-cont" style="position: absolute;right:20px;" (click)="popupClose()" *ngIf="!closebtnFlg"><img
-            src="assets/general/close.png" /></div>
-    <mat-radio-group [value]="selectedIndex" style="margin:0; margin-left:6px; display: block;" (change)="addressChange($event)">
-        <div *ngFor="let address of this.addresses; let i=index; trackBy: trackByAddressId" class="address-box" id="addr_{{i}}">
+    <!-- Header Section -->
+    <div class="addressSheetHeader">
+        <div class="headerTextCol">
+            <div class="titleRow">
+                <span class="material-icons-round headerIcon">location_on</span>
+                <h3 class="sheetMainTitle">Delivery Addresses</h3>
+                <span class="addrCountBadge" *ngIf="addresses && addresses.length > 0">{{ addresses.length }}</span>
+            </div>
+            <p class="sheetSubTitle">Choose where you want your fresh orders delivered</p>
+        </div>
+        
+        <button class="modalCloseBtn" (click)="popupClose()" *ngIf="!closebtnFlg" title="Close">
+            <span class="material-icons-round">close</span>
+        </button>
+    </div>
 
-            <div class="flex-box" [style]="{'top':'0px'}">
-                <mat-radio-button [value]="i" class="addressItems" [checked]="address.active==1?true:false">
-                    <!-- <div *ngIf="address.active==1" class="defaultAddress">{{address.name}}'s Home</div> -->
-                    <div class="addressTitle">{{address.title}} 
-                        <span class="delivering-here" *ngIf="address.active==1">Delivering here</span>
-                        <span class="default-tag" *ngIf="isDefaultAddress(address)">Default</span>
+    <!-- Address Cards List -->
+    <div class="addressListContainer" *ngIf="addresses && addresses.length > 0; else no_addresses_template">
+        <mat-radio-group [value]="selectedIndex" (change)="addressChange($event)" class="radioGroupContainer">
+            <div 
+                *ngFor="let address of addresses; let i = index; trackBy: trackByAddressId" 
+                class="modernAddressCard" 
+                [class.active-card]="address.active == 1"
+                id="addr_{{i}}"
+                (click)="selectCardAddress(address, i)">
+
+                <div class="cardMainRow">
+                    <!-- Left Category Avatar -->
+                    <div class="addrAvatar" [class.avatar-active]="address.active == 1">
+                        <span class="material-icons-round">{{ getAddressIcon(address.title) }}</span>
                     </div>
-                    <div class="addressTxt">{{address.name}}</div>
-                    <div class="addressTxt">{{address.address}}</div>
-                    <div class="addressPincode">{{address.pincode}}</div>
-                </mat-radio-button>
 
-                <div class="delete-btn" (click)="deleteAction($event, address, i)">
-                    <img src="assets/address/address_delete.png" />
+                    <!-- Center Address Content -->
+                    <div class="addrDetailsCol">
+                        <div class="addrTitleRow">
+                            <span class="cardTitle">{{ address.title || 'Delivery Address' }}</span>
+                            
+                            <div class="badgeGroup">
+                                <span class="deliveringBadge" *ngIf="address.active == 1">
+                                    <span class="badgeDot"></span>
+                                    Delivering here
+                                </span>
+                                <span class="defaultBadge" *ngIf="isDefaultAddress(address)">
+                                    <span class="material-icons-round defaultStarIcon">star</span>
+                                    Default
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="addrRecipient">
+                            <span class="material-icons-round userMiniIcon">person</span>
+                            <span>{{ address.name }}</span>
+                        </div>
+
+                        <div class="addrStreet">{{ address.address }}</div>
+                        
+                        <div class="addrPincodePill">
+                            <span class="material-icons-round pinMiniIcon">pin_drop</span>
+                            <span>{{ address.pincode }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Right Radio / Delete Indicator -->
+                    <div class="rightCol">
+                        <mat-radio-button 
+                            [value]="i" 
+                            [checked]="address.active == 1"
+                            class="customRadioButton"
+                            (click)="$event.stopPropagation()">
+                        </mat-radio-button>
+
+                        <button 
+                            *ngIf="address.active != 1 && !isDefaultAddress(address)"
+                            class="deleteIconBtn" 
+                            (click)="deleteAction($event, address, i)" 
+                            title="Delete address">
+                            <span class="material-icons-round">delete_outline</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bottom Action Controls -->
+                <div class="cardActionsRow" *ngIf="address.active == 1">
+                    <button class="cardActionBtn editBtn" (click)="editAddress(address); $event.stopPropagation()">
+                        <span class="material-icons-round">edit</span>
+                        <span>Edit</span>
+                    </button>
+
+                    <button 
+                        class="cardActionBtn defaultBtn" 
+                        (click)="defaultAddress(address); $event.stopPropagation()" 
+                        *ngIf="!isDefaultAddress(address)">
+                        <span class="material-icons-round">star_border</span>
+                        <span>Set as Default</span>
+                    </button>
                 </div>
             </div>
+        </mat-radio-group>
+    </div>
 
-            <div class="flex-box" [style]="{'top':'0px'}" *ngIf="address.active == 1">
-                <div class="tnkspt_secondary_btn edit-btn" (click)="editAddress(address)">Edit</div>
-                <div class="tnkspt_primary_btn deliver-btn" (click)="defaultAddress(address)" *ngIf="!isDefaultAddress(address)">Make as default</div>
+    <!-- Empty State Template -->
+    <ng-template #no_addresses_template>
+        <div class="emptyAddressesCard">
+            <div class="emptyAvatarCircle">
+                <span class="material-icons-round">add_location_alt</span>
             </div>
+            <h4 class="emptyTitle">No Saved Addresses</h4>
+            <p class="emptySubtext">Add your delivery location to start ordering fresh produce and groceries.</p>
+            <button (click)="addAddressAction()" class="emptyAddBtn">
+                <span class="material-icons-round">add</span>
+                <span>Add Your First Address</span>
+            </button>
         </div>
-    </mat-radio-group>
+    </ng-template>
 
-    <app-address [address]="selectedAddress" [editBtnFlg]=editBtnFlg [title]=addressTitle [type]="type"
-        (close)="closeEvent()" (update)="updateEvent($event)"></app-address>
+    <!-- Address Edit/Add Modal Component -->
+    <app-address 
+        [address]="selectedAddress" 
+        [editBtnFlg]="editBtnFlg" 
+        [title]="addressTitle" 
+        [type]="type"
+        (close)="closeEvent()" 
+        (update)="updateEvent($event)">
+    </app-address>
 
-    <div class="add-address-btn-container">
-        <button (click)="addAddressAction()" class="tnkspt_primary_btn">Add a new address</button>
+    <!-- Sticky Bottom Add Address CTA -->
+    <div class="add-address-btn-container" *ngIf="addresses && addresses.length > 0">
+        <button (click)="addAddressAction()" class="addNewAddressBtn">
+            <span class="material-icons-round">add_circle_outline</span>
+            <span>Add a New Address</span>
+        </button>
     </div>
 </div>

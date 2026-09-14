@@ -8,6 +8,8 @@ if (!$mobile || !$pdo) {
 }
 
 try {
+    syncWalletAndRazorpayTables($pdo);
+
     try {
         $pdo->exec("ALTER TABLE wallets ADD COLUMN status VARCHAR(20) DEFAULT 'authorized'");
     } catch (Exception $e) {}
@@ -25,7 +27,7 @@ try {
 
         $todayStr = date('Y-m-d');
         foreach ($subItems as $subItem) {
-            $rawPrice = (float)$subItem['price'];
+            $rawPrice = round((float)$subItem['price']);
             $datesJson = ($subItem['subscriptionType'] === 'range') ? $subItem['rangeDates'] : $subItem['subscribedDates'];
             $dates = json_decode($datesJson, true);
             if (is_array($dates) && count($dates) > 0) {
@@ -46,6 +48,7 @@ try {
                 }
             }
         }
+        $ledgerBalance = round($ledgerBalance);
     } catch (Exception $ex) {
         $ledgerBalance = 0;
     }
@@ -58,7 +61,7 @@ try {
     $walletList = [];
 
     foreach ($rows as $row) {
-        $amt = (float)$row['amount'];
+        $amt = round((float)$row['amount']);
         $type = (strtoupper($row['type']) === 'DEBIT') ? 'Debit' : 'Credit';
         $status = strtolower($row['status'] ?: 'authorized');
 
@@ -77,13 +80,30 @@ try {
             'type' => $type,
             'amount' => $amt,
             'total' => $runningTotal,
-            'ledger_balance' => $ledgerBalance,
+            'ledger_balance' => round($ledgerBalance),
             'timestamp' => strtotime($row['created_at']) * 1000,
             'created_at' => $row['created_at'],
             'description' => $row['description'] ?: 'Wallet Transaction',
             'trxn_id' => 'TXN_' . $row['id'],
             'status' => $status
         ];
+    }
+
+    if (empty($walletList)) {
+        sendJson([[
+            'id' => '0',
+            'mobile' => (string)$mobile,
+            'type' => 'Credit',
+            'amount' => 0,
+            'total' => 0,
+            'ledger_balance' => round($ledgerBalance),
+            'timestamp' => time() * 1000,
+            'created_at' => date('Y-m-d H:i:s'),
+            'description' => 'Initial Balance',
+            'trxn_id' => 'TXN_0',
+            'status' => 'authorized'
+        ]]);
+        exit;
     }
 
     sendJson($walletList);

@@ -120,6 +120,7 @@ export class CartService {
   payAndCheckoutFlg: boolean = false;
   //set as true from wallet after placing the order from php
   orderPlacedFlag: boolean = false;
+  lastPlacedOrderId: string = '';
 
   //delivery instructions
   deliveryInst: string = "";
@@ -397,6 +398,14 @@ export class CartService {
 
   readRecommendedProducts(tableName): Observable<any> {
     return this.apiS.postApi('home/recommended_products.php', { table_name: tableName });
+  }
+
+  readRecentPurchases(mobile: string): Observable<any> {
+    return this.apiS.postApi('home/recent_purchases.php', { mobile: mobile });
+  }
+
+  readBatterProducts(tableName?: string): Observable<any> {
+    return this.apiS.postApi('products/download_products_sql.php', { table_name: tableName || 'products', cat: 'Batter' });
   }
 
 
@@ -715,30 +724,32 @@ export class CartService {
     this.remainingToPay = remainingToPay;
 
     return {
-      total: Math.round(total * 100) / 100,
-      subTotal: this.cartDetails.total,
-      couponDiscount: Math.round(couponDiscount * 100) / 100,
+      total: Math.round(total),
+      subTotal: Math.round(this.cartDetails.total),
+      couponDiscount: Math.round(couponDiscount),
       cart: this.cartProducts,
       totalItemsCount: Object.keys(this.cartProducts).length,
-      totalDeliveryCharges: deliveryChargeTotal,
-      taxAndFees: STD_TAX_FEE,
-      walletDeduction: Math.round(walletDeduction * 100) / 100,
-      remainingToPay: Math.round(remainingToPay * 100) / 100,
+      totalDeliveryCharges: Math.round(deliveryChargeTotal),
+      taxAndFees: Math.round(STD_TAX_FEE),
+      walletDeduction: Math.round(walletDeduction),
+      remainingToPay: Math.round(remainingToPay),
       cartProductDateWise: this.cartProductsDateWise,
       subscribedItems: [],
       selectedCoupon: this.couponS.selectedCoupon
     }
   }
 
-  placeOrder(callback) {
+  placeOrder(callback, paymentType: 'Wallet' | 'COD' = 'Wallet') {
     const userWallet = Number(this.loginS.user?.wallet || 0);
     const orderAmt = Number(this.orderInformation?.total || 0);
     const remainingToPay = Number(this.orderInformation?.remainingToPay ?? Math.max(0, orderAmt - userWallet));
 
-    if (remainingToPay > 0.01 && userWallet < (orderAmt - 0.01)) {
-      alert("CRITICAL SECURITY GUARD: Insufficient wallet balance! Available: ₹" + userWallet + ", Order Total: ₹" + orderAmt + ". Order blocked.");
-      this.payAndCheckoutFlg = false;
-      return;
+    if (paymentType !== 'COD') {
+      if (remainingToPay > 0.01 && userWallet < (orderAmt - 0.01)) {
+        alert("CRITICAL SECURITY GUARD: Insufficient wallet balance! Available: ₹" + userWallet + ", Order Total: ₹" + orderAmt + ". Order blocked.");
+        this.payAndCheckoutFlg = false;
+        return;
+      }
     }
 
     const activeUserMobile = this.currentUserID;
@@ -767,6 +778,8 @@ export class CartService {
         }
       }
 
+      totalPrice = Math.round(totalPrice);
+
       return {
         id: p.id || p.product_id,
         name: p.name || p.product_name,
@@ -789,16 +802,17 @@ export class CartService {
       "ordersDetails": JSON.stringify({
         "mobile": activeUserMobile,
         "order_id": this.orderID,
-        "type": "Debit",
-        "trxn_type": "Account",
+        "payment_type": paymentType,
+        "type": paymentType === 'COD' ? 'COD' : 'Debit',
+        "trxn_type": paymentType === 'COD' ? 'COD' : 'Account',
         "modified_at": new DateE(this.serverTime).getTime(),
-        "delivery_charges": this.orderInformation.totalDeliveryCharges,
+        "delivery_charges": Math.round(this.orderInformation.totalDeliveryCharges),
         "delivery_mode": (this.storageS.getItem("tnkspt_delivery_mode")) ? this.storageS.getItem("tnkspt_delivery_mode").index : 1,
         "delivery_inst": this.deliveryInst,
-        "other_charges": STD_TAX_FEE,
-        "amount": this.orderInformation.total,
-        "wallet_total": (this.loginS.user?.wallet || 0) - this.orderInformation.total,
-        "description": "Purchase",
+        "other_charges": Math.round(STD_TAX_FEE),
+        "amount": Math.round(this.orderInformation.total),
+        "wallet_total": paymentType === 'COD' ? Math.round(this.loginS.user?.wallet || 0) : Math.round((this.loginS.user?.wallet || 0) - this.orderInformation.total),
+        "description": paymentType === 'COD' ? 'Cash on Delivery Purchase' : 'Purchase',
         "status": "placed",
         "address": JSON.stringify(activeAddress),
         "items_count": this.cartDetails.totalItems,
@@ -810,7 +824,8 @@ export class CartService {
     }).subscribe({
       next: (res: any) => {
         this.orderPlacedFlag = true;
-        const placedOrderId = res?.order_id || this.orderID;
+        const placedOrderId = res?.order_id || this.orderID || '';
+        this.lastPlacedOrderId = placedOrderId;
         this.orderID = undefined;
         if (this.orderInformation.selectedCoupon)
           this.updateUserCoupon(this.orderInformation.selectedCoupon);
