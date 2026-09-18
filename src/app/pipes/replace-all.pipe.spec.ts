@@ -1,8 +1,8 @@
-import { ReplaceAllPipe } from './replace-all.pipe';
+import { ReplaceAll } from './replace-all.pipe';
 
-describe('ReplaceAllPipe', () => {
+describe('ReplaceAll', () => {
   it('create an instance', () => {
-    const pipe = new ReplaceAllPipe();
+    const pipe = new ReplaceAll();
     expect(pipe).toBeTruthy();
   });
 });

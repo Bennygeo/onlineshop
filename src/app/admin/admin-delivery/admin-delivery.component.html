@@ -100,8 +100,8 @@
           <span class="order-type-chip" [class.subscription]="order.order_type === 'subscription'">
             {{ order.order_type === 'subscription' ? '🔄 Subscription' : '📦 Regular Order' }}
           </span>
-          <span class="payment-chip" [class.cod]="order.payment_type === 'COD'">
-            {{ order.payment_type }}
+          <span class="payment-chip" [class.cod]="order.payment_type === 'COD'" [style.background]="(order.order_source === 'ADMIN_OFFLINE' || order.payment_type === 'OFFLINE') ? '#f3e8ff' : ''" [style.color]="(order.order_source === 'ADMIN_OFFLINE' || order.payment_type === 'OFFLINE') ? '#6d28d9' : ''" [style.border-color]="(order.order_source === 'ADMIN_OFFLINE' || order.payment_type === 'OFFLINE') ? '#ddd6fe' : ''">
+            {{ (order.order_source === 'ADMIN_OFFLINE' || order.payment_type === 'OFFLINE') ? '⚡ Offline / Admin' : order.payment_type }}
           </span>
         </div>
 
@@ -157,17 +157,23 @@
         </div>
 
         <div class="items-list">
-          <div class="item-checklist-row" *ngFor="let item of order.items" [class.item-missing]="item.is_missing" [class.item-checked]="item.is_packed && !item.is_missing">
+          <div class="item-checklist-row" *ngFor="let item of order.items" 
+               [class.item-missing]="item.is_missing" 
+               [class.item-partial]="item.is_partial" 
+               [class.item-checked]="item.is_packed && !item.is_missing && !item.is_partial">
             
             <!-- Checkbox for Packing Verification -->
-            <label class="item-checkbox-wrap" *ngIf="order.delivery_category === 'packed' && !item.is_missing">
+            <label class="item-checkbox-wrap" *ngIf="order.delivery_category === 'packed' && !item.is_missing && !item.is_partial">
               <input type="checkbox" [checked]="item.is_packed" (change)="toggleItemPacked(order, item, $event)" />
               <span class="custom-checkmark"></span>
             </label>
 
-            <!-- Missing Icon if item is refunded/missing -->
+            <!-- Status Indicator Icon if item is refunded/missing/partial -->
             <div class="missing-status-indicator" *ngIf="item.is_missing">
               <span class="material-icons">report_problem</span>
+            </div>
+            <div class="partial-status-indicator" *ngIf="item.is_partial">
+              <span class="material-icons">scale</span>
             </div>
 
             <!-- Item Image -->
@@ -188,16 +194,24 @@
               </div>
             </div>
 
-            <!-- Missing / Refund Tag or Action Button -->
+            <!-- Missing / Partial Refund Tag or Action Button -->
             <div class="item-action-col">
               <div class="missing-badge" *ngIf="item.is_missing">
                 <span>Missing ({{ item.missing_qty }}x)</span>
                 <span class="refund-val">₹{{ item.refund_amount | number }} Refunded</span>
               </div>
 
-              <button *ngIf="order.delivery_category === 'packed' && !item.is_missing" class="report-missing-btn" (click)="openRefundModal(order, item, $event)" title="Report item missing / damaged and refund customer">
-                <span class="material-icons">remove_shopping_cart</span>
-                <span>Missing?</span>
+              <div class="partial-delivery-badge" *ngIf="item.is_partial">
+                <span class="partial-title">Delivered: {{ item.delivered_weight }}{{ item.unit_name }}</span>
+                <span class="refund-val">₹{{ item.refund_amount | number }} Refunded</span>
+              </div>
+
+              <button *ngIf="order.delivery_category === 'packed' && !item.is_missing && !item.is_partial" 
+                      class="report-missing-btn" 
+                      (click)="openRefundModal(order, item, $event)" 
+                      title="Adjust delivered weight or refund missing items">
+                <span class="material-icons">scale</span>
+                <span>Refund / Adjust</span>
               </button>
             </div>
 
@@ -205,7 +219,7 @@
         </div>
       </div>
 
-      <!-- Refund Alert Banner (if order had missing items) -->
+      <!-- Refund Alert Banner (if order had missing/partial items) -->
       <div class="order-refund-banner" *ngIf="order.refund_amount > 0">
         <span class="material-icons">account_balance_wallet</span>
         <div class="refund-banner-text">
@@ -251,15 +265,18 @@
 </div>
 
 <!-- ============================================== -->
-<!-- Missing Item & Refund Modal Dialog             -->
+<!-- Missing Item & Partial Refund Modal Dialog     -->
 <!-- ============================================== -->
 <div class="modal-backdrop" *ngIf="isRefundModalOpen" (click)="closeRefundModal()">
-  <div class="modal-card" (click)="$event.stopPropagation()">
+  <div class="modal-card refund-enhanced-card" (click)="$event.stopPropagation()">
     
     <div class="modal-header">
       <div class="modal-title-wrap">
         <span class="material-icons modal-header-icon">currency_rupee</span>
-        <h3>Report Missing Item & Refund</h3>
+        <div>
+          <h3>Item Refund & Weight Adjustment</h3>
+          <p class="modal-subtitle">Pro-rated wallet refunds for partial deliveries and missing items</p>
+        </div>
       </div>
       <button class="modal-close-btn" (click)="closeRefundModal()">
         <span class="material-icons">close</span>
@@ -271,56 +288,164 @@
       <div class="refund-item-preview">
         <img [src]="activeRefundItem.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" class="preview-img" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
         <div class="preview-details">
-          <h4>{{ activeRefundItem.name }}</h4>
-          <p>Order: <strong>#{{ activeRefundOrder.order_id }}</strong></p>
-          <p>Unit Price: <strong>₹{{ activeRefundItem.price | number }}</strong> &bull; Total Ordered: {{ activeRefundItem.quantity }}</p>
+          <div class="preview-title-row">
+            <h4>{{ activeRefundItem.name }}</h4>
+            <span class="item-rate-badge" *ngIf="unitRate > 0 && refundMode === 'weight'">
+              ₹{{ (unitRate * (unitName === 'kg' ? 1 : 100)) | number:'1.2-2' }}/{{ unitName === 'kg' ? 'kg' : '100g' }}
+            </span>
+          </div>
+          <p class="preview-meta">
+            Order: <strong>#{{ activeRefundOrder.order_id }}</strong> &bull; Total Ordered: <strong>{{ orderedWeight }} {{ unitName }}</strong> (₹{{ activeRefundItem.price | number }})
+          </p>
         </div>
       </div>
 
-      <!-- Missing Quantity Counter -->
-      <div class="form-group">
-        <label>Missing Quantity to Refund:</label>
-        <div class="qty-stepper">
-          <button class="stepper-btn" (click)="refundMissingQty = (refundMissingQty > 1 ? refundMissingQty - 1 : 1)" [disabled]="refundMissingQty <= 1">-</button>
-          <span class="stepper-val">{{ refundMissingQty }}</span>
-          <button class="stepper-btn" (click)="refundMissingQty = (refundMissingQty < activeRefundItem.quantity ? refundMissingQty + 1 : activeRefundItem.quantity)" [disabled]="refundMissingQty >= activeRefundItem.quantity">+</button>
+      <!-- Refund Mode Selector Tabs -->
+      <div class="refund-mode-segmented">
+        <button type="button" class="mode-btn" [class.active]="refundMode === 'weight'" (click)="refundMode = 'weight'">
+          <span class="material-icons">scale</span>
+          <span>Partial Weight</span>
+        </button>
+        <button type="button" class="mode-btn" [class.active]="refundMode === 'quantity'" (click)="refundMode = 'quantity'; onMissingQtyChange(1)">
+          <span class="material-icons">inventory_2</span>
+          <span>Full Unit Missing</span>
+        </button>
+        <button type="button" class="mode-btn" [class.active]="refundMode === 'custom'" (click)="refundMode = 'custom'">
+          <span class="material-icons">edit</span>
+          <span>Custom Amount</span>
+        </button>
+      </div>
+
+      <!-- 1. PARTIAL WEIGHT MODE -->
+      <div class="mode-content-block" *ngIf="refundMode === 'weight'">
+        
+        <!-- Quick Suggestion Chips -->
+        <div class="suggestions-section" *ngIf="quickSuggestions.length > 0">
+          <label class="section-micro-lbl">
+            <span class="material-icons size-13">auto_awesome</span>
+            <span>Quick Suggestions (Based on Weight & Price):</span>
+          </label>
+          <div class="chips-flex-row">
+            <button type="button" 
+                    class="suggestion-chip" 
+                    *ngFor="let sug of quickSuggestions"
+                    [class.selected]="missingWeight === sug.shortfall"
+                    (click)="applySuggestion(sug)">
+              <span class="chip-shortfall">{{ sug.label }}</span>
+              <span class="chip-refund">₹{{ sug.refund | number }}</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Weight Inputs Row -->
+        <div class="weight-inputs-grid">
+          <div class="form-group">
+            <label>Delivered Weight ({{ unitName }}):</label>
+            <div class="input-with-unit">
+              <input type="number" 
+                     class="modal-input" 
+                     [value]="deliveredWeight" 
+                     (input)="onDeliveredWeightChange($any($event.target).value)" 
+                     min="0" 
+                     [max]="orderedWeight" 
+                     step="10" />
+              <span class="unit-tag">{{ unitName }}</span>
+            </div>
+            <span class="input-hint">Amount packed in bag</span>
+          </div>
+
+          <div class="form-group">
+            <label>Shortfall to Refund ({{ unitName }}):</label>
+            <div class="input-with-unit shortfall-input">
+              <input type="number" 
+                     class="modal-input" 
+                     [value]="missingWeight" 
+                     (input)="onShortfallWeightChange($any($event.target).value)" 
+                     min="0" 
+                     [max]="orderedWeight" 
+                     step="10" />
+              <span class="unit-tag">{{ unitName }}</span>
+            </div>
+            <span class="input-hint">Shortfall amount</span>
+          </div>
+        </div>
+
+        <!-- Formula Callout -->
+        <div class="formula-breakdown-card">
+          <div class="formula-row">
+            <span class="formula-label">Weight Balance:</span>
+            <span class="formula-val">{{ orderedWeight }}{{ unitName }} (Ordered) - {{ deliveredWeight }}{{ unitName }} (Delivered) = <strong>{{ missingWeight }}{{ unitName }} deficit</strong></span>
+          </div>
+          <div class="formula-row">
+            <span class="formula-label">Unit Rate:</span>
+            <span class="formula-val">₹{{ activeRefundItem.price }} &divide; {{ orderedWeight }}{{ unitName }} = <strong>₹{{ unitRate | number:'1.2-4' }} per {{ unitName }}</strong></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. FULL QUANTITY MISSING MODE -->
+      <div class="mode-content-block" *ngIf="refundMode === 'quantity'">
+        <div class="form-group">
+          <label>Missing Quantity to Refund:</label>
+          <div class="qty-stepper">
+            <button type="button" class="stepper-btn" (click)="onMissingQtyChange(refundMissingQty - 1)" [disabled]="refundMissingQty <= 1">-</button>
+            <span class="stepper-val">{{ refundMissingQty }}</span>
+            <button type="button" class="stepper-btn" (click)="onMissingQtyChange(refundMissingQty + 1)" [disabled]="refundMissingQty >= activeRefundItem.quantity">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. CUSTOM AMOUNT MODE -->
+      <div class="mode-content-block" *ngIf="refundMode === 'custom'">
+        <div class="form-group">
+          <label>Direct Refund Amount (₹):</label>
+          <div class="input-with-unit">
+            <input type="number" class="modal-input" [(ngModel)]="customRefundAmt" min="0" [max]="activeRefundItem.price * activeRefundItem.quantity" step="1" />
+            <span class="unit-tag">INR (₹)</span>
+          </div>
         </div>
       </div>
 
       <!-- Calculated Refund Summary -->
       <div class="refund-calculation-box">
         <div class="calc-row">
-          <span>Refund Amount:</span>
-          <span class="calc-total">₹{{ (activeRefundItem.price * refundMissingQty) | number }}</span>
+          <span>Net Refund to Customer:</span>
+          <span class="calc-total">₹{{ getFinalRefundAmount() | number }}</span>
         </div>
         <div class="calc-explanation">
           <span class="material-icons info-icon">info</span>
-          <div *ngIf="activeRefundItem.is_subscription">
-            <strong>Subscription Order:</strong> ₹{{ (activeRefundItem.price * refundMissingQty) | number }} will be credited to customer's ThinkSpot Wallet, and today's delivery schedule will be marked cancelled, <em>reducing their active Ledger Balance immediately</em>.
+          <div *ngIf="refundMode === 'weight'">
+            <strong>Partial Weight Delivery:</strong> ₹{{ getFinalRefundAmount() | number }} will be credited directly to customer's ThinkSpot Wallet with audit details (<strong>{{ deliveredWeight }}{{ unitName }} delivered</strong>, <strong>{{ missingWeight }}{{ unitName }} deficit</strong>).
           </div>
-          <div *ngIf="!activeRefundItem.is_subscription">
-            <strong>Regular Order:</strong> ₹{{ (activeRefundItem.price * refundMissingQty) | number }} will be credited immediately to customer's ThinkSpot Wallet.
+          <div *ngIf="refundMode === 'quantity'">
+            <strong>Full Item Missing:</strong> ₹{{ getFinalRefundAmount() | number }} for {{ refundMissingQty }}x item will be credited to customer's ThinkSpot Wallet.
+          </div>
+          <div *ngIf="refundMode === 'custom'">
+            <strong>Custom Adjustment:</strong> ₹{{ getFinalRefundAmount() | number }} will be credited directly to customer's ThinkSpot Wallet.
           </div>
         </div>
       </div>
 
       <!-- Reason Input -->
       <div class="form-group">
-        <label for="refundReason">Reason for Refund / Missing item:</label>
+        <label for="refundReason">Reason for Refund / Adjustment:</label>
         <select id="refundReason" class="custom-select modal-select" [(ngModel)]="refundReason">
-          <option value="Item missing during packing">Item missing during packing</option>
-          <option value="Item damaged or spoiled">Item damaged or spoiled</option>
-          <option value="Out of stock in market">Out of stock in market</option>
-          <option value="Customer requested to omit">Customer requested to omit</option>
+          <option value="Weight deficit / Partial weight delivered">Weight deficit / Partial weight delivered</option>
+          <option value="Short weight from farm / wholesale harvest">Short weight from farm / wholesale harvest</option>
+          <option value="Partial spoilage sorted out before packing">Partial spoilage sorted out before packing</option>
+          <option value="Item partially or fully missing during packing">Item partially or fully missing during packing</option>
+          <option value="Item damaged or spoiled during transit">Item damaged or spoiled during transit</option>
+          <option value="Customer requested reduction / omission">Customer requested reduction / omission</option>
         </select>
       </div>
     </div>
 
     <div class="modal-footer">
       <button class="btn-cancel" (click)="closeRefundModal()" [disabled]="isProcessingRefund">Cancel</button>
-      <button class="btn-confirm-refund" (click)="confirmRefund()" [disabled]="isProcessingRefund || !activeRefundItem">
+      <button class="btn-confirm-refund" (click)="confirmRefund()" [disabled]="isProcessingRefund || !activeRefundItem || getFinalRefundAmount() <= 0">
         <span class="material-icons" [class.spin]="isProcessingRefund">{{ isProcessingRefund ? 'sync' : 'savings' }}</span>
-        <span>{{ isProcessingRefund ? 'Processing...' : 'Confirm & Refund ₹' + ((activeRefundItem ? activeRefundItem.price * refundMissingQty : 0) | number) }}</span>
+        <span>{{ isProcessingRefund ? 'Processing...' : 'Confirm & Refund ₹' + (getFinalRefundAmount() | number) }}</span>
       </button>
     </div>
 

@@ -43,9 +43,12 @@
           <th>Category</th>
           <th>Unit / Weight</th>
           <th>Selling Price</th>
-          <th>Original Price</th>
-          <th>Stock Price</th>
-          <th>Status</th>
+          <th>MRP</th>
+          <th>GST %</th>
+          <th>Stock Qty</th>
+          <th>Avg Cost</th>
+          <th>Inventory</th>
+          <th>Visibility</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -65,20 +68,49 @@
           <td><span class="unit-badge">{{ p.weight }} {{ p.unit_name || 'grams' }}</span></td>
           <td><span class="price-val">₹ {{ p.price }}</span></td>
           <td><span class="orig-price-val">₹ {{ p.original_price }}</span></td>
-          <td>₹ {{ p.stock_price || '-' }}</td>
+          <td><span class="gst-badge">{{ p.gst_percent !== undefined ? p.gst_percent : 5 }}%</span></td>
           <td>
-            <button class="status-toggle-btn" [class.in-stock]="!p.disabled" [class.out-of-stock]="p.disabled" (click)="toggleStockStatus(p)">
-              {{ p.disabled ? 'Disabled' : 'Active' }}
+            <div class="stock-qty-cell">
+              <span class="stock-qty-badge" [class.low-stock]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0" [class.zero-stock]="(p.stock_qty || 0) <= 0">
+                <span class="material-icons size-14">{{ (p.stock_qty || 0) > 0 ? 'inventory' : 'production_quantity_limits' }}</span>
+                <span>{{ p.stock_qty !== undefined ? p.stock_qty : 0 }} {{ p.unit_name || 'kg' }}</span>
+              </span>
+            </div>
+          </td>
+          <td>
+            <div class="avg-cost-cell">
+              <span class="avg-cost-val">₹ {{ (p.stock_price !== undefined ? p.stock_price : (p.avg_cost || 0)) | number:'1.2-2' }}</span>
+              <small class="cost-unit-label">/ {{ p.unit_name || 'kg' }}</small>
+            </div>
+          </td>
+          <td>
+            <button class="status-toggle-btn" [class.in-stock]="p.in_stock !== false && p.in_stock !== 0" [class.out-of-stock]="p.in_stock === false || p.in_stock === 0" (click)="toggleStockStatus(p)" [title]="(p.in_stock !== false && p.in_stock !== 0) ? 'Click to mark Out of Stock' : 'Click to mark In Stock'">
+              <span class="material-icons size-14">{{ (p.in_stock !== false && p.in_stock !== 0) ? 'check_circle' : 'remove_shopping_cart' }}</span>
+              {{ (p.in_stock !== false && p.in_stock !== 0) ? 'In Stock' : 'Out of Stock' }}
             </button>
           </td>
           <td>
-            <button class="edit-btn" (click)="openEditModal(p)">
-              <span class="material-icons">edit</span> Edit
+            <button class="visibility-toggle-btn" [class.visible-active]="!p.disabled" [class.visible-disabled]="p.disabled" (click)="toggleVisibilityStatus(p)" [title]="p.disabled ? 'Currently Hidden from Customers. Click to Enable' : 'Currently Visible to Customers. Click to Disable'">
+              <span class="material-icons size-14">{{ p.disabled ? 'visibility_off' : 'visibility' }}</span>
+              {{ p.disabled ? 'Hidden (Disabled)' : 'Visible (Active)' }}
             </button>
+          </td>
+          <td>
+            <div class="table-actions-cell">
+              <button class="stock-action-btn" (click)="openAddStockModal(p)" title="Add Stock & Record Purchase for {{ p.name }}">
+                <span class="material-icons">add_box</span> + Stock
+              </button>
+              <button class="history-action-btn" (click)="openPurchaseHistoryModal(p)" title="View Purchase & Cost History for {{ p.name }}">
+                <span class="material-icons">history</span>
+              </button>
+              <button class="edit-btn" (click)="openEditModal(p)" title="Edit Product">
+                <span class="material-icons">edit</span>
+              </button>
+            </div>
           </td>
         </tr>
         <tr *ngIf="filteredProducts.length === 0">
-          <td colspan="8" class="no-data">No products found matching criteria.</td>
+          <td colspan="11" class="no-data">No products found matching criteria.</td>
         </tr>
       </tbody>
     </table>
@@ -231,24 +263,101 @@
           <input type="number" [(ngModel)]="newProduct.stock_price" placeholder="80" />
         </div>
 
+        <div class="form-group">
+          <label>GST Percentage (%) *</label>
+          <input type="number" [(ngModel)]="newProduct.gst_percent" placeholder="5" step="0.5" />
+          <small class="field-hint">e.g. 0%, 5%, 12%, 18%</small>
+        </div>
+
+        <div class="form-group">
+          <label>Inventory Availability *</label>
+          <select [(ngModel)]="newProduct.in_stock">
+            <option [ngValue]="1">In Stock (Available for purchase)</option>
+            <option [ngValue]="0">Out of Stock (Shows as Out of Stock)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Customer Visibility Status *</label>
+          <select [(ngModel)]="newProduct.disabled">
+            <option [ngValue]="0">Active (Visible to Customer)</option>
+            <option [ngValue]="1">Disabled (Hidden from Customer)</option>
+          </select>
+        </div>
+
         <div class="form-group full-width">
           <label>Image URL</label>
           <input type="text" [(ngModel)]="newProduct.img_url" placeholder="assets/categories/Thinkspot_veggiesIcon.png" />
+        </div>
+
+        <!-- Delivery Options Configuration -->
+        <div class="form-group full-width delivery-config-section">
+          <label class="section-heading">
+            <span class="material-icons">local_shipping</span> Delivery Options Configuration
+          </label>
+          <p class="section-desc">Select which delivery slots and speeds are enabled for this product</p>
+          <div class="delivery-options-grid">
+            <label class="delivery-toggle-card" [class.selected]="newProduct.allow_next_day == 1">
+              <input type="checkbox" [ngModel]="newProduct.allow_next_day == 1" (ngModelChange)="newProduct.allow_next_day = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">wb_sunny</span> Next-Day 7:00 AM IST
+                </div>
+                <span class="toggle-card-sub">Fixed 7 AM morning delivery (12 Midnight cutoff)</span>
+              </div>
+            </label>
+
+            <label class="delivery-toggle-card" [class.selected]="newProduct.allow_immediate_10 == 1">
+              <input type="checkbox" [ngModel]="newProduct.allow_immediate_10 == 1" (ngModelChange)="newProduct.allow_immediate_10 = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">bolt</span> 10 Mins Delivery
+                </div>
+                <span class="toggle-card-sub">Ultra-fast instant delivery slot</span>
+              </div>
+            </label>
+
+            <label class="delivery-toggle-card" [class.selected]="newProduct.allow_immediate_30 == 1">
+              <input type="checkbox" [ngModel]="newProduct.allow_immediate_30 == 1" (ngModelChange)="newProduct.allow_immediate_30 = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">speed</span> 30 Mins Delivery
+                </div>
+                <span class="toggle-card-sub">Express 30-minute delivery slot</span>
+              </div>
+            </label>
+
+            <label class="delivery-toggle-card" [class.selected]="newProduct.allow_immediate_60 == 1">
+              <input type="checkbox" [ngModel]="newProduct.allow_immediate_60 == 1" (ngModelChange)="newProduct.allow_immediate_60 = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">schedule</span> 60 Mins Delivery
+                </div>
+                <span class="toggle-card-sub">Quick 1-hour delivery slot</span>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
 
       <div class="modal-footer">
         <button class="btn-secondary" (click)="closeAddModal()">Cancel</button>
-        <button class="btn-primary" (click)="submitAddProduct()">Save & Add Product</button>
+        <button class="btn-primary" (click)="submitAddProduct()">Add Product</button>
       </div>
     </div>
   </div>
 
   <!-- Edit Product Modal -->
   <div class="modal-overlay" *ngIf="isEditModalOpen" (click)="closeEditModal()">
-    <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-card edit-product-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Edit Product - {{ editingProduct?.name }}</h3>
+        <div class="modal-title-wrap">
+          <span class="material-icons modal-title-icon edit-icon">edit</span>
+          <div>
+            <h3>Edit Product</h3>
+            <p class="modal-sub">{{ editingProduct?.name }} (ID: {{ editingProduct?.id }})</p>
+          </div>
+        </div>
         <button class="close-btn" (click)="closeEditModal()">✕</button>
       </div>
 
@@ -301,16 +410,79 @@
         </div>
 
         <div class="form-group">
-          <label>Status</label>
+          <label>GST Percentage (%) *</label>
+          <input type="number" [(ngModel)]="editingProduct.gst_percent" step="0.5" />
+          <small class="field-hint">e.g. 0%, 5%, 12%, 18%</small>
+        </div>
+
+        <div class="form-group">
+          <label>Inventory Availability *</label>
+          <select [(ngModel)]="editingProduct.in_stock">
+            <option [ngValue]="1">In Stock (Available for purchase)</option>
+            <option [ngValue]="0">Out of Stock (Shows as Out of Stock)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Customer Visibility Status *</label>
           <select [(ngModel)]="editingProduct.disabled">
-            <option [value]="0">Active (In Stock)</option>
-            <option [value]="1">Disabled (Out of Stock)</option>
+            <option [ngValue]="0">Active (Visible to Customer)</option>
+            <option [ngValue]="1">Disabled (Hidden from Customer)</option>
           </select>
         </div>
 
         <div class="form-group full-width">
           <label>Image URL</label>
           <input type="text" [(ngModel)]="editingProduct.img_url" />
+        </div>
+
+        <!-- Delivery Options Configuration -->
+        <div class="form-group full-width delivery-config-section">
+          <label class="section-heading">
+            <span class="material-icons">local_shipping</span> Delivery Options Configuration
+          </label>
+          <p class="section-desc">Select which delivery slots and speeds are enabled for this product</p>
+          <div class="delivery-options-grid">
+            <label class="delivery-toggle-card" [class.selected]="editingProduct.allow_next_day == 1">
+              <input type="checkbox" [ngModel]="editingProduct.allow_next_day == 1" (ngModelChange)="editingProduct.allow_next_day = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">wb_sunny</span> Next-Day 7:00 AM IST
+                </div>
+                <span class="toggle-card-sub">Fixed 7 AM morning delivery (12 Midnight cutoff)</span>
+              </div>
+            </label>
+
+            <label class="delivery-toggle-card" [class.selected]="editingProduct.allow_immediate_10 == 1">
+              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_10 == 1" (ngModelChange)="editingProduct.allow_immediate_10 = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">bolt</span> 10 Mins Delivery
+                </div>
+                <span class="toggle-card-sub">Ultra-fast instant delivery slot</span>
+              </div>
+            </label>
+
+            <label class="delivery-toggle-card" [class.selected]="editingProduct.allow_immediate_30 == 1">
+              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_30 == 1" (ngModelChange)="editingProduct.allow_immediate_30 = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">speed</span> 30 Mins Delivery
+                </div>
+                <span class="toggle-card-sub">Express 30-minute delivery slot</span>
+              </div>
+            </label>
+
+            <label class="delivery-toggle-card" [class.selected]="editingProduct.allow_immediate_60 == 1">
+              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_60 == 1" (ngModelChange)="editingProduct.allow_immediate_60 = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">schedule</span> 60 Mins Delivery
+                </div>
+                <span class="toggle-card-sub">Quick 1-hour delivery slot</span>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -320,5 +492,263 @@
       </div>
     </div>
   </div>
+
+  <!-- Add Stock / Record Purchase Modal -->
+  <div class="modal-overlay" *ngIf="isAddStockModalOpen">
+    <div class="modal-card stock-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="material-icons modal-title-icon stock-icon">add_box</span>
+          <div>
+            <h3>Add Stock & Record Purchase</h3>
+            <p class="modal-sub">{{ selectedProductForStock?.name }} (ID: {{ selectedProductForStock?.id }})</p>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closeAddStockModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Current Stock Status Overview -->
+        <div class="current-stock-overview">
+          <div class="overview-item">
+            <span class="overview-label">Current Stock</span>
+            <span class="overview-value">{{ selectedProductForStock?.stock_qty || 0 }} {{ selectedProductForStock?.unit_name || 'kg' }}</span>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">Current Weighted Avg Cost</span>
+            <span class="overview-value cost-highlight">₹ {{ (selectedProductForStock?.stock_price || selectedProductForStock?.avg_cost || 0) | number:'1.0-0' }} <small>/ {{ selectedProductForStock?.unit_name || 'kg' }}</small></span>
+          </div>
+          <div class="overview-item">
+            <span class="overview-label">Current Selling Price</span>
+            <span class="overview-value">₹ {{ selectedProductForStock?.price | number:'1.0-0' }}</span>
+          </div>
+        </div>
+
+        <!-- Add Stock Form Fields -->
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Purchase Date *</label>
+            <input type="date" [(ngModel)]="stockPurchaseForm.purchase_date" />
+          </div>
+
+          <div class="form-group">
+            <label>Purchase Quantity ({{ selectedProductForStock?.unit_name || 'kg' }}) *</label>
+            <input type="number" [(ngModel)]="stockPurchaseForm.quantity" placeholder="e.g. 5" min="1" step="1" />
+          </div>
+
+          <div class="form-group">
+            <label>Total Purchase Cost (₹) *</label>
+            <input type="number" [(ngModel)]="stockPurchaseForm.total_cost" placeholder="e.g. 300" min="0" step="1" />
+          </div>
+
+          <div class="form-group">
+            <label>Profit Percentage (%) *</label>
+            <input type="number" [(ngModel)]="stockPurchaseForm.profit_percent" placeholder="e.g. 10" min="0" step="1" />
+            <small class="field-hint">Profit markup added over weighted avg cost</small>
+          </div>
+
+          <div class="form-group">
+            <label>GST Percentage (%) *</label>
+            <input type="number" [(ngModel)]="stockPurchaseForm.gst_percent" placeholder="e.g. 5" min="0" step="1" />
+            <small class="field-hint">GST applied on base price with profit</small>
+          </div>
+
+          <div class="form-group">
+            <label>Supplier / Vendor Name (Optional)</label>
+            <input type="text" [(ngModel)]="stockPurchaseForm.vendor_name" placeholder="e.g. Metro Veggie Wholesale" />
+          </div>
+
+          <div class="form-group full-width">
+            <label>Invoice # / Batch Notes (Optional)</label>
+            <input type="text" [(ngModel)]="stockPurchaseForm.notes" placeholder="e.g. Batch #204, Invoice INV-892" />
+          </div>
+        </div>
+
+        <!-- Real-time Live Calculation Card -->
+        <div class="calculation-preview-card">
+          <div class="calc-header">
+            <span class="material-icons">analytics</span>
+            <span>Real-time Stock, Profit & Selling Price Calculation</span>
+          </div>
+
+          <div class="calc-grid">
+            <div class="calc-col">
+              <span class="calc-label">Purchase Unit Cost</span>
+              <span class="calc-val">₹ {{ getCalculatedUnitCost() | number:'1.0-0' }} <small>/ {{ stockPurchaseForm.unit_name }}</small></span>
+              <span class="calc-sub">(₹ {{ stockPurchaseForm.total_cost || 0 }} ÷ {{ stockPurchaseForm.quantity || 0 }} {{ stockPurchaseForm.unit_name }})</span>
+            </div>
+            <div class="calc-col">
+              <span class="calc-label">New Total Stock</span>
+              <span class="calc-val text-green">{{ getCalculatedNewStock() }} {{ stockPurchaseForm.unit_name }}</span>
+              <span class="calc-sub">({{ selectedProductForStock?.stock_qty || 0 }} + {{ stockPurchaseForm.quantity || 0 }})</span>
+            </div>
+            <div class="calc-col">
+              <span class="calc-label">New Weighted Avg Cost</span>
+              <span class="calc-val text-teal">₹ {{ getCalculatedNewWeightedAvg() | number:'1.0-0' }} <small>/ {{ stockPurchaseForm.unit_name }}</small></span>
+              <span class="calc-sub">Weighted cost basis</span>
+            </div>
+          </div>
+
+          <!-- Price Formula Breakdown Strip -->
+          <div class="pricing-breakdown-box">
+            <div class="breakdown-row">
+              <div class="step-item">
+                <span class="step-lbl">Avg Cost</span>
+                <span class="step-val">₹ {{ getCalculatedNewWeightedAvg() | number:'1.0-0' }}</span>
+              </div>
+              <span class="step-op">+</span>
+              <div class="step-item">
+                <span class="step-lbl">Profit ({{ stockPurchaseForm.profit_percent || 0 }}%)</span>
+                <span class="step-val text-profit">+ ₹ {{ (getCalculatedBaseWithProfit() - getCalculatedNewWeightedAvg()) | number:'1.0-0' }}</span>
+              </div>
+              <span class="step-op">=</span>
+              <div class="step-item">
+                <span class="step-lbl">Base Price</span>
+                <span class="step-val">₹ {{ getCalculatedBaseWithProfit() | number:'1.0-0' }}</span>
+              </div>
+              <span class="step-op">+</span>
+              <div class="step-item">
+                <span class="step-lbl">GST ({{ stockPurchaseForm.gst_percent || 0 }}%)</span>
+                <span class="step-val text-gst">+ ₹ {{ getCalculatedGstAmount() | number:'1.0-0' }}</span>
+              </div>
+              <span class="step-op">=</span>
+              <div class="step-item highlight-final">
+                <span class="step-lbl">New Selling Price</span>
+                <span class="step-val text-final">₹ {{ getCalculatedFinalSellingPrice() | number:'1.0-0' }}</span>
+              </div>
+            </div>
+            <div class="mrp-subtext">
+              <span>Suggested MRP (Original Price): <strong>₹ {{ getCalculatedMRP() }}</strong></span>
+            </div>
+          </div>
+
+          <div class="calc-note">
+            <span class="material-icons">info</span>
+            <div class="calc-note-text">
+              <div *ngIf="(selectedProductForStock?.stock_price || selectedProductForStock?.avg_cost || 0) <= 0">
+                <strong>Initial Cost Basis Setup:</strong> No prior purchase history was logged for the existing {{ selectedProductForStock?.stock_qty || 0 }} {{ stockPurchaseForm.unit_name }}. This incoming batch (₹ {{ getCalculatedUnitCost() | number:'1.0-0' }} / {{ stockPurchaseForm.unit_name }}) will establish the weighted average cost basis for all {{ getCalculatedNewStock() }} {{ stockPurchaseForm.unit_name }}.
+              </div>
+              <div *ngIf="(selectedProductForStock?.stock_price || selectedProductForStock?.avg_cost || 0) > 0">
+                <strong>Multi-batch Weighted Average:</strong> Computed as (({{ selectedProductForStock?.stock_qty || 0 }} × ₹{{ (selectedProductForStock?.stock_price || selectedProductForStock?.avg_cost) | number:'1.0-0' }}) + ₹{{ stockPurchaseForm.total_cost || 0 }}) ÷ {{ getCalculatedNewStock() }} {{ stockPurchaseForm.unit_name }}.
+              </div>
+              <div class="price-update-notice">
+                Confirming will immediately update the live selling price to <strong>₹ {{ getCalculatedFinalSellingPrice() | number:'1.0-0' }}</strong> and available stock to <strong>{{ getCalculatedNewStock() }} {{ stockPurchaseForm.unit_name }}</strong> across customer shop & cart.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeAddStockModal()">Cancel</button>
+        <button class="btn-primary btn-add-stock-submit" (click)="submitAddStock()" [disabled]="addStockSubmitting">
+          <span class="material-icons" *ngIf="!addStockSubmitting">check_circle</span>
+          <span *ngIf="!addStockSubmitting">Confirm & Add Stock</span>
+          <span *ngIf="addStockSubmitting">Updating Inventory...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Purchase History & Cost Tracking Modal -->
+  <div class="modal-overlay" *ngIf="isPurchaseHistoryModalOpen" (click)="closePurchaseHistoryModal()">
+    <div class="modal-card history-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="material-icons modal-title-icon history-icon">receipt_long</span>
+          <div>
+            <h3>Purchase History & Cost Log</h3>
+            <p class="modal-sub">{{ selectedProductForHistory?.name }} (ID: {{ selectedProductForHistory?.id }})</p>
+          </div>
+        </div>
+        <button class="close-btn" (click)="closePurchaseHistoryModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Summary Stat Cards -->
+        <div class="history-stat-cards" *ngIf="!purchaseHistoryLoading && purchaseHistory.length > 0">
+          <div class="stat-card">
+            <span class="stat-num">{{ getHistorySummary().count }}</span>
+            <span class="stat-title">Purchase Batches</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num">{{ getHistorySummary().totalQty }} {{ selectedProductForHistory?.unit_name || 'kg' }}</span>
+            <span class="stat-title">Total Stock Inward</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-num">₹ {{ getHistorySummary().totalCost | number:'1.2-2' }}</span>
+            <span class="stat-title">Total Cost Incurred</span>
+          </div>
+          <div class="stat-card highlight">
+            <span class="stat-num">₹ {{ getHistorySummary().weightedAvg | number:'1.2-2' }}</span>
+            <span class="stat-title">Lifetime Weighted Avg Cost</span>
+          </div>
+        </div>
+
+        <!-- History Loading Indicator -->
+        <div class="history-loading" *ngIf="purchaseHistoryLoading">
+          <span class="material-icons spin">sync</span>
+          <span>Loading purchase history records...</span>
+        </div>
+
+        <!-- History Table -->
+        <div class="history-table-container" *ngIf="!purchaseHistoryLoading && purchaseHistory.length > 0">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Purchase Date</th>
+                <th>Quantity</th>
+                <th>Total Cost</th>
+                <th>Unit Cost</th>
+                <th>Vendor / Supplier</th>
+                <th>Notes / Batch</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of purchaseHistory">
+                <td>
+                  <span class="history-date">{{ item.purchase_date | date:'dd MMM yyyy, hh:mm a' }}</span>
+                </td>
+                <td>
+                  <span class="history-qty-badge">+ {{ item.quantity }} {{ item.unit_name || 'kg' }}</span>
+                </td>
+                <td>
+                  <span class="history-cost">₹ {{ item.total_cost | number:'1.2-2' }}</span>
+                </td>
+                <td>
+                  <span class="history-unit-cost">₹ {{ item.cost_per_unit | number:'1.2-2' }} / {{ item.unit_name || 'kg' }}</span>
+                </td>
+                <td>
+                  <span class="history-vendor">{{ item.vendor_name || '—' }}</span>
+                </td>
+                <td>
+                  <span class="history-notes">{{ item.notes || '—' }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div class="history-empty-state" *ngIf="!purchaseHistoryLoading && purchaseHistory.length === 0">
+          <span class="material-icons">inventory</span>
+          <h4>No Purchase History Recorded Yet</h4>
+          <p>No previous stock purchases were logged for this product. Use the "+ Add Stock" button to record your first inventory purchase.</p>
+          <button class="btn-primary" (click)="closePurchaseHistoryModal(); openAddStockModal(selectedProductForHistory)">
+            <span class="material-icons">add_box</span>
+            <span>Record First Purchase</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closePurchaseHistoryModal()">Close</button>
+        <button class="btn-primary" (click)="closePurchaseHistoryModal(); openAddStockModal(selectedProductForHistory)">
+          <span class="material-icons">add</span> Add New Stock
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
 

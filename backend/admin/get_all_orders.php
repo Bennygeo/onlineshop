@@ -6,6 +6,19 @@ if (!$pdo) {
 }
 
 try {
+    $alters = [
+        "ALTER TABLE orders ADD COLUMN order_source VARCHAR(50) DEFAULT 'CLIENT_WEB'",
+        "ALTER TABLE orders ADD COLUMN created_by VARCHAR(100) DEFAULT NULL",
+        "ALTER TABLE orders ADD COLUMN assigned_to VARCHAR(100) DEFAULT ''",
+        "ALTER TABLE orders ADD COLUMN delivery_inst TEXT",
+        "ALTER TABLE orders ADD COLUMN delivery_mode VARCHAR(100) DEFAULT ''"
+    ];
+    foreach ($alters as $sql) {
+        try {
+            $pdo->exec($sql);
+        } catch (Exception $e) {}
+    }
+
     // Select all orders from database
     $stmt = $pdo->query("SELECT * FROM orders ORDER BY created_at DESC, order_id DESC LIMIT 500");
     $orders = $stmt->fetchAll();

@@ -1,4 +1,4 @@
-<div class="product_details">
+<div class="product_details" [class.is-out-of-stock]="product.disabled || product.in_stock === false || product.in_stock === 0 || (product.stock_qty !== undefined && product.stock_qty <= 0)">
     <div style="width: 100%;">
 
         <div class="pName">
@@ -7,8 +7,11 @@
 
         <div *ngIf="product['badge']=='yes'" class="badge_txt">{{product['badge_txt']}}</div>
 
-        <div style="text-align: center; margin-top: -4px;" (click)="detailed_view($event)">
+        <div style="text-align: center; margin-top: -4px; position: relative;" (click)="detailed_view($event)">
             <img [src]="product['img_url']" class="product_thumb" (load)="onImageLoad($event)" [alt]="product['name']">
+            <div class="thumb-out-of-stock-overlay" *ngIf="product.in_stock === false || product.in_stock === 0 || (product.stock_qty !== undefined && product.stock_qty <= 0)">
+                <span>Out of Stock</span>
+            </div>
         </div>
 
         <div>
@@ -16,21 +19,24 @@
         </div>
 
         <div class="price" *ngIf="!product['disable']">₹ {{ this.product['price'] | number:'1.0-0'}}
-            <span *ngIf="product['original_price'] && product['original_price'] > product['price']" style="text-decoration: line-through; color:#aaa; font-weight: 500;" class="font-12">
+            <span *ngIf="product['original_price'] && product['original_price'] > product['price']"
+                style="text-decoration: line-through; color:#aaa; font-weight: 500;" class="font-12">
                 ₹ {{this.product['original_price'] | number:'1.0-0'}} </span>
         </div>
 
         <div *ngIf="!product['disable']">
             <div class="std_delivery">
-                Delivery: <span style="font-weight: 500; color:#e87517;"
+                Delivery: <span [style.color]="(product.allow_immediate_30 == 1 || product.allow_immediate_10 == 1 || product.allow_immediate_60 == 1) ? '#0d9488' : '#e87517'" style="font-weight: 600;"
                     class="font-11">{{product["delivery_date_enhanced"]}}</span>
             </div>
         </div>
 
-        <div *ngIf="!product.disabled; else NotAvailable">
+        <div
+            *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailable">
             <plus-minus style="position: relative; float: left;" class="plusMinusComp" [caption]=""
-                [inputVal]="(product['units']||0)" [stepVal]="1" [minVal]="0" (onChange)="plusMinusValue($event)"
-                [disabled]="product['disable']"
+                [inputVal]="(product['units']||0)" [stepVal]="1" [minVal]="0"
+                [maxVal]="(product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 10"
+                (onChange)="plusMinusValue($event)" [disabled]="product['disable']"
                 *ngIf="!(product.subs_options ? ((product.subs_options.rangeSelected.length>0) || (product.subs_options.multiDaySelected.length > 0)) : false)">
             </plus-minus>
 
@@ -42,12 +48,13 @@
             <div class="view_subscription" (click)="viewSubscription($event)"
                 style="position: relative; float: right; margin-top: 6px;"
                 *ngIf="(product.subs_options) ? ((product.subs_options.rangeSelected.length>0) || (product.subs_options.multiDaySelected.length > 0)) : false">
-                <!-- <img [src]="'assets/general/calendar_active.png'" width="28" /> -->
                 <span class="tnkspt_primary_btn subscribed">Subscribed</span>
             </div>
         </div>
         <ng-template #NotAvailable>
-            <span style="color: red; display: inline-block; margin-top: 9px; font-weight: 500;">Not available</span>
+            <div class="out-of-stock-container">
+                <span class="out-of-stock-pill">Out of Stock</span>
+            </div>
         </ng-template>
     </div>
 </div>

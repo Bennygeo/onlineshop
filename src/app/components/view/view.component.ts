@@ -88,7 +88,7 @@ export class ViewComponent implements OnInit, OnDestroy {
   groceryPerks = [
     { icon: 'bolt', title: '7 AM Delivery', desc: 'Fresh at doorstep' },
     { icon: 'eco', title: '100% Farm Pure', desc: 'No chemicals' },
-    { icon: 'payments', title: 'Cash on Delivery', desc: 'Pay at door' },
+    { icon: 'payments', title: 'COD', desc: 'Pay at door' },
     { icon: 'event_repeat', title: 'Easy Subscriptions', desc: 'Pause anytime' }
   ];
 
@@ -257,10 +257,32 @@ export class ViewComponent implements OnInit, OnDestroy {
     if (!productList || !Array.isArray(productList)) return;
     for (let pro of productList) {
       pro.disabled = String(pro.disabled) === 'true';
-      if (this.cartS.cartProducts[pro.id]) {
-        pro.units = this.cartS.cartProducts[pro.id]["units"];
+      if (!pro['unit_price'] || isNaN(Number(pro['unit_price'])) || Number(pro['unit_price']) <= 0) {
+        pro['unit_price'] = Number(pro.price || 0);
+      }
+      if (!pro['unit_original_price']) {
+        pro['unit_original_price'] = Number(pro.original_price || pro['unit_price'] || 0);
+      }
+      if (!pro['base_weight']) {
+        pro['base_weight'] = pro.weight || 500;
+      }
+      if (!pro['base_unit_name']) {
+        pro['base_unit_name'] = pro.unit_name || 'grams';
+      }
+
+      const cartItem = this.cartS.cartProducts[pro.id];
+      if (cartItem && cartItem["units"] > 0) {
+        pro.units = cartItem["units"];
+        pro.price = (cartItem["price"] !== undefined && cartItem["price"] !== null) ? cartItem["price"] : Math.round(Number(pro['unit_price']) * pro.units);
+        pro.original_price = (cartItem["original_price"] !== undefined && cartItem["original_price"] !== null) ? cartItem["original_price"] : Math.round(Number(pro['unit_original_price']) * pro.units);
+        pro.updated_weight = (cartItem["updated_weight"] !== undefined && cartItem["updated_weight"] !== null) ? cartItem["updated_weight"] : (Number(pro['base_weight']) * pro.units);
+        pro.unit_name = cartItem["unit_name"] || pro.unit_name;
       } else {
         pro.units = 0;
+        pro.price = Number(pro['unit_price']);
+        pro.original_price = Number(pro['unit_original_price']);
+        pro.updated_weight = pro['base_weight'];
+        pro.unit_name = pro['base_unit_name'];
       }
     }
   }

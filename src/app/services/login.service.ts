@@ -166,6 +166,49 @@ export class LoginService {
         });
     }
 
+    impersonateCustomer(mobile: string, name: string = 'Customer', adminUsername: string = 'Admin'): void {
+        this.storageS.setItem('login', btoa(mobile));
+        const adminModeData = {
+            active: true,
+            customerMobile: mobile,
+            customerName: name,
+            adminUsername: adminUsername,
+            startedAt: new Date().toISOString()
+        };
+        this.storageS.setItem('tnkspt_admin_mode', adminModeData);
+        this.userStatus = 'LOGIN';
+        this.user = new User();
+        this.user.mobile = mobile;
+        this.user.name = name;
+        this.loginChangeEvent.next(Common.loginStatus.LOGIN);
+        this.loginPromptEvent.next(false);
+        this.readWallet();
+        this.readAddress();
+        this.readUser().subscribe((res: any) => {
+            if (res && res.length > 0) {
+                this.user.referralId = res[0].referral_id;
+                if (res[0].name) {
+                    this.user.name = res[0].name;
+                }
+            }
+        });
+    }
+
+    getAdminMode(): { active: boolean; customerMobile: string; customerName: string; adminUsername: string; startedAt: string } | null {
+        try {
+            const raw = this.storageS.getItem('tnkspt_admin_mode');
+            if (!raw) return null;
+            return typeof raw === 'string' ? JSON.parse(raw) : raw;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    exitAdminMode(): void {
+        this.storageS.removeItem('tnkspt_admin_mode');
+        this.logoutEvent.next();
+    }
+
     updateUser(params: any): Observable<any> {
         return this.apiService.postApi("user/update_user.php", params);
     }

@@ -108,10 +108,10 @@
                         <div class="card-action">
                             <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
                                 (onChange)="plusMinusValue($event, product)"
-                                *ngIf="!product.disabled; else NotAvailableTrending">
+                                *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailableTrending">
                             </plus-minus>
                             <ng-template #NotAvailableTrending>
-                                <span class="sold-out-badge">Sold Out</span>
+                                <span class="sold-out-badge">Out of stock</span>
                             </ng-template>
                         </div>
                     </div>
@@ -145,10 +145,10 @@
                     <div class="card-action">
                         <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
                             (onChange)="plusMinusValue($event, product)"
-                            *ngIf="!product.disabled; else NotAvailableResult">
+                            *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailableResult">
                         </plus-minus>
                         <ng-template #NotAvailableResult>
-                            <span class="sold-out-badge">Sold Out</span>
+                            <span class="sold-out-badge">Out of stock</span>
                         </ng-template>
                     </div>
                 </div>

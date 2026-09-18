@@ -1,4 +1,20 @@
 <div *ngIf="isMobile && !isAdminPage; else mobileContent">
+    <!-- Admin Impersonation Top Mode Banner -->
+    <div class="admin-impersonation-bar" *ngIf="loginS.getAdminMode()?.active">
+        <div class="admin-bar-content">
+            <div class="admin-bar-left">
+                <span class="pulse-badge">⚡ ADMIN OFFLINE ORDER</span>
+                <span class="customer-target">Placing order for: <b>{{ loginS.getAdminMode()?.customerName || 'Customer' }}</b> ({{ loginS.getAdminMode()?.customerMobile }})</span>
+            </div>
+            <div class="admin-bar-right">
+                <button class="exit-admin-btn" (click)="exitAdminMode()" title="Return to Admin Panel">
+                    <span class="material-icons-round">arrow_back</span>
+                    <span class="btn-text">Exit to Admin</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <loader></loader>
     <app-header></app-header>
     <router-outlet></router-outlet>

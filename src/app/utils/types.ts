@@ -44,8 +44,27 @@ export type Product = {
     offer: number;
 
     disabled: boolean;
+    in_stock?: boolean | number;
+    stock_qty?: number;
+    stock_price?: number;
+    avg_cost?: number;
+    quantity?: number;
+    product_id?: string;
+    product_name?: string;
+    subscriptionType?: string;
+    rangeDates?: string;
+    subscribedDates?: string;
+    subsStatus?: string;
+    startDate?: string;
+    endDate?: string;
+    gst_percent?: number;
     cat?: string;
     sub_cat?: string;
+
+    allow_next_day?: number | boolean;
+    allow_immediate_10?: number | boolean;
+    allow_immediate_30?: number | boolean;
+    allow_immediate_60?: number | boolean;
 
     packing_charges: number;
     delivery_charges: number;
@@ -288,6 +307,11 @@ export type OrderInfo = {
     cart: CartType,
     //Tax and fees
     taxAndFees: number,
+    //GST and tax breakdown
+    gst?: number,
+    cgst?: number,
+    sgst?: number,
+    gstPercent?: number,
 
     walletDeduction?: number,
     remainingToPay: number,

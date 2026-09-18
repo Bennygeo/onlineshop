@@ -148,8 +148,9 @@
                     <span class="type-badge" [class.sub-type]="o.order_type === 'subscription'" [class.reg-type]="o.order_type !== 'subscription'">
                       {{ o.order_type === 'subscription' ? 'Subscription' : 'Regular' }}
                     </span>
+                    <span *ngIf="o.order_source === 'ADMIN_OFFLINE' || o.payment_type === 'OFFLINE'" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #f3e8ff; color: #6d28d9; border: 1px solid #ddd6fe;">⚡ Admin Offline</span>
                     <span *ngIf="o.payment_type === 'COD'" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a;">COD</span>
-                    <span *ngIf="o.payment_type && o.payment_type !== 'COD'" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">Prepaid</span>
+                    <span *ngIf="o.payment_type && o.payment_type !== 'COD' && o.payment_type !== 'OFFLINE' && o.order_source !== 'ADMIN_OFFLINE'" style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0;">Prepaid</span>
                   </div>
                 </div>
               </td>
@@ -262,6 +263,7 @@
             <span class="type-badge" [class.sub-type]="o.order_type === 'subscription'" [class.reg-type]="o.order_type !== 'subscription'">
               {{ o.order_type === 'subscription' ? 'Subscription' : 'Regular' }}
             </span>
+            <span class="type-badge" *ngIf="o.order_source === 'ADMIN_OFFLINE' || o.payment_type === 'OFFLINE'" style="background: #f3e8ff; color: #6d28d9; border: 1px solid #ddd6fe; font-size: 10.5px; padding: 2px 6px; border-radius: 4px; font-weight: 700;">⚡ Offline</span>
           </div>
 
           <div class="m-status-wrap">

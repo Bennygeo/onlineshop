@@ -1,7 +1,7 @@
-import { CustomClasses } from './custom-classes';
+import { DateE } from './custom-classes';
 
-describe('CustomClasses', () => {
+describe('DateE', () => {
   it('should create an instance', () => {
-    expect(new CustomClasses()).toBeTruthy();
+    expect(new DateE()).toBeTruthy();
   });
 });

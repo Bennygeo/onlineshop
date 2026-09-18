@@ -27,13 +27,21 @@
             </div>
 
             <div class="priceRow">
-                <div class="unitPrice" *ngIf="!product.zoneAvailability">
+                <div class="unitPrice" *ngIf="!product.zoneAvailability && product.in_stock !== false && product.in_stock !== 0">
                     <span class="currency">₹</span>{{product.price | number}}
                 </div>
-                <div *ngIf="product.zoneAvailability" class="unavailableBadge">
+                <div *ngIf="product.zoneAvailability || product.in_stock === false || product.in_stock === 0" class="unavailableBadge">
                     <span class="material-icons-round unavailIcon">error_outline</span>
                     <span>Currently out of stock</span>
                 </div>
+            </div>
+
+            <!-- Cart item stock level warning (shown only when requested units meet or exceed available stock) -->
+            <div class="cartStockRow" *ngIf="product.stock_qty !== undefined && product.stock_qty !== null && product.stock_qty > 0 && (product.units || 0) >= product.stock_qty && product.in_stock !== false && product.in_stock !== 0">
+                <span class="cartStockTag exceeds-stock">
+                    <span class="material-icons-round size-12">warning_amber</span>
+                    <span>Only {{ product.stock_qty }} {{ product.unit_name || 'kg' }} available in stock</span>
+                </span>
             </div>
         </div>
 
@@ -44,6 +52,7 @@
                     [inputVal]="(product.units || 0)" 
                     [stepVal]="1" 
                     [minVal]="1" 
+                    [maxVal]="(product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 10"
                     [caption]="''"
                     class="customPlusMinus" 
                     (onChange)="plusMinusAction($event)">

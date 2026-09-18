@@ -11,7 +11,7 @@ if (!$order_id || !$pdo) {
 
 try {
     try {
-        $stmtItems = $pdo->prepare("SELECT oi.id, oi.product_id AS productID, COALESCE(NULLIF(oi.product_name, ''), p.name, oi.product_id, 'Product Item') AS product_name, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, oi.item_status, oi.missing_qty, oi.refund_amount, p.img_url FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
+        $stmtItems = $pdo->prepare("SELECT oi.id, oi.product_id AS productID, COALESCE(NULLIF(oi.product_name, ''), p.name, oi.product_id, 'Product Item') AS product_name, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, oi.item_status, oi.missing_qty, oi.refund_amount, oi.delivered_weight, oi.missing_weight, oi.partial_refund_notes, p.img_url, p.unit_name FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
         $stmtItems->execute([$order_id]);
         $items = $stmtItems->fetchAll();
     } catch (Exception $colEx) {

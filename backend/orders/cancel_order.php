@@ -15,12 +15,22 @@ if (!$pdo) {
 
 try {
     // Ensure refund columns exist
-    try {
-        $pdo->exec("ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00");
-        $pdo->exec("ALTER TABLE orders ADD COLUMN refund_notes TEXT DEFAULT NULL");
-        $pdo->exec("ALTER TABLE order_items ADD COLUMN item_status VARCHAR(50) DEFAULT 'active'");
-        $pdo->exec("ALTER TABLE order_items ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00");
-    } catch (Exception $colEx) {}
+    $alters = [
+        "ALTER TABLE orders ADD COLUMN order_source VARCHAR(50) DEFAULT 'CLIENT_WEB'",
+        "ALTER TABLE orders ADD COLUMN created_by VARCHAR(100) DEFAULT NULL",
+        "ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE orders ADD COLUMN refund_notes TEXT DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN item_status VARCHAR(50) DEFAULT 'active'",
+        "ALTER TABLE order_items ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE order_items ADD COLUMN delivered_weight DECIMAL(10,2) DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN missing_weight DECIMAL(10,2) DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN partial_refund_notes VARCHAR(255) DEFAULT NULL"
+    ];
+    foreach ($alters as $sql) {
+        try {
+            $pdo->exec($sql);
+        } catch (Exception $colEx) {}
+    }
 
     // Fetch order
     $stmt = $pdo->prepare("SELECT * FROM orders WHERE order_id = ?");
@@ -96,7 +106,7 @@ try {
         'refund_amount' => $actual_refund,
         'wallet_balance' => $newWalletBal,
         'message' => $isCOD
-            ? "Order #{$order_id} cancelled. Since this was Cash on Delivery, no refund was required."
+            ? "Order #{$order_id} cancelled. Since this was COD, no refund was required."
             : "Order #{$order_id} cancelled. ₹" . number_format($actual_refund, 0) . " has been refunded to your wallet."
     ]);
 } catch (Exception $e) {

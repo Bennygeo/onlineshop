@@ -136,6 +136,79 @@ export class OrdersComponent implements OnInit, OnDestroy {
     }
   }
 
+  getDeliveryOptionBadge(option: string): { label: string, icon: string, class: string } {
+    const opt = String(option || 'NEXT_DAY_7AM').toUpperCase();
+    switch (opt) {
+      case 'IMMEDIATE_10':
+        return { label: '10 Mins Delivery', icon: 'bolt', class: 'opt-10m' };
+      case 'IMMEDIATE_30':
+        return { label: '30 Mins Delivery', icon: 'timer', class: 'opt-30m' };
+      case 'IMMEDIATE_60':
+        return { label: '60 Mins Delivery', icon: 'schedule', class: 'opt-60m' };
+      case 'NEXT_DAY_7AM':
+      default:
+        return { label: 'Tomorrow 7:00 AM IST', icon: 'wb_twilight', class: 'opt-next-day' };
+    }
+  }
+
+  getDeliveryEtaText(item: any): string {
+    const opt = String(item?.delivery_option || 'NEXT_DAY_7AM').toUpperCase();
+    if (opt.startsWith('IMMEDIATE_')) {
+      if (item?.delivery_expected_at) {
+        const d = this.safeDate(item.delivery_expected_at);
+        let h = d.getHours();
+        const m = String(d.getMinutes()).padStart(2, '0');
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        return `Expected ~${h}:${m} ${ampm} IST`;
+      }
+      return 'Express delivery in progress';
+    }
+    return 'Scheduled 7:00 AM IST';
+  }
+
+  getOrderThumbnails(order: any): Array<{ img: string, name: string }> {
+    if (!order) return [];
+    if (order.products && Array.isArray(order.products) && order.products.length > 0) {
+      return order.products.slice(0, 4).map(p => ({
+        img: p.img_url || 'assets/orders/orders_veg.png',
+        name: p.name || p.product_name || 'Product'
+      }));
+    }
+    if (order.itemsList && Array.isArray(order.itemsList) && order.itemsList.length > 0) {
+      return order.itemsList.slice(0, 4).map(p => ({
+        img: p.img_url || 'assets/orders/orders_veg.png',
+        name: p.product_name || p.name || 'Product'
+      }));
+    }
+    if (order.items) {
+      try {
+        const raw = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
+        if (Array.isArray(raw) && raw.length > 0) {
+          return raw.slice(0, 4).map((p: any) => ({
+            img: p.img_url || 'assets/orders/orders_veg.png',
+            name: p.product_name || p.name || 'Product'
+          }));
+        }
+      } catch (e) {}
+    }
+    return [];
+  }
+
+  getOrderItemsCount(order: any): number {
+    if (!order) return 1;
+    if (order.items_count !== undefined && Number(order.items_count) > 0) {
+      return Number(order.items_count);
+    }
+    if (order.products && Array.isArray(order.products) && order.products.length > 0) {
+      return order.products.length;
+    }
+    if (order.itemsList && Array.isArray(order.itemsList) && order.itemsList.length > 0) {
+      return order.itemsList.length;
+    }
+    return 1;
+  }
+
   isSubscriptionProduct(pro: any): boolean {
     if (!pro) return false;
     if (pro.is_subscription !== undefined) return !!pro.is_subscription;
@@ -437,7 +510,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
             this.showToast(`Order cancelled. ₹${res.refund_amount} has been refunded to your wallet!`, 'success');
           } else {
             const codMsg = this.targetOrder.payment_type === 'COD' 
-              ? 'Order cancelled. Since this was Cash on Delivery, no wallet refund was needed.' 
+              ? 'Order cancelled. Since this was COD, no wallet refund was needed.' 
               : 'Order cancelled successfully.';
             this.showToast(codMsg, 'info');
           }

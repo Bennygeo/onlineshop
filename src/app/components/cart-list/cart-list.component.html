@@ -16,7 +16,7 @@
             <div *ngFor="let dte of cartProductsDateWise|keyvalue; let ind=index;">
                 <div class="cart-cont">
 
-                    <div class="cat_title">{{dte.key|ReplaceAll:"_":" "}}</div>
+                    <div class="cat_title" *ngIf="dte.key === 'Subscriptions'">Subscriptions</div>
 
                     <div *ngFor="let group of groupProductsByCategory(dte.value); let gIndex=index;" class="cat_group">
                         <div class="sub_cat_title">
@@ -85,6 +85,28 @@
             </mat-radio-group>
         </div>
 
+        <!-- Order Standard Delivery Banner (Auto-computed from highest delivery time item in cart) -->
+        <div class="container delivery-banner-wrap" *ngIf="fetchUserBagFlg" [@fadeInOut]>
+            <div class="order-delivery-card" [class.express-mode]="orderDeliverySummary?.isImmediate">
+                <div class="delivery-icon-circle" [class.express-circle]="orderDeliverySummary?.isImmediate">
+                    <span class="material-icons">{{ orderDeliverySummary?.icon }}</span>
+                </div>
+                <div class="delivery-card-info">
+                    <div class="delivery-badge-row">
+                        <span class="delivery-badge" [class.express-badge]="orderDeliverySummary?.isImmediate">
+                            {{ orderDeliverySummary?.badge }}
+                        </span>
+                        <span class="ist-time-pill">
+                            <span class="material-icons size-12">schedule</span>
+                            IST: {{ istDetails?.currentIstTimeStr || 'Asia/Kolkata' }}
+                        </span>
+                    </div>
+                    <h4 class="delivery-main-title">{{ orderDeliverySummary?.label }}</h4>
+                    <p class="delivery-sub-title">{{ orderDeliverySummary?.subLabel }}</p>
+                </div>
+            </div>
+        </div>
+
         <div class="container">
             <div class="title">Delivery instructions</div>
             <div class="row ">
@@ -137,10 +159,24 @@
                         <span class="material-icons">payments</span>
                     </div>
                     <div class="payment-details">
-                        <div class="payment-title">Cash on Delivery (COD)</div>
+                        <div class="payment-title">COD</div>
                         <div class="payment-sub">Pay in cash or UPI at your doorstep upon delivery</div>
                     </div>
                     <span class="cod-tag">Available</span>
+                </div>
+                <!-- Admin / Offline Order Option (Active in Admin Impersonation Mode) -->
+                <div class="payment-card offline-card" [class.active]="selectedPaymentMethod === 'OFFLINE'" (click)="selectPaymentMethod('OFFLINE')" *ngIf="loginS.getAdminMode()?.active">
+                    <div class="payment-radio">
+                        <span class="radio-dot" *ngIf="selectedPaymentMethod === 'OFFLINE'"></span>
+                    </div>
+                    <div class="payment-icon offline-icon" style="background-color: #ede9fe; color: #7c3aed;">
+                        <span class="material-icons">point_of_sale</span>
+                    </div>
+                    <div class="payment-details">
+                        <div class="payment-title" style="color: #6d28d9; font-weight: 700;">⚡ Offline / Admin Direct Sale</div>
+                        <div class="payment-sub">Cash collected at counter / phone. Tagged as Admin Offline Order.</div>
+                    </div>
+                    <span class="cod-tag" style="background-color: #f3e8ff; color: #7c3aed; border-color: #ddd6fe;">Admin Mode</span>
                 </div>
             </div>
         </div>
@@ -168,8 +204,21 @@
                     </tr>
 
                     <tr>
-                        <th class="tg-col1">Tax and Fees</th>
-                        <th class="tg-col2">₹ {{orderInformation.taxAndFees | number}}</th>
+                        <th class="tg-col1">
+                            <div class="gst-label-wrap">
+                                <span class="gst-main-text">GST ({{orderInformation.gstPercent || 5}}%)</span>
+                                <span class="gst-tag">Tax</span>
+                            </div>
+                            <div class="gst-breakdown-sub" *ngIf="orderInformation.gst && orderInformation.gst > 0">
+                                CGST ({{(orderInformation.gstPercent || 5) / 2}}%): ₹{{orderInformation.cgst | number:'1.2-2'}} &bull; SGST ({{(orderInformation.gstPercent || 5) / 2}}%): ₹{{orderInformation.sgst | number:'1.2-2'}}
+                            </div>
+                        </th>
+                        <th class="tg-col2">₹ {{orderInformation.gst | number:'1.2-2'}}</th>
+                    </tr>
+
+                    <tr *ngIf="orderInformation.taxAndFees && orderInformation.taxAndFees > 0">
+                        <th class="tg-col1">Other Fees</th>
+                        <th class="tg-col2">₹ {{orderInformation.taxAndFees | number:'1.2-2'}}</th>
                     </tr>
 
                     <tr>
@@ -212,7 +261,7 @@
 
                     <tr *ngIf="selectedPaymentMethod === 'COD'">
                         <th class="tg-col1" style="font-size: 16px; font-weight: bolder; color: #b45309;">Payment Mode</th>
-                        <th class="tg-col2" style="font-size: 14px; font-weight: bolder; color: #b45309;">Cash on Delivery</th>
+                        <th class="tg-col2" style="font-size: 14px; font-weight: bolder; color: #b45309;">COD</th>
                     </tr>
 
                     <tr *ngIf="selectedPaymentMethod === 'COD'">
@@ -220,9 +269,29 @@
                         <th class="tg-col2" style="font-size: 16px; font-weight: bolder; color: #0d9488;">₹
                             {{orderInformation.total | number}}</th>
                     </tr>
+
+                    <tr *ngIf="selectedPaymentMethod === 'OFFLINE'">
+                        <th class="tg-col1" style="font-size: 15px; font-weight: bolder; color: #7c3aed;">Payment Mode</th>
+                        <th class="tg-col2" style="font-size: 14px; font-weight: bolder; color: #7c3aed;">⚡ Offline / Admin Direct</th>
+                    </tr>
+
+                    <tr *ngIf="selectedPaymentMethod === 'OFFLINE'">
+                        <th class="tg-col1" style="font-size: 15px; font-weight: bolder;">Settlement Amount</th>
+                        <th class="tg-col2" style="font-size: 16px; font-weight: bolder; color: #7c3aed;">₹ {{orderInformation.total | number}}</th>
+                    </tr>
                 </table>
             </div>
             <div class="pay-cont">
+                <!-- Offline / Admin Place Order Button -->
+                <button class="tnkspt_primary_btn pay-btn offline-order-btn" *ngIf="selectedPaymentMethod === 'OFFLINE'"
+                    (click)="payAction()" [disabled]="isProcessingPayment" style="margin-right: 0px; background: linear-gradient(135deg, #7c3aed, #6d28d9); box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);">
+                    <span *ngIf="!isProcessingPayment" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <span class="material-icons" style="font-size: 18px;">point_of_sale</span>
+                        Place Offline Order (₹{{orderInformation.total | number}})
+                    </span>
+                    <span *ngIf="isProcessingPayment">Placing Offline Order...</span>
+                </button>
+
                 <!-- COD Place Order Button -->
                 <button class="tnkspt_primary_btn pay-btn cod-order-btn" *ngIf="selectedPaymentMethod === 'COD'"
                     (click)="payAction()" [disabled]="isProcessingPayment" style="margin-right: 0px; background: linear-gradient(135deg, #0d9488, #0f766e);">
@@ -265,7 +334,7 @@
         </div>
         <div class="modal-cod-option" (click)="payWithCODAction()">
             <span class="material-icons" style="font-size: 18px; color: #0d9488; vertical-align: middle;">payments</span>
-            <span>Or choose <strong>Cash on Delivery (COD)</strong> to pay upon arrival &rarr;</span>
+            <span>Or choose <strong>COD</strong> to pay upon arrival &rarr;</span>
         </div>
     </div>
 </div>
@@ -275,8 +344,17 @@
         <img [src]="'assets/general/order_placed.gif'" />
         <p class="empty">Order placed successfully. Thank You!</p>
         <p class="order-id">Order ID: {{cartService.lastPlacedOrderId || cartService.orderID}}</p>
-        <p class="delivery-info">Your order will be delivered on
-            <b>{{this.cartService.deliveryDate|date:'EEEE d MMMM'}}</b> between 8:00 am - 10:00 am
+        <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'NEXT_DAY_7AM'">
+            Scheduled for <b>Tomorrow Delivery at 7:00 AM IST</b> ({{ istDetails?.nextDayDeliveryDateStr || (cartService.deliveryDate|date:'EEEE, d MMMM') }})
+        </p>
+        <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_10'">
+            ⚡ Scheduled for <b>10 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate10EstimateStr }}</b>
+        </p>
+        <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_30'">
+            ⚡ Scheduled for <b>30 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate30EstimateStr }}</b>
+        </p>
+        <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_60'">
+            ⚡ Scheduled for <b>60 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate60EstimateStr }}</b>
         </p>
         <div class="flex-box">
             <div class="tnkspt_secondary_btn cancel-btn" routerLink="/home/orders" (click)="cartService.orderPlacedFlag = false">Goto my orders</div>

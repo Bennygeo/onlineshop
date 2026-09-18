@@ -1,0 +1,261 @@
+<div class="admin-users-container">
+  <!-- Page Header -->
+  <div class="users-header">
+    <div class="title-area">
+      <div class="badge-tag">
+        <span class="material-icons">people</span>
+        <span>Customer Management</span>
+      </div>
+      <h1 class="page-title">Users & Offline Orders</h1>
+      <p class="page-subtitle">View customer profiles, lifetime orders, wallet balances, and place direct offline orders on behalf of any customer.</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="action-btn secondary" (click)="fetchUsers()" [disabled]="loading" title="Refresh list">
+        <span class="material-icons" [class.spin]="loading">refresh</span>
+        <span>Refresh List</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Key Metrics / Stats Row -->
+  <div class="stats-grid">
+    <div class="stat-card total-users">
+      <div class="stat-icon">
+        <span class="material-icons">groups</span>
+      </div>
+      <div class="stat-meta">
+        <span class="stat-label">Total Customers</span>
+        <span class="stat-value">{{ totalUsersCount | number }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card active-users">
+      <div class="stat-icon">
+        <span class="material-icons">shopping_bag</span>
+      </div>
+      <div class="stat-meta">
+        <span class="stat-label">Active Ordering Users</span>
+        <span class="stat-value">{{ activeOrderingUsersCount | number }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card total-orders">
+      <div class="stat-icon">
+        <span class="material-icons">local_shipping</span>
+      </div>
+      <div class="stat-meta">
+        <span class="stat-label">Lifetime Orders</span>
+        <span class="stat-value">{{ totalLifetimeOrders | number }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card wallet-liability">
+      <div class="stat-icon">
+        <span class="material-icons">account_balance_wallet</span>
+      </div>
+      <div class="stat-meta">
+        <span class="stat-label">Total Wallet Balance</span>
+        <span class="stat-value">₹{{ totalWalletLiability | number }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls Bar: Search, Filters, Sorters -->
+  <div class="controls-card">
+    <div class="search-box">
+      <span class="material-icons search-icon">search</span>
+      <input
+        type="text"
+        placeholder="Search by name, 10-digit mobile, referral ID or address..."
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
+      />
+      <button class="clear-btn" *ngIf="searchQuery" (click)="clearSearch()" title="Clear search">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="tab-chip" [class.active]="filterTab === 'ALL'" (click)="setFilterTab('ALL')">
+        All ({{ users.length }})
+      </button>
+      <button class="tab-chip" [class.active]="filterTab === 'WITH_ORDERS'" (click)="setFilterTab('WITH_ORDERS')">
+        With Orders ({{ activeOrderingUsersCount }})
+      </button>
+      <button class="tab-chip" [class.active]="filterTab === 'NO_ORDERS'" (click)="setFilterTab('NO_ORDERS')">
+        No Orders ({{ users.length - activeOrderingUsersCount }})
+      </button>
+      <button class="tab-chip" [class.active]="filterTab === 'WITH_WALLET'" (click)="setFilterTab('WITH_WALLET')">
+        Wallet > ₹0
+      </button>
+    </div>
+
+    <div class="sort-selector">
+      <span class="sort-label">Sort by:</span>
+      <select [ngModel]="sortBy" (ngModelChange)="setSortBy($event)">
+        <option value="RECENT">Recent Activity</option>
+        <option value="ORDERS_DESC">Most Orders</option>
+        <option value="WALLET_DESC">Highest Wallet Balance</option>
+        <option value="NAME_ASC">Name (A-Z)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading customers data...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!loading && filteredUsers.length === 0">
+    <span class="material-icons empty-icon">person_search</span>
+    <h3>No Customers Found</h3>
+    <p *ngIf="searchQuery">No users match "{{ searchQuery }}". Try adjusting your search query or filters.</p>
+    <p *ngIf="!searchQuery">No customer records found in the database.</p>
+  </div>
+
+  <!-- Customers Table View (Desktop & Tablet) -->
+  <div class="table-card" *ngIf="!loading && filteredUsers.length > 0">
+    <div class="table-responsive">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Contact & ID</th>
+            <th>Wallet Balance</th>
+            <th>Orders & Spent</th>
+            <th>Address</th>
+            <th class="text-right">Offline Order Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of filteredUsers" class="user-row">
+            <!-- Customer Avatar & Name -->
+            <td>
+              <div class="customer-profile">
+                <div class="avatar-circle">
+                  {{ u.name.charAt(0).toUpperCase() || 'C' }}
+                </div>
+                <div class="customer-info">
+                  <span class="customer-name">{{ u.name }}</span>
+                  <span class="customer-joined" *ngIf="u.created_at">Joined: {{ u.created_at | date:'mediumDate' }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Contact & Referral -->
+            <td>
+              <div class="contact-meta">
+                <div class="phone-row" (click)="copyToClipboard(u.mobile, 'Mobile')" title="Click to copy mobile number">
+                  <span class="material-icons phone-icon">call</span>
+                  <span class="phone-number">{{ u.mobile }}</span>
+                  <span class="material-icons copy-hint">content_copy</span>
+                </div>
+                <div class="referral-badge" *ngIf="u.referral_id">
+                  <span class="ref-label">REF:</span>
+                  <span class="ref-code">{{ u.referral_id }}</span>
+                </div>
+                <div class="email-text" *ngIf="u.email">{{ u.email }}</div>
+              </div>
+            </td>
+
+            <!-- Wallet Balance -->
+            <td>
+              <div class="wallet-chip" [class.positive]="u.wallet_balance > 0" [class.zero]="u.wallet_balance <= 0">
+                <span class="material-icons">account_balance_wallet</span>
+                <span>₹{{ u.wallet_balance | number }}</span>
+              </div>
+            </td>
+
+            <!-- Orders Count & Lifetime Spent -->
+            <td>
+              <div class="orders-stat-cell">
+                <span class="orders-count-badge" [class.has-orders]="u.total_orders > 0">
+                  {{ u.total_orders }} {{ u.total_orders === 1 ? 'order' : 'orders' }}
+                </span>
+                <span class="spent-amount" *ngIf="u.total_spent > 0">Total: ₹{{ u.total_spent | number }}</span>
+                <span class="last-order-date" *ngIf="u.last_order_date">Last: {{ u.last_order_date | date:'shortDate' }}</span>
+              </div>
+            </td>
+
+            <!-- Address -->
+            <td>
+              <div class="address-cell" [title]="u.address || 'No address on file'">
+                <span class="material-icons address-pin" *ngIf="u.address">location_on</span>
+                <span class="address-text">{{ u.address || 'No address added' }}</span>
+              </div>
+            </td>
+
+            <!-- Actions: Place Offline Order Button -->
+            <td class="text-right">
+              <div class="action-buttons-group">
+                <button
+                  class="offline-order-btn"
+                  (click)="loginAsCustomer(u)"
+                  title="Login as this customer to place an offline order"
+                >
+                  <span class="material-icons">bolt</span>
+                  <span class="btn-text">Place Offline Order</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Mobile Cards View (Small Screens) -->
+  <div class="mobile-cards-grid" *ngIf="!loading && filteredUsers.length > 0">
+    <div class="mobile-user-card" *ngFor="let u of filteredUsers">
+      <div class="card-top">
+        <div class="avatar-circle">
+          {{ u.name.charAt(0).toUpperCase() || 'C' }}
+        </div>
+        <div class="meta-wrap">
+          <div class="name-row">
+            <span class="customer-name">{{ u.name }}</span>
+            <div class="wallet-chip mini" [class.positive]="u.wallet_balance > 0">
+              ₹{{ u.wallet_balance | number }}
+            </div>
+          </div>
+          <div class="phone-row" (click)="copyToClipboard(u.mobile, 'Mobile')">
+            <span class="material-icons phone-icon">call</span>
+            <span>{{ u.mobile }}</span>
+            <span class="material-icons copy-hint">content_copy</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-details">
+        <div class="detail-item">
+          <span class="lbl">Orders:</span>
+          <span class="val font-bold">{{ u.total_orders }} (₹{{ u.total_spent | number }})</span>
+        </div>
+        <div class="detail-item" *ngIf="u.referral_id">
+          <span class="lbl">Referral:</span>
+          <span class="val font-mono">{{ u.referral_id }}</span>
+        </div>
+        <div class="detail-item address-item" *ngIf="u.address">
+          <span class="lbl">Address:</span>
+          <span class="val address-val">{{ u.address }}</span>
+        </div>
+      </div>
+
+      <div class="card-actions">
+        <button class="offline-order-btn full-width" (click)="loginAsCustomer(u)">
+          <span class="material-icons">bolt</span>
+          <span>Place Offline Order</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="floating-toast" *ngIf="showToast">
+    <span class="material-icons">info</span>
+    <span>{{ toastMessage }}</span>
+  </div>
+</div>

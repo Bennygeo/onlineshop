@@ -19,12 +19,20 @@ if (!$pdo) {
 }
 
 try {
-    try {
-        $pdo->exec("ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00");
-        $pdo->exec("ALTER TABLE orders ADD COLUMN refund_notes TEXT DEFAULT NULL");
-        $pdo->exec("ALTER TABLE order_items ADD COLUMN item_status VARCHAR(50) DEFAULT 'active'");
-        $pdo->exec("ALTER TABLE order_items ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00");
-    } catch (Exception $colEx) {}
+    $alters = [
+        "ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE orders ADD COLUMN refund_notes TEXT DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN item_status VARCHAR(50) DEFAULT 'active'",
+        "ALTER TABLE order_items ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE order_items ADD COLUMN delivered_weight DECIMAL(10,2) DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN missing_weight DECIMAL(10,2) DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN partial_refund_notes VARCHAR(255) DEFAULT NULL"
+    ];
+    foreach ($alters as $sql) {
+        try {
+            $pdo->exec($sql);
+        } catch (Exception $colEx) {}
+    }
 
     // Fetch order
     $stmt = $pdo->prepare("SELECT * FROM orders WHERE order_id = ?");

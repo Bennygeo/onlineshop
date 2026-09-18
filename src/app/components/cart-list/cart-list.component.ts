@@ -43,7 +43,7 @@ export class CartListComponent implements OnInit, OnDestroy {
   public couponForm: FormGroup;
   payFlg: boolean = false;
   isProcessingPayment: boolean = false;
-  selectedPaymentMethod: 'ONLINE' | 'COD' = 'ONLINE';
+  selectedPaymentMethod: 'ONLINE' | 'COD' | 'OFFLINE' = 'ONLINE';
   orderInformation: OrderInfo;
 
   addressFlg: boolean = false;
@@ -56,6 +56,17 @@ export class CartListComponent implements OnInit, OnDestroy {
   selectedInstructionIndex = 0;
 
   userCoupons: Array<UserCoupon> = [];
+  istTimerInterval: any = null;
+  istDetails: any = null;
+
+  get orderDeliverySummary() {
+    return this.cartService.calculateOrderStandardDelivery();
+  }
+
+  refreshDeliveryDetails() {
+    this.istDetails = this.cartService.getISTDeliveryDetails();
+    this.cartService.calculateOrderStandardDelivery();
+  }
 
   constructor(
     public cartService: CartService,
@@ -80,6 +91,11 @@ export class CartListComponent implements OnInit, OnDestroy {
     });
 
     this.cartService.headerChangeEvent.next("type2");
+
+    const adminMode = this.loginS.getAdminMode();
+    if (adminMode && adminMode.active) {
+      this.selectedPaymentMethod = 'OFFLINE';
+    }
 
     this.orderInformation = this.cartService.orderInformation;
     if (this.orderInformation) {
@@ -145,6 +161,14 @@ export class CartListComponent implements OnInit, OnDestroy {
       this.loginS.readWallet();
     }
 
+    // Refresh cart items with latest stock and prices
+    this.cartService.read_cart_products();
+
+    this.refreshDeliveryDetails();
+    this.istTimerInterval = setInterval(() => {
+      this.refreshDeliveryDetails();
+    }, 15000);
+
     this.orderInformation = this.cartService.orderInformation;
     if (this.orderInformation) {
       this.cartService.remainingToPay = this.orderInformation.remainingToPay;
@@ -158,6 +182,7 @@ export class CartListComponent implements OnInit, OnDestroy {
         this.cartService.remainingToPay = this.orderInformation.remainingToPay;
         this.cartProductsDateWise = this.orderInformation.cartProductDateWise;
       }
+      this.refreshDeliveryDetails();
       this.fetchUserBagFlg = true;
     });
 
@@ -356,7 +381,7 @@ export class CartListComponent implements OnInit, OnDestroy {
     this.cartService.router.navigate(["/home/wallet"], { queryParams: { pay: this.cartService.remainingToPay } });
   }
 
-  selectPaymentMethod(method: 'ONLINE' | 'COD') {
+  selectPaymentMethod(method: 'ONLINE' | 'COD' | 'OFFLINE') {
     this.selectedPaymentMethod = method;
   }
 
@@ -367,17 +392,52 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   payAction() {
+    const isOffline = (this.selectedPaymentMethod === 'OFFLINE' || this.loginS.getAdminMode()?.active);
     const userAddresses = this.loginS.user?.addresses || [];
-    const activeAddress = this.loginS.user?.address || (userAddresses.length > 0 ? userAddresses[0] : null);
+    let activeAddress = this.loginS.user?.address || (userAddresses.length > 0 ? userAddresses[0] : null);
 
     if (!activeAddress && userAddresses.length === 0) {
-      alert("Please add or select a delivery address to place your order.");
-      this.loginS.noAddressEvent.next(true);
-      return;
+      if (!isOffline) {
+        alert("Please add or select a delivery address to place your order.");
+        this.loginS.noAddressEvent.next(true);
+        return;
+      } else {
+        // Provide fallback counter address for offline / admin direct store sales
+        activeAddress = {
+          name: this.loginS.user?.name || 'Walk-in Customer',
+          mobile: this.loginS.user?.mobile || this.loginS.getAdminMode()?.customerMobile || '',
+          address: 'Store Counter / In-Store Direct Sale',
+          pincode: '600095',
+          active: 1,
+          default: 1
+        } as any;
+        if (this.loginS.user) {
+          this.loginS.user.address = activeAddress;
+          this.loginS.user.addresses = [activeAddress];
+        }
+      }
     }
 
     if (this.loginS.user && !this.loginS.user.address && activeAddress) {
       this.loginS.user.address = activeAddress;
+    }
+
+    if (this.selectedPaymentMethod === 'OFFLINE') {
+      this.isProcessingPayment = true;
+      this.cartService.placeOrder((res: any) => {
+        this.isProcessingPayment = false;
+        if (res && res.total !== undefined) {
+          this.loginS.user.wallet = res.total;
+        }
+        if (this.loginS.user?.walletHistory && Array.isArray(this.loginS.user.walletHistory)) {
+          this.loginS.user.walletHistory.unshift(res);
+        }
+        this.loginS.readWallet();
+        this.loginS.walletUpdateEvent.next([res]);
+      }, 'OFFLINE', () => {
+        this.isProcessingPayment = false;
+      });
+      return;
     }
 
     if (this.selectedPaymentMethod === 'COD') {
@@ -392,7 +452,9 @@ export class CartListComponent implements OnInit, OnDestroy {
         }
         this.loginS.readWallet();
         this.loginS.walletUpdateEvent.next([res]);
-      }, 'COD');
+      }, 'COD', () => {
+        this.isProcessingPayment = false;
+      });
       return;
     }
 
@@ -410,7 +472,9 @@ export class CartListComponent implements OnInit, OnDestroy {
         }
         this.loginS.readWallet();
         this.loginS.walletUpdateEvent.next([res]);
-      }, 'Wallet');
+      }, 'Wallet', () => {
+        this.isProcessingPayment = false;
+      });
     }
   }
 
@@ -459,6 +523,9 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.istTimerInterval) {
+      clearInterval(this.istTimerInterval);
+    }
     this.cartEventSubscription?.unsubscribe();
     this.cartupdateEventSubscription?.unsubscribe();
     this.razorPaySubscription?.unsubscribe();

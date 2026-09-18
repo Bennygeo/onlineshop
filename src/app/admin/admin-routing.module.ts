@@ -6,6 +6,7 @@ import { AdminProductsComponent } from './admin-products/admin-products.componen
 import { AdminOrdersComponent } from './admin-orders/admin-orders.component';
 import { AdminDeliveryComponent } from './admin-delivery/admin-delivery.component';
 import { AdminLoginComponent } from './admin-login/admin-login.component';
+import { AdminUsersComponent } from './admin-users/admin-users.component';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 
 const routes: Routes = [
@@ -20,6 +21,7 @@ const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: AdminDashboardComponent },
+      { path: 'users', component: AdminUsersComponent },
       { path: 'products', component: AdminProductsComponent },
       { path: 'orders', component: AdminOrdersComponent },
       { path: 'delivery', component: AdminDeliveryComponent }

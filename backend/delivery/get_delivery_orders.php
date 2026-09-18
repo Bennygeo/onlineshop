@@ -3,18 +3,28 @@ require_once __DIR__ . '/../config/db.php';
 
 // Ensure table columns exist
 if ($pdo) {
-    try {
-        $pdo->exec("ALTER TABLE orders ADD COLUMN assigned_to VARCHAR(100) DEFAULT ''");
-        $pdo->exec("ALTER TABLE orders ADD COLUMN delivery_inst TEXT");
-        $pdo->exec("ALTER TABLE orders ADD COLUMN delivery_mode VARCHAR(100) DEFAULT ''");
-        $pdo->exec("ALTER TABLE orders ADD COLUMN delivered_at DATETIME NULL");
-        $pdo->exec("ALTER TABLE orders ADD COLUMN undelivered_reason VARCHAR(255) DEFAULT NULL");
-        $pdo->exec("ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00");
-        $pdo->exec("ALTER TABLE orders ADD COLUMN refund_notes TEXT DEFAULT NULL");
-        $pdo->exec("ALTER TABLE order_items ADD COLUMN item_status VARCHAR(50) DEFAULT 'packed'");
-        $pdo->exec("ALTER TABLE order_items ADD COLUMN missing_qty INT DEFAULT 0");
-        $pdo->exec("ALTER TABLE order_items ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00");
-    } catch (Exception $e) {}
+    $alters = [
+        "ALTER TABLE orders ADD COLUMN order_source VARCHAR(50) DEFAULT 'CLIENT_WEB'",
+        "ALTER TABLE orders ADD COLUMN created_by VARCHAR(100) DEFAULT NULL",
+        "ALTER TABLE orders ADD COLUMN assigned_to VARCHAR(100) DEFAULT ''",
+        "ALTER TABLE orders ADD COLUMN delivery_inst TEXT",
+        "ALTER TABLE orders ADD COLUMN delivery_mode VARCHAR(100) DEFAULT ''",
+        "ALTER TABLE orders ADD COLUMN delivered_at DATETIME NULL",
+        "ALTER TABLE orders ADD COLUMN undelivered_reason VARCHAR(255) DEFAULT NULL",
+        "ALTER TABLE orders ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE orders ADD COLUMN refund_notes TEXT DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN item_status VARCHAR(50) DEFAULT 'packed'",
+        "ALTER TABLE order_items ADD COLUMN missing_qty INT DEFAULT 0",
+        "ALTER TABLE order_items ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE order_items ADD COLUMN delivered_weight DECIMAL(10,2) DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN missing_weight DECIMAL(10,2) DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN partial_refund_notes VARCHAR(255) DEFAULT NULL"
+    ];
+    foreach ($alters as $sql) {
+        try {
+            $pdo->exec($sql);
+        } catch (Exception $e) {}
+    }
 }
 
 $dateParam = getParam('date') ?: date('Y-m-d');
@@ -131,6 +141,12 @@ try {
             $itemStatus = !empty($it['item_status']) ? $it['item_status'] : 'packed';
             $missingQty = (int)($it['missing_qty'] ?? 0);
             $itemRefundAmount = floatval($it['refund_amount'] ?? 0);
+            $deliveredWeight = isset($it['delivered_weight']) ? floatval($it['delivered_weight']) : null;
+            $missingWeight = isset($it['missing_weight']) ? floatval($it['missing_weight']) : null;
+            $partialNotes = !empty($it['partial_refund_notes']) ? $it['partial_refund_notes'] : '';
+
+            $isPartial = ($itemStatus === 'partially_delivered' || ($deliveredWeight !== null && $missingWeight !== null && $missingWeight > 0));
+            $isMissing = ($itemStatus === 'missing' || $itemStatus === 'refunded');
 
             $formattedItems[] = [
                 'id' => $it['id'],
@@ -144,9 +160,13 @@ try {
                 'is_subscription' => $isSub,
                 'subscription_type' => $it['subscriptionType'] ?? 'none',
                 'item_status' => $itemStatus,
-                'is_packed' => ($itemStatus === 'packed' || $itemStatus === 'delivered'),
-                'is_missing' => ($itemStatus === 'missing' || $itemStatus === 'refunded'),
+                'is_packed' => ($itemStatus === 'packed' || $itemStatus === 'delivered' || $itemStatus === 'partially_delivered'),
+                'is_missing' => $isMissing,
+                'is_partial' => $isPartial,
                 'missing_qty' => $missingQty,
+                'delivered_weight' => $deliveredWeight,
+                'missing_weight' => $missingWeight,
+                'partial_refund_notes' => $partialNotes,
                 'refund_amount' => round($itemRefundAmount),
                 'scheduled_today' => $itemScheduledToday,
                 'today_delivery_status' => $todayDeliveryStatus
@@ -192,6 +212,8 @@ try {
             'refund_amount' => round(floatval($ord['refund_amount'] ?? 0)),
             'refund_notes' => $ord['refund_notes'] ?? '',
             'order_type' => $orderType,
+            'order_source' => $ord['order_source'] ?? 'CLIENT_WEB',
+            'created_by' => $ord['created_by'] ?? null,
             'items' => $formattedItems,
             'items_count' => count($formattedItems),
             'created_at' => $ord['created_at']

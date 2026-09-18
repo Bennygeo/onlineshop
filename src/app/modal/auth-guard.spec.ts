@@ -2,6 +2,7 @@ import { AuthGuard } from './auth-guard';
 
 describe('AuthGuard', () => {
   it('should create an instance', () => {
-    expect(new AuthGuard()).toBeTruthy();
+    const mockLoginService: any = { loginstatus: () => true };
+    expect(new AuthGuard(mockLoginService)).toBeTruthy();
   });
 });

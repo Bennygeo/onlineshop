@@ -59,6 +59,11 @@
           <span>Sales Dashboard</span>
         </a>
 
+        <a routerLink="/admin/users" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+          <span class="material-icons">people</span>
+          <span>Customers & Users</span>
+        </a>
+
         <a routerLink="/admin/products" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
           <span class="material-icons">inventory_2</span>
           <span>Products Catalog</span>
@@ -97,6 +102,11 @@
     <a routerLink="/admin/dashboard" routerLinkActive="active" class="bottom-nav-item">
       <span class="material-icons">dashboard</span>
       <span class="nav-label">Dashboard</span>
+    </a>
+
+    <a routerLink="/admin/users" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-icons">people</span>
+      <span class="nav-label">Customers</span>
     </a>
 
     <a routerLink="/admin/products" routerLinkActive="active" class="bottom-nav-item">

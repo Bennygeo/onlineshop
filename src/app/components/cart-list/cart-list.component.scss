@@ -83,12 +83,16 @@
         display: flex;
         align-items: center;
         gap: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
 
         &::before {
-            content: "local_shipping";
+            content: "event_repeat";
             font-family: "Material Icons";
             font-size: 16px;
             color: $teal-100;
+            flex-shrink: 0;
         }
     }
 
@@ -97,12 +101,12 @@
         padding: 4px 10px;
         background-color: #f0fdfa;
         font-weight: 600;
-        border-radius: 6px;
+        border-radius: 8px;
         margin: 6px 0 8px 4px;
         color: #0d9488;
         display: inline-flex;
         align-items: center;
-        border-left: 3px solid #0d9488;
+        border: 1px solid #ccfbf1;
 
         .category_name {
             font-weight: 600;
@@ -145,6 +149,36 @@
             font-weight: 500;
             font-size: 13px;
             color: #475569;
+
+            .gst-label-wrap {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-wrap: wrap;
+
+                .gst-main-text {
+                    font-weight: 500;
+                    color: #475569;
+                }
+
+                .gst-tag {
+                    font-size: 10px;
+                    background: #f1f5f9;
+                    color: #0d9488;
+                    padding: 1px 6px;
+                    border-radius: 4px;
+                    font-weight: 700;
+                    letter-spacing: 0.3px;
+                    border: 1px solid #ccfbf1;
+                }
+            }
+
+            .gst-breakdown-sub {
+                font-size: 11px;
+                color: #64748b;
+                font-weight: normal;
+                margin-top: 3px;
+            }
         }
 
         .tg-col2 {
@@ -153,6 +187,8 @@
             font-size: 13.5px;
             min-width: 100px;
             color: #0f172a;
+            vertical-align: top;
+            padding-top: 12px;
         }
     }
 }
@@ -453,6 +489,114 @@
     }
 }
 
+
+
+.delivery-banner-wrap {
+    margin-top: 18px;
+    margin-bottom: 20px;
+
+    .order-delivery-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 14px 18px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+
+        &.express-mode {
+            background: linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 100%);
+            border-color: #99f6e4;
+            box-shadow: 0 3px 12px rgba(13, 148, 136, 0.1);
+        }
+
+        .delivery-icon-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: #ffffff;
+            color: #d97706;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+
+            &.express-circle {
+                color: #0d9488;
+                box-shadow: 0 2px 8px rgba(13, 148, 136, 0.15);
+            }
+
+            .material-icons {
+                font-size: 24px;
+            }
+        }
+
+        .delivery-card-info {
+            flex: 1;
+
+            .delivery-badge-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: nowrap;
+                margin-bottom: 4px;
+
+                .delivery-badge {
+                    font-size: 11px;
+                    font-weight: 700;
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                    background: #f1f5f9;
+                    color: #475569;
+                    border: 1px solid #e2e8f0;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                    white-space: nowrap;
+                    flex-shrink: 0;
+
+                    &.express-badge {
+                        background: #dcfce7;
+                        color: #166534;
+                        border-color: #bbf7d0;
+                    }
+                }
+
+                .ist-time-pill {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 3px;
+                    font-size: 11px;
+                    color: #64748b;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    flex-shrink: 0;
+                }
+            }
+
+            .delivery-main-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: #0f172a;
+                margin: 0 0 2px 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .delivery-sub-title {
+                font-size: 12px;
+                color: #475569;
+                margin: 0;
+                line-height: 1.4;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+    }
+}
 
 
 .payment-method-container {

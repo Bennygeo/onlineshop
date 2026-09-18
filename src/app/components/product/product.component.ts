@@ -79,37 +79,27 @@ export class ProductComponent implements OnInit, OnChanges {
 
     this.product.disabled = (String(this.product['disabled']) == 'true') ? true : false;
 
+    if (this.product['stock_qty'] !== undefined && this.product['stock_qty'] !== null) {
+      this.product.stock_qty = parseFloat(String(this.product['stock_qty']));
+    }
+    const hasStock = (this.product.stock_qty === undefined || this.product.stock_qty === null || this.product.stock_qty > 0);
+    const inStockFlag = (this.product['in_stock'] !== false && String(this.product['in_stock']) !== '0' && this.product['in_stock'] !== 0);
+    this.product.in_stock = inStockFlag && hasStock;
+
     const _quantity = (this.product.units * 1) || 1;
 
     if (!this.product['updated_weight']) this.product['updated_weight'] = this.product["weight"];
 
-    let basePrice = Number(this.product['price']);
-    if (isNaN(basePrice) || basePrice <= 0) {
-      basePrice = Number(this.product['unit_price'] || 0);
-    }
-    if (!this.product['unit_price'] || isNaN(Number(this.product['unit_price']))) {
+    let basePrice = Number(this.product['unit_price'] || this.product['price'] || 0);
+    if (!this.product['unit_price'] || isNaN(Number(this.product['unit_price'])) || Number(this.product['unit_price']) <= 0) {
       this.product['unit_price'] = basePrice;
     }
-
-    const stockPrice = Number(this.product['stock_price']);
-    const profitPercent = Number(this.product['profit_percent']);
-    const showOffPercent = Number(this.product['show_off_percent']);
-
-    if (!isNaN(stockPrice) && stockPrice > 0 && !isNaN(profitPercent) && profitPercent > 0) {
-      this.product['price'] = Math.round(stockPrice * (1 + profitPercent / 100) * _quantity);
-    } else {
-      this.product['price'] = Math.round(basePrice * _quantity);
+    let origPrice = Number(this.product['unit_original_price'] || this.product['original_price'] || basePrice);
+    if (!this.product['unit_original_price'] || isNaN(Number(this.product['unit_original_price']))) {
+      this.product['unit_original_price'] = origPrice;
     }
 
-    let origPrice = Number(this.product['original_price']);
-    if (isNaN(origPrice) || origPrice <= 0) {
-      if (!isNaN(stockPrice) && stockPrice > 0 && !isNaN(showOffPercent) && showOffPercent > 0) {
-        origPrice = Math.round(stockPrice * (1 + showOffPercent / 100));
-      } else {
-        origPrice = basePrice;
-      }
-    }
-
+    this.product['price'] = Math.round(basePrice * _quantity);
     this.product['original_price'] = Math.round(origPrice * _quantity);
     if (isNaN(Number(this.product['original_price']))) {
       this.product['original_price'] = this.product['price'];
@@ -141,9 +131,22 @@ export class ProductComponent implements OnInit, OnChanges {
       this.product.subscribeFlg = isMilk || isTenderCoconut;
     }
 
-    try {
-      this.product.delivery_date_enhanced = (DateE.dateDiff(this.cartS.deliveryDate, this.product.delivery_date) == 0) ? "Tomorrow." : this.datePipe.transform(this.product["delivery_date"], 'EEE,MMM d');
-    } catch (e) {
+    const hasImm30 = Number(this.product.allow_immediate_30) === 1;
+    const hasImm10 = Number(this.product.allow_immediate_10) === 1;
+    const hasImm60 = Number(this.product.allow_immediate_60) === 1;
+
+    if (hasImm10) {
+      this.product.delivery_date_enhanced = "10 mins";
+    } else if (hasImm30) {
+      this.product.delivery_date_enhanced = "30 mins";
+    } else if (hasImm60) {
+      this.product.delivery_date_enhanced = "60 mins";
+    } else {
+      try {
+        this.product.delivery_date_enhanced = (DateE.dateDiff(this.cartS.deliveryDate, this.product.delivery_date) == 0) ? "Tomorrow" : this.datePipe.transform(this.product["delivery_date"], 'EEE,MMM d');
+      } catch (e) {
+        this.product.delivery_date_enhanced = "Tomorrow";
+      }
     }
   }
 

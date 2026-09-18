@@ -22,6 +22,14 @@ $original_unit_name = isset($data['original_unit_name']) ? trim($data['original_
 $tamil_name = isset($data['tamil_name']) ? trim($data['tamil_name']) : '';
 $img_url = isset($data['img_url']) ? trim($data['img_url']) : 'assets/categories/Thinkspot_veggiesIcon.png';
 $zone = isset($data['zone']) ? trim($data['zone']) : 'both'; // zone1, zone2, or both
+$gst_percent = isset($data['gst_percent']) ? floatval($data['gst_percent']) : 5.00;
+$in_stock = isset($data['in_stock']) ? intval($data['in_stock']) : 1;
+$stock_qty = isset($data['stock_qty']) ? intval($data['stock_qty']) : 100;
+$disabled = isset($data['disabled']) ? intval($data['disabled']) : 0;
+$allow_next_day = isset($data['allow_next_day']) ? intval($data['allow_next_day']) : 1;
+$allow_immediate_10 = isset($data['allow_immediate_10']) ? intval($data['allow_immediate_10']) : 0;
+$allow_immediate_30 = isset($data['allow_immediate_30']) ? intval($data['allow_immediate_30']) : 0;
+$allow_immediate_60 = isset($data['allow_immediate_60']) ? intval($data['allow_immediate_60']) : 0;
 
 if (!$name) {
     sendJson(['error' => 'Product name is required'], 400);
@@ -33,20 +41,47 @@ if (!$pdo) {
 
 $id = 'PROD_' . time() . '_' . rand(100, 999);
 
-$tables = ['products', 'zone1_products_new_1', 'zone2_products_new_1'];
+$tables = ['products'];
+try {
+    $stmtTbls = $pdo->query("SHOW TABLES LIKE '%products%'");
+    $dbTbls = $stmtTbls->fetchAll(PDO::FETCH_COLUMN);
+    if (!empty($dbTbls)) {
+        $tables = $dbTbls;
+    }
+} catch (Exception $e) {}
 
 $successCnt = 0;
 foreach ($tables as $table) {
+    $columnDefs = [
+        "ALTER TABLE {$table} ADD COLUMN in_stock INT DEFAULT 1",
+        "ALTER TABLE {$table} ADD COLUMN stock_qty DECIMAL(10,2) DEFAULT 100.00",
+        "ALTER TABLE {$table} ADD COLUMN gst_percent DECIMAL(5,2) DEFAULT 5.00",
+        "ALTER TABLE {$table} ADD COLUMN stock_price DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE {$table} ADD COLUMN profit_percent DECIMAL(5,2) DEFAULT 10.00",
+        "ALTER TABLE {$table} ADD COLUMN total_purchased_qty DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE {$table} ADD COLUMN total_purchased_cost DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE {$table} ADD COLUMN allow_next_day INT DEFAULT 1",
+        "ALTER TABLE {$table} ADD COLUMN allow_immediate_10 INT DEFAULT 0",
+        "ALTER TABLE {$table} ADD COLUMN allow_immediate_30 INT DEFAULT 0",
+        "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0"
+    ];
+    foreach ($columnDefs as $sqlDef) {
+        try {
+            $pdo->exec($sqlDef);
+        } catch (Exception $eCol) {}
+    }
+
     try {
         $stmt = $pdo->prepare("
             INSERT INTO {$table} 
-            (id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, show_off_percent, weight, original_weight, unit_name, original_unit_name, img_url, disabled) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            (id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, show_off_percent, weight, original_weight, unit_name, original_unit_name, img_url, disabled, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $id, $name, $tamil_name, $cat, $sub_cat, $price, $original_price,
             $stock_price, $profit_percent, $show_off_percent, $weight, $weight,
-            $unit_name, $original_unit_name, $img_url
+            $unit_name, $original_unit_name, $img_url, $disabled, $in_stock, $stock_qty, $gst_percent,
+            $allow_next_day, $allow_immediate_10, $allow_immediate_30, $allow_immediate_60
         ]);
         $successCnt++;
     } catch (Exception $e) {

@@ -25,7 +25,11 @@ export interface DeliveryItem {
   item_status: string;
   is_packed: boolean;
   is_missing: boolean;
+  is_partial?: boolean;
   missing_qty: number;
+  delivered_weight?: number;
+  missing_weight?: number;
+  partial_refund_notes?: string;
   refund_amount: number;
   scheduled_today: boolean;
   today_delivery_status: string;
@@ -52,6 +56,8 @@ export interface DeliveryOrder {
   refund_amount: number;
   refund_notes: string;
   order_type: 'regular' | 'subscription';
+  order_source?: string;
+  created_by?: string | null;
   items: DeliveryItem[];
   items_count: number;
   created_at: string;
@@ -81,13 +87,23 @@ export class AdminDeliveryComponent implements OnInit {
     undelivered: 0
   };
 
-  // Missing Item Refund Modal State
+  // Refund / Partial Weight Modal State
   isRefundModalOpen: boolean = false;
   activeRefundOrder: DeliveryOrder | null = null;
   activeRefundItem: DeliveryItem | null = null;
+  
+  refundMode: 'weight' | 'quantity' | 'custom' = 'weight';
+  orderedWeight: number = 1000;
+  deliveredWeight: number = 800;
+  missingWeight: number = 200;
+  unitRate: number = 0; // price per weight unit (e.g. per gram)
+  unitName: string = 'grams';
   refundMissingQty: number = 1;
-  refundReason: string = 'Item missing or unavailable during packing/delivery';
+  calculatedRefundAmt: number = 0;
+  customRefundAmt: number = 0;
+  refundReason: string = 'Weight deficit / Partial weight delivered';
   isProcessingRefund: boolean = false;
+  quickSuggestions: { label: string; delivered: number; shortfall: number; refund: number }[] = [];
 
   // Undelivered Order Modal State
   isUndeliveredModalOpen: boolean = false;
@@ -237,17 +253,129 @@ export class AdminDeliveryComponent implements OnInit {
   // Check if all items in order are packed
   isOrderAllPacked(order: DeliveryOrder): boolean {
     if (!order.items || order.items.length === 0) return true;
-    return order.items.every(it => it.is_packed || it.is_missing);
+    return order.items.every(it => it.is_packed || it.is_missing || it.is_partial);
   }
 
-  // Open Refund / Missing Item Modal
+  // Open Refund / Partial Weight Modal
   openRefundModal(order: DeliveryOrder, item: DeliveryItem, event?: Event) {
     if (event) event.stopPropagation();
     this.activeRefundOrder = order;
     this.activeRefundItem = item;
-    this.refundMissingQty = 1;
-    this.refundReason = 'Item missing or damaged during dispatch';
+
+    // Determine unit name and base weight
+    this.unitName = item.unit_name || 'grams';
+    const isWeightItem = this.unitName.toLowerCase().includes('g') || 
+                         this.unitName.toLowerCase().includes('kg') || 
+                         this.unitName.toLowerCase().includes('gram') ||
+                         (item.weight && item.weight > 1);
+
+    // Calculate total ordered weight
+    const singleWeight = Number(item.weight) || (this.unitName.toLowerCase() === 'kg' ? 1000 : 500);
+    const itemQty = Number(item.quantity) || 1;
+    this.orderedWeight = singleWeight * itemQty;
+
+    // Unit rate = Price per 1 unit of weight (e.g. price per 1 gram)
+    if (this.orderedWeight > 0) {
+      this.unitRate = (item.price * itemQty) / this.orderedWeight;
+    } else {
+      this.unitRate = item.price;
+    }
+
+    if (isWeightItem) {
+      this.refundMode = 'weight';
+      this.refundReason = 'Weight shortfall / Partial weight delivered';
+
+      // Default to 80% delivered or deficit of 200g (or 20%)
+      const defaultDeficit = Math.min(200, Math.round(this.orderedWeight * 0.2));
+      this.missingWeight = defaultDeficit > 0 ? defaultDeficit : Math.round(this.orderedWeight * 0.2);
+      this.deliveredWeight = Math.max(0, this.orderedWeight - this.missingWeight);
+      this.calculatedRefundAmt = Math.round(this.missingWeight * this.unitRate * 100) / 100;
+      this.customRefundAmt = this.calculatedRefundAmt;
+
+      this.generateQuickSuggestions();
+    } else {
+      this.refundMode = 'quantity';
+      this.refundReason = 'Item missing or unavailable during packing/delivery';
+      this.refundMissingQty = 1;
+      this.calculatedRefundAmt = item.price;
+      this.customRefundAmt = item.price;
+      this.quickSuggestions = [];
+    }
+
     this.isRefundModalOpen = true;
+  }
+
+  generateQuickSuggestions() {
+    this.quickSuggestions = [];
+    const totalW = this.orderedWeight;
+    if (totalW <= 0) return;
+
+    // Suggest based on common weight steps
+    let steps: number[] = [];
+    if (totalW >= 1000) {
+      steps = [100, 200, 250, 500];
+    } else if (totalW >= 500) {
+      steps = [50, 100, 150, 250];
+    } else if (totalW >= 250) {
+      steps = [25, 50, 100, 125];
+    } else {
+      steps = [
+        Math.round(totalW * 0.1),
+        Math.round(totalW * 0.2),
+        Math.round(totalW * 0.25),
+        Math.round(totalW * 0.5)
+      ];
+    }
+
+    steps.forEach(step => {
+      if (step > 0 && step < totalW) {
+        const delivered = totalW - step;
+        const refund = Math.round(step * this.unitRate * 100) / 100;
+        this.quickSuggestions.push({
+          label: `-${step}${this.unitName} (${delivered}${this.unitName} delivered)`,
+          delivered: delivered,
+          shortfall: step,
+          refund: refund
+        });
+      }
+    });
+  }
+
+  onDeliveredWeightChange(val: any) {
+    const num = parseFloat(val) || 0;
+    this.deliveredWeight = Math.max(0, Math.min(num, this.orderedWeight));
+    this.missingWeight = Math.max(0, Math.round((this.orderedWeight - this.deliveredWeight) * 100) / 100);
+    this.calculatedRefundAmt = Math.round(this.missingWeight * this.unitRate * 100) / 100;
+    this.customRefundAmt = this.calculatedRefundAmt;
+  }
+
+  onShortfallWeightChange(val: any) {
+    const num = parseFloat(val) || 0;
+    this.missingWeight = Math.max(0, Math.min(num, this.orderedWeight));
+    this.deliveredWeight = Math.max(0, Math.round((this.orderedWeight - this.missingWeight) * 100) / 100);
+    this.calculatedRefundAmt = Math.round(this.missingWeight * this.unitRate * 100) / 100;
+    this.customRefundAmt = this.calculatedRefundAmt;
+  }
+
+  onMissingQtyChange(qty: number) {
+    if (!this.activeRefundItem) return;
+    this.refundMissingQty = Math.max(1, Math.min(qty, this.activeRefundItem.quantity));
+    this.calculatedRefundAmt = Math.round(this.activeRefundItem.price * this.refundMissingQty * 100) / 100;
+    this.customRefundAmt = this.calculatedRefundAmt;
+  }
+
+  applySuggestion(sug: { label: string; delivered: number; shortfall: number; refund: number }) {
+    this.deliveredWeight = sug.delivered;
+    this.missingWeight = sug.shortfall;
+    this.calculatedRefundAmt = sug.refund;
+    this.customRefundAmt = sug.refund;
+  }
+
+  getFinalRefundAmount(): number {
+    if (this.refundMode === 'custom') {
+      return Math.max(0, this.customRefundAmt || 0);
+    }
+    return Math.max(0, this.calculatedRefundAmt || 0);
   }
 
   closeRefundModal() {
@@ -262,23 +390,34 @@ export class AdminDeliveryComponent implements OnInit {
     this.isProcessingRefund = true;
     const orderId = this.activeRefundOrder.order_id;
     const itemId = this.activeRefundItem.id;
-    const qty = this.refundMissingQty;
+    const refundAmount = this.getFinalRefundAmount();
     const reason = this.refundReason;
 
+    const payload: any = {
+      action: 'report_missing_item',
+      order_id: orderId,
+      item_id: itemId,
+      refund_type: this.refundMode,
+      refund_amount: refundAmount,
+      reason: reason,
+      date: this.selectedDate
+    };
+
+    if (this.refundMode === 'weight') {
+      payload.delivered_weight = this.deliveredWeight;
+      payload.missing_weight = this.missingWeight;
+      payload.unit_name = this.unitName;
+    } else {
+      payload.missing_qty = this.refundMissingQty;
+    }
+
     this.apiS.postApi('delivery/update_delivery_status.php', {
-      data: JSON.stringify({
-        action: 'report_missing_item',
-        order_id: orderId,
-        item_id: itemId,
-        missing_qty: qty,
-        reason: reason,
-        date: this.selectedDate
-      })
+      data: JSON.stringify(payload)
     }).subscribe({
       next: (res: any) => {
         this.isProcessingRefund = false;
         this.closeRefundModal();
-        this.showToast('Refund Processed', res.message || 'Refund credited to wallet and ledger updated', 'success');
+        this.showToast('Refund Processed', res.message || 'Refund credited to customer wallet and order updated', 'success');
         this.loadOrders();
       },
       error: (err: any) => {

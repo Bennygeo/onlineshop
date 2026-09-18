@@ -20,15 +20,53 @@ $sub_cat = isset($data['sub_cat']) ? trim($data['sub_cat']) : null;
 $weight = isset($data['weight']) ? intval($data['weight']) : null;
 $unit_name = isset($data['unit_name']) ? trim($data['unit_name']) : null;
 $disabled = isset($data['disabled']) ? intval($data['disabled']) : null;
+$stock_qty = isset($data['stock_qty']) && $data['stock_qty'] !== '' ? floatval($data['stock_qty']) : null;
+$in_stock = isset($data['in_stock']) ? intval($data['in_stock']) : null;
+if ($stock_qty !== null) {
+    if ($stock_qty <= 0) {
+        $in_stock = 0;
+    } elseif ($in_stock === null) {
+        $in_stock = 1;
+    }
+}
+$gst_percent = isset($data['gst_percent']) ? floatval($data['gst_percent']) : null;
 $img_url = isset($data['img_url']) ? trim($data['img_url']) : null;
+$allow_next_day = isset($data['allow_next_day']) ? intval($data['allow_next_day']) : null;
+$allow_immediate_10 = isset($data['allow_immediate_10']) ? intval($data['allow_immediate_10']) : null;
+$allow_immediate_30 = isset($data['allow_immediate_30']) ? intval($data['allow_immediate_30']) : null;
+$allow_immediate_60 = isset($data['allow_immediate_60']) ? intval($data['allow_immediate_60']) : null;
 
 if (!$pdo) {
     sendJson(['error' => 'Database connection unavailable'], 500);
 }
 
-$tables = ['products', 'zone1_products_new_1', 'zone2_products_new_1'];
+$tables = ['products'];
+try {
+    $stmtTbls = $pdo->query("SHOW TABLES LIKE '%products%'");
+    $dbTbls = $stmtTbls->fetchAll(PDO::FETCH_COLUMN);
+    if (!empty($dbTbls)) {
+        $tables = $dbTbls;
+    }
+} catch (Exception $e) {}
 
 foreach ($tables as $table) {
+    $columnDefs = [
+        "ALTER TABLE {$table} ADD COLUMN in_stock INT DEFAULT 1",
+        "ALTER TABLE {$table} ADD COLUMN stock_qty DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE {$table} ADD COLUMN gst_percent DECIMAL(5,2) DEFAULT 5.00",
+        "ALTER TABLE {$table} ADD COLUMN stock_price DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE {$table} ADD COLUMN profit_percent DECIMAL(5,2) DEFAULT 10.00",
+        "ALTER TABLE {$table} ADD COLUMN allow_next_day INT DEFAULT 1",
+        "ALTER TABLE {$table} ADD COLUMN allow_immediate_10 INT DEFAULT 0",
+        "ALTER TABLE {$table} ADD COLUMN allow_immediate_30 INT DEFAULT 0",
+        "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0"
+    ];
+    foreach ($columnDefs as $sqlDef) {
+        try {
+            $pdo->exec($sqlDef);
+        } catch (Exception $eCol) {}
+    }
+
     try {
         $updates = [];
         $params = [];
@@ -50,11 +88,19 @@ foreach ($tables as $table) {
             $updates[] = "original_unit_name = ?"; $params[] = $unit_name;
         }
         if ($disabled !== null) { $updates[] = "disabled = ?"; $params[] = $disabled; }
+        if ($in_stock !== null) { $updates[] = "in_stock = ?"; $params[] = $in_stock; }
+        if ($stock_qty !== null) { $updates[] = "stock_qty = ?"; $params[] = $stock_qty; }
+        if ($gst_percent !== null) { $updates[] = "gst_percent = ?"; $params[] = $gst_percent; }
         if ($img_url !== null) { $updates[] = "img_url = ?"; $params[] = $img_url; }
+        if ($allow_next_day !== null) { $updates[] = "allow_next_day = ?"; $params[] = $allow_next_day; }
+        if ($allow_immediate_10 !== null) { $updates[] = "allow_immediate_10 = ?"; $params[] = $allow_immediate_10; }
+        if ($allow_immediate_30 !== null) { $updates[] = "allow_immediate_30 = ?"; $params[] = $allow_immediate_30; }
+        if ($allow_immediate_60 !== null) { $updates[] = "allow_immediate_60 = ?"; $params[] = $allow_immediate_60; }
 
         if (!empty($updates)) {
-            $sql = "UPDATE {$table} SET " . implode(", ", $updates) . " WHERE id = ?";
+            $sql = "UPDATE {$table} SET " . implode(", ", $updates) . " WHERE id = ?" . ($name ? " OR name = ?" : "");
             $params[] = $id;
+            if ($name) { $params[] = $name; }
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
         }
@@ -65,5 +111,21 @@ foreach ($tables as $table) {
 
 sendJson([
     'status' => 'SUCCESS',
-    'message' => 'Product updated successfully'
+    'message' => 'Product updated successfully',
+    'product' => [
+        'id' => $id,
+        'name' => $name,
+        'stock_qty' => $stock_qty,
+        'in_stock' => $in_stock,
+        'price' => $price,
+        'original_price' => $original_price,
+        'stock_price' => $stock_price,
+        'profit_percent' => $profit_percent,
+        'gst_percent' => $gst_percent,
+        'allow_next_day' => $allow_next_day,
+        'allow_immediate_10' => $allow_immediate_10,
+        'allow_immediate_30' => $allow_immediate_30,
+        'allow_immediate_60' => $allow_immediate_60
+    ]
 ]);
+

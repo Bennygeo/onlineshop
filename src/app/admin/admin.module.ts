@@ -8,6 +8,7 @@ import { AdminProductsComponent } from './admin-products/admin-products.componen
 import { AdminOrdersComponent } from './admin-orders/admin-orders.component';
 import { AdminDeliveryComponent } from './admin-delivery/admin-delivery.component';
 import { AdminLoginComponent } from './admin-login/admin-login.component';
+import { AdminUsersComponent } from './admin-users/admin-users.component';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
@@ -17,7 +18,8 @@ import { SharedModule } from '../shared/shared.module';
     AdminProductsComponent,
     AdminOrdersComponent,
     AdminDeliveryComponent,
-    AdminLoginComponent
+    AdminLoginComponent,
+    AdminUsersComponent
   ],
   imports: [
     CommonModule,

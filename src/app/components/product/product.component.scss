@@ -1,9 +1,13 @@
 @import "../../../assets/styles/global-constants.scss";
 
 .std_delivery {
-    line-height: 24px;
+    line-height: 22px;
     font-size: $font-xs;
     color: $product_name_clr;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
 }
 
 .pName {
@@ -90,4 +94,84 @@
     font-size: $font-s;
     padding: 0 12px 0 12px;
     background-color: $orange-60 !important;
+}
+
+.is-out-of-stock {
+    opacity: 0.85;
+
+    .pName {
+        color: #64748b;
+    }
+}
+
+.thumb-out-of-stock-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15, 23, 42, 0.75);
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+    letter-spacing: 0.3px;
+}
+
+.out-of-stock-container {
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.out-of-stock-pill {
+    display: inline-flex;
+    align-items: center;
+    background: #fee2e2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.product_stock_row {
+    margin-top: 2px;
+    margin-bottom: 4px;
+    min-height: 18px;
+
+    .stock_indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #059669;
+        background: #ecfdf5;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid #a7f3d0;
+
+        .stock_dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        &.low_stock {
+            color: #d97706;
+            background: #fffbeb;
+            border-color: #fde68a;
+
+            .stock_dot {
+                background: #f59e0b;
+            }
+        }
+    }
 }

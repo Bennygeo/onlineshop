@@ -81,6 +81,11 @@ export class AppComponent implements OnInit {
     this.loginS.popupEvent.next({ flag: false, msg: "" });
   }
 
+  exitAdminMode(): void {
+    this.loginS.exitAdminMode();
+    this.cartS.router.navigate(['/admin/users']);
+  }
+
   ngOnInit(): void {
     this.cartS.windowSize$.subscribe(res => {
       const isLargeScreen = res.width >= 768;
@@ -88,11 +93,20 @@ export class AppComponent implements OnInit {
       const hash = window.location.hash || "";
       const path = window.location.pathname || "";
       const isAdmin = currentUrl.startsWith('/admin') || hash.includes('/admin') || path.includes('/admin');
+      const isAdminMode = !!this.loginS.getAdminMode()?.active;
 
       if (isAdmin) {
         this.isAdminPage = true;
         this.isMobile = false;
         return; // Preserve route on admin pages when refreshing
+      }
+
+      this.isAdminPage = false;
+
+      // In admin impersonation mode, treat as active store view so admin can place orders directly
+      if (isAdminMode) {
+        this.isMobile = true;
+        return;
       }
 
       if (isLargeScreen && !this.utils.isMobile()) {
