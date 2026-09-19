@@ -13,12 +13,18 @@
                        class="search-main-input" 
                        [value]="searchTerm"
                        (input)="onSearchInput($event)"
-                       placeholder="Search fresh veggies, batters, milk, fruits, greens..." 
+                       (keyup.enter)="askAi()"
+                       placeholder="Search fresh veggies, batters, milk, or ask recipes..." 
                        autofocus />
                 <button class="clear-search-btn" *ngIf="searchTerm" (click)="clearSearch()" title="Clear">
                     <span class="material-icons size-16">close</span>
                 </button>
             </div>
+
+            <button class="ai-sparkle-btn" (click)="askAi()" [disabled]="aiLoading" title="Ask AI Assistant">
+                <span class="material-icons sparkle-icon">auto_awesome</span>
+                <span class="ai-btn-text">AI Chef</span>
+            </button>
         </div>
 
         <!-- Category Filter Tabs (Appears when search has multiple categories) -->
@@ -42,6 +48,61 @@
     <!-- MAIN SCROLLABLE CONTENT AREA -->
     <div class="search-content-area">
 
+        <!-- AI ASSISTANT CARD (Live Gemini Response) -->
+        <div class="ai-assistant-card" *ngIf="showAiCard">
+            <div class="ai-card-header">
+                <div class="ai-header-left">
+                    <span class="material-icons ai-badge-icon">auto_awesome</span>
+                    <span class="ai-badge-title">Thinkspot AI Recipe & Shopping Assistant</span>
+                    <span class="ai-model-tag" *ngIf="aiResponse?.source">{{ aiResponse?.source }}</span>
+                </div>
+                <button class="ai-close-btn" (click)="closeAiCard()">
+                    <span class="material-icons size-18">close</span>
+                </button>
+            </div>
+
+            <!-- AI Loading State -->
+            <div class="ai-loading-box" *ngIf="aiLoading">
+                <div class="ai-spinner"></div>
+                <p>Asking Gemini AI for recipes and checking farm-fresh inventory for "<em>{{ aiActivePrompt }}</em>"...</p>
+            </div>
+
+            <!-- AI Response Content -->
+            <div class="ai-content-body" *ngIf="!aiLoading && aiResponse">
+                <div class="ai-reply-text" [innerHTML]="aiResponse.reply.replace('\n', '<br>')"></div>
+
+                <!-- Matched Store Ingredients / Add to Cart Chips -->
+                <div class="ai-suggested-products" *ngIf="aiSuggestedProducts && aiSuggestedProducts.length > 0">
+                    <h5 class="suggested-heading">
+                        <span class="material-icons size-16">shopping_basket</span>
+                        Matching Store Ingredients Ready to Add:
+                    </h5>
+                    <div class="ai-product-chips-grid">
+                        <div class="ai-prod-chip" *ngFor="let product of aiSuggestedProducts">
+                            <div class="chip-left">
+                                <img [src]="product.img_url || 'assets/general/no_image.png'" 
+                                     class="chip-thumb" 
+                                     [alt]="product.name" 
+                                     onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                                <div class="chip-info">
+                                    <span class="chip-name" [title]="product.name">{{ product.name }}</span>
+                                    <div class="chip-pricing">
+                                        <span class="chip-price">₹{{ product.price }}</span>
+                                        <span class="chip-unit">{{ product.weight }} {{ product.unit_name || 'grams' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chip-action">
+                                <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
+                                    (onChange)="plusMinusValue($event, product)">
+                                </plus-minus>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 2. LOADING SHIMMER STATE -->
         <div class="search-shimmer-grid" *ngIf="loadingFlg">
             <div class="shimmer-card" *ngFor="let item of [1,2,3,4,5,6]">
@@ -53,8 +114,22 @@
         </div>
 
         <!-- 3. PRE-SEARCH DISCOVERY & TRENDING (When user hasn't typed a query yet) -->
-        <div class="discovery-container" *ngIf="(!hasSearched || searchTerm.length < 2) && !loadingFlg">
+        <div class="discovery-container" *ngIf="(!hasSearched || searchTerm.length < 2) && !loadingFlg && !showAiCard">
             
+            <!-- AI Smart Recipe Kits / Meal Planner -->
+            <div class="discovery-section ai-kits-section">
+                <div class="discovery-header">
+                    <span class="material-icons section-icon ai-sparkle-icon">auto_awesome</span>
+                    <h3 class="discovery-title">Ask AI Chef & Meal Kits</h3>
+                    <span class="new-pill">Gemini AI</span>
+                </div>
+                <div class="trending-tags-wrap">
+                    <button class="ai-kit-pill" *ngFor="let kit of aiRecipeKits" (click)="askAi(kit.query)">
+                        <span>{{ kit.label }}</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Trending Search Keywords -->
             <div class="discovery-section">
                 <div class="discovery-header">
@@ -126,6 +201,9 @@
                 <span class="results-count-text">
                     Showing <strong>{{ filteredResults.length }}</strong> {{ filteredResults.length === 1 ? 'item' : 'items' }} for "<em>{{ searchTerm }}</em>"
                 </span>
+                <button class="ask-ai-inline-btn" (click)="askAi()">
+                    <span class="material-icons size-14">auto_awesome</span> Ask AI Recipe
+                </button>
             </div>
 
             <div class="search-products-grid">
@@ -156,15 +234,21 @@
         </div>
 
         <!-- 5. NO RESULTS FOUND STATE -->
-        <div class="search-not-found-card" *ngIf="notFoundFlg && !loadingFlg">
+        <div class="search-not-found-card" *ngIf="notFoundFlg && !loadingFlg && !showAiCard">
             <div class="not-found-icon-wrap">
                 <span class="material-icons">search_off</span>
             </div>
             <h3 class="not-found-title">No products found for "{{ searchTerm }}"</h3>
             <p class="not-found-desc">
-                We couldn't find an exact match. Try checking for spelling errors, or try popular keywords like <strong>Batter</strong>, <strong>Tomato</strong>, <strong>Milk</strong>, or <strong>Greens</strong>.
+                We couldn't find an exact keyword match. Let our AI Assistant find recipe ingredients or related fresh items for you!
             </p>
-            <div class="suggested-chips-wrap">
+            <div class="ai-fallback-action">
+                <button class="ask-ai-primary-btn" (click)="askAi()">
+                    <span class="material-icons">auto_awesome</span>
+                    <span>Ask AI Assistant for "{{ searchTerm }}"</span>
+                </button>
+            </div>
+            <div class="suggested-chips-wrap" style="margin-top: 20px;">
                 <button class="trending-tag-pill" (click)="searchKeyword('Batter')">🥣 Batters</button>
                 <button class="trending-tag-pill" (click)="searchKeyword('Tomato')">🍅 Tomato</button>
                 <button class="trending-tag-pill" (click)="searchKeyword('Milk')">🥛 Fresh Milk</button>

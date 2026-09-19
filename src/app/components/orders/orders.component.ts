@@ -136,7 +136,24 @@ export class OrdersComponent implements OnInit, OnDestroy {
     }
   }
 
-  getDeliveryOptionBadge(option: string): { label: string, icon: string, class: string } {
+  formatDateShort(d: any): string {
+    const dateObj = this.safeDate(d);
+    if (!dateObj || isNaN(dateObj.getTime())) return '';
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${days[dateObj.getDay()]}, ${months[dateObj.getMonth()]} ${dateObj.getDate()}`;
+  }
+
+  getDeliveryOptionBadge(itemOrOption: any, maybeDate?: any): { label: string, icon: string, class: string } {
+    let option = '';
+    let deliveryDate: Date | null = null;
+    if (itemOrOption && typeof itemOrOption === 'object') {
+      option = itemOrOption.delivery_option || '';
+      deliveryDate = itemOrOption.delivery_date ? this.safeDate(itemOrOption.delivery_date) : null;
+    } else {
+      option = typeof itemOrOption === 'string' ? itemOrOption : '';
+      if (maybeDate) deliveryDate = this.safeDate(maybeDate);
+    }
     const opt = String(option || 'NEXT_DAY_7AM').toUpperCase();
     switch (opt) {
       case 'IMMEDIATE_10':
@@ -145,8 +162,23 @@ export class OrdersComponent implements OnInit, OnDestroy {
         return { label: '30 Mins Delivery', icon: 'timer', class: 'opt-30m' };
       case 'IMMEDIATE_60':
         return { label: '60 Mins Delivery', icon: 'schedule', class: 'opt-60m' };
+      case 'SCHEDULED':
       case 'NEXT_DAY_7AM':
       default:
+        if (deliveryDate && !isNaN(deliveryDate.getTime())) {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const target = new Date(deliveryDate.getFullYear(), deliveryDate.getMonth(), deliveryDate.getDate());
+          const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays === 0) {
+            return { label: 'Today 7:00 AM IST', icon: 'wb_twilight', class: 'opt-next-day' };
+          } else if (diffDays === 1) {
+            return { label: 'Tomorrow 7:00 AM IST', icon: 'wb_twilight', class: 'opt-next-day' };
+          } else if (diffDays > 1) {
+            const dateStr = this.formatDateShort(deliveryDate);
+            return { label: `${dateStr} • 7:00 AM Delivery`, icon: 'event_available', class: 'opt-scheduled' };
+          }
+        }
         return { label: 'Tomorrow 7:00 AM IST', icon: 'wb_twilight', class: 'opt-next-day' };
     }
   }
@@ -164,7 +196,24 @@ export class OrdersComponent implements OnInit, OnDestroy {
       }
       return 'Express delivery in progress';
     }
-    return 'Scheduled 7:00 AM IST';
+    if (item?.delivery_date) {
+      const d = this.safeDate(item.delivery_date);
+      if (d && !isNaN(d.getTime())) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          return 'Tomorrow by 7:00 AM IST';
+        } else if (diffDays === 0) {
+          return 'Today by 7:00 AM IST';
+        } else if (diffDays > 1) {
+          const dateStr = this.formatDateShort(d);
+          return `Arriving ${dateStr} by 7:00 AM IST`;
+        }
+      }
+    }
+    return 'Tomorrow by 7:00 AM IST';
   }
 
   getOrderThumbnails(order: any): Array<{ img: string, name: string }> {

@@ -81,9 +81,9 @@
                     <!-- Delivery & Amount Hero Banner -->
                     <div class="hero-summary-bar">
                         <div class="hero-left">
-                            <div class="delivery-badge-pill" [ngClass]="getDeliveryOptionBadge(item.delivery_option).class">
-                                <span class="material-icons size-14">{{ getDeliveryOptionBadge(item.delivery_option).icon }}</span>
-                                <span>{{ getDeliveryOptionBadge(item.delivery_option).label }}</span>
+                            <div class="delivery-badge-pill" [ngClass]="getDeliveryOptionBadge(item).class">
+                                <span class="material-icons size-14">{{ getDeliveryOptionBadge(item).icon }}</span>
+                                <span>{{ getDeliveryOptionBadge(item).label }}</span>
                             </div>
                             <div class="hero-timing-text">
                                 <span class="delivery-date-bold">{{ (item.delivery_option && item.delivery_option.startsWith('IMMEDIATE_') ? safeDate(item.created_at) : safeDate(item.delivery_date)) | date:'EEE, MMM d' }}</span>
@@ -152,6 +152,10 @@
                                         <div class="item-spec-row">
                                             <span>Qty: {{ getItemTotalQty(pro) }} {{ pro.weight ? '(' + pro.weight + ')' : '' }}</span>
                                             <span *ngIf="getItemDaysCount(pro) > 1" class="days-pill">&bull; {{ getItemDaysCount(pro) }} Deliveries</span>
+                                            <span *ngIf="pro.delivery_date" class="item-delivery-date-chip">
+                                                <span class="material-icons size-11">event</span>
+                                                {{ pro.delivery_date | date:'EEE, MMM d' }}
+                                            </span>
                                         </div>
                                     </div>
 

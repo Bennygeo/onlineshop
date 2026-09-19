@@ -31,6 +31,10 @@ if ($isLocal) {
     $pass   = 'silenceRocks@77';
 }
 
+if (!defined('GEMINI_API_KEY')) {
+    define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
+}
+
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -83,6 +87,19 @@ function ensureSchemaColumns($pdo) {
             "description VARCHAR(255) DEFAULT NULL",
             "offer VARCHAR(100) DEFAULT NULL",
             "offer_desc VARCHAR(255) DEFAULT NULL"
+        ],
+        "products" => [
+            "in_stock INT DEFAULT 1",
+            "stock_qty DECIMAL(10,2) DEFAULT 100.00",
+            "gst_percent DECIMAL(5,2) DEFAULT 5.00",
+            "stock_price DECIMAL(10,2) DEFAULT 0.00",
+            "profit_percent DECIMAL(5,2) DEFAULT 10.00",
+            "preferred_days VARCHAR(255) DEFAULT '[]'",
+            "subscribe_flg INT DEFAULT 0",
+            "allow_next_day INT DEFAULT 1",
+            "allow_immediate_10 INT DEFAULT 0",
+            "allow_immediate_30 INT DEFAULT 0",
+            "allow_immediate_60 INT DEFAULT 0"
         ]
     ];
 

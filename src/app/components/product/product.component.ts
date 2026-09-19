@@ -118,7 +118,16 @@ export class ProductComponent implements OnInit, OnChanges {
 
     this.product.delivery_date = this.cartS.deliveryDate;
 
-    if (this.product.delivery_day != -1) this.product.delivery_date = this.cartS.getNextDeliveryDate(this.product);
+    // Handle Preferred Delivery Days Forward Scheduling
+    const prefDays = DateE.normalizePreferredDays(this.product.preferred_days);
+    if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
+      const scheduledDate = DateE.getPreferredDaysNextDeliveryDate(prefDays, this.cartS.deliveryDate);
+      this.product.delivery_date = new DateE(scheduledDate);
+      this.product.scheduled_delivery_label = DateE.formatPreferredDaysSummary(prefDays);
+      this.product.scheduled_delivery_date = `${scheduledDate.getFullYear()}-${String(scheduledDate.getMonth() + 1).padStart(2, '0')}-${String(scheduledDate.getDate()).padStart(2, '0')}`;
+    } else if (this.product.delivery_day != -1) {
+      this.product.delivery_date = this.cartS.getNextDeliveryDate(this.product);
+    }
 
     const subFlgVal = this.product.subscribe_flg !== undefined ? this.product.subscribe_flg : this.product['subscribeFlg'];
     if (subFlgVal !== undefined && subFlgVal !== null) {
@@ -135,7 +144,14 @@ export class ProductComponent implements OnInit, OnChanges {
     const hasImm10 = Number(this.product.allow_immediate_10) === 1;
     const hasImm60 = Number(this.product.allow_immediate_60) === 1;
 
-    if (hasImm10) {
+    if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
+      try {
+        const isTmrw = (DateE.dateDiff(this.cartS.deliveryDate, this.product.delivery_date) == 0);
+        this.product.delivery_date_enhanced = isTmrw ? "Tomorrow" : (this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d') || 'Scheduled');
+      } catch (e) {
+        this.product.delivery_date_enhanced = this.product.scheduled_delivery_label || "Scheduled";
+      }
+    } else if (hasImm10) {
       this.product.delivery_date_enhanced = "10 mins";
     } else if (hasImm30) {
       this.product.delivery_date_enhanced = "30 mins";
@@ -143,7 +159,7 @@ export class ProductComponent implements OnInit, OnChanges {
       this.product.delivery_date_enhanced = "60 mins";
     } else {
       try {
-        this.product.delivery_date_enhanced = (DateE.dateDiff(this.cartS.deliveryDate, this.product.delivery_date) == 0) ? "Tomorrow" : this.datePipe.transform(this.product["delivery_date"], 'EEE,MMM d');
+        this.product.delivery_date_enhanced = (DateE.dateDiff(this.cartS.deliveryDate, this.product.delivery_date) == 0) ? "Tomorrow" : this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d');
       } catch (e) {
         this.product.delivery_date_enhanced = "Tomorrow";
       }

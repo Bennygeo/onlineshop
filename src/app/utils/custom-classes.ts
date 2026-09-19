@@ -134,6 +134,68 @@ export class DateE extends Date implements IDate {
         });
     }
 
+    static normalizePreferredDays(prefDays: any): string[] {
+        if (!prefDays) return [];
+        let list: string[] = [];
+        if (Array.isArray(prefDays)) {
+            list = prefDays;
+        } else if (typeof prefDays === 'string') {
+            try {
+                const parsed = JSON.parse(prefDays);
+                if (Array.isArray(parsed)) list = parsed;
+                else list = prefDays.split(',').map(s => s.trim());
+            } catch (e) {
+                list = prefDays.split(',').map(s => s.trim());
+            }
+        }
+        return list.filter(s => !!s);
+    }
+
+    static getPreferredDaysNextDeliveryDate(prefDays: any, baseDeliveryDate?: Date): Date {
+        const days = DateE.normalizePreferredDays(prefDays);
+        const refDate = baseDeliveryDate ? new Date(baseDeliveryDate) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+        
+        if (!days || days.length === 0 || days.length >= 7) {
+            return refDate;
+        }
+
+        const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const normalizedDays = days.map(d => d.toLowerCase().trim());
+
+        for (let i = 0; i < 7; i++) {
+            const checkDate = new Date(refDate);
+            checkDate.setDate(checkDate.getDate() + i);
+            const dayIndex = checkDate.getDay();
+            const fullDay = weekdayNames[dayIndex].toLowerCase();
+            const shortDay = weekdayShort[dayIndex].toLowerCase();
+
+            const isMatch = normalizedDays.some(d => d === fullDay || d === shortDay || fullDay.startsWith(d));
+            if (isMatch) {
+                return checkDate;
+            }
+        }
+
+        return refDate;
+    }
+
+    static formatPreferredDaysSummary(prefDays: any): string {
+        const days = DateE.normalizePreferredDays(prefDays);
+        if (!days || days.length === 0 || days.length >= 7) {
+            return '';
+        }
+        if (days.length === 1) {
+            const d = days[0];
+            const proper = d.charAt(0).toUpperCase() + d.slice(1);
+            return `Delivery on ${proper}s only`;
+        }
+        const shortNames = days.map(d => {
+            const clean = d.charAt(0).toUpperCase() + d.slice(1, 3);
+            return clean;
+        });
+        return `Delivery on ${shortNames.join(', ')}`;
+    }
+
     constructor(date?: Date) {
         super(date || new Date());
     }

@@ -212,9 +212,9 @@ export class CartService {
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+
     const nextDayDeliveryDateStr = `${dayNames[scheduledDate.getDay()]}, ${scheduledDate.getDate()} ${monthNames[scheduledDate.getMonth()]} at 7:00 AM IST`;
-    
+
     const formatTime = (d: Date) => {
       let h = d.getHours();
       const m = String(d.getMinutes()).padStart(2, '0');
@@ -304,17 +304,48 @@ export class CartService {
     const hasMixedDeliveries = activeCategoriesCount > 1;
 
     if (maxLevel === 3) {
+      const prefProducts = products.filter(p => {
+        const prefDays = DateE.normalizePreferredDays(p.preferred_days);
+        return prefDays && prefDays.length > 0 && prefDays.length < 7;
+      });
+
+      let hasScheduledFutureDate = false;
+      let scheduledFormattedDate = '';
+
+      if (prefProducts.length > 0 && prefProducts.length === products.length) {
+        let minDate: Date | null = null;
+        prefProducts.forEach(p => {
+          const prefDays = DateE.normalizePreferredDays(p.preferred_days);
+          const nextD = DateE.getPreferredDaysNextDeliveryDate(prefDays, this.deliveryDate);
+          if (!minDate || nextD < minDate) {
+            minDate = nextD;
+          }
+        });
+        if (minDate) {
+          const now = new Date();
+          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const target = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+          const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays > 1) {
+            hasScheduledFutureDate = true;
+            scheduledFormattedDate = minDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+          }
+        }
+      }
+
       this.selectedDeliveryOption = 'NEXT_DAY_7AM';
       return {
         option: 'NEXT_DAY_7AM',
-        label: 'Tomorrow Delivery (7:00 AM IST)',
-        subLabel: hasMixedDeliveries
-          ? `Contains next-day delivery items. Scheduled for ${istDetails.nextDayDeliveryDateStr}`
-          : `Scheduled for ${istDetails.nextDayDeliveryDateStr}`,
-        icon: 'wb_twilight',
-        badge: 'Tomorrow Delivery',
+        label: hasScheduledFutureDate ? `${scheduledFormattedDate} • 7:00 AM Delivery` : 'Tomorrow Delivery (7:00 AM IST)',
+        subLabel: hasScheduledFutureDate
+          ? `Scheduled for ${scheduledFormattedDate} at 7:00 AM IST`
+          : (hasMixedDeliveries
+            ? `Contains next-day delivery items. Scheduled for ${istDetails.nextDayDeliveryDateStr}`
+            : `Scheduled for ${istDetails.nextDayDeliveryDateStr}`),
+        icon: hasScheduledFutureDate ? 'event_available' : 'wb_twilight',
+        badge: hasScheduledFutureDate ? `Scheduled: ${scheduledFormattedDate}` : 'Tomorrow Delivery',
         isImmediate: false,
-        expectedTimeStr: istDetails.nextDayDeliveryDateStr,
+        expectedTimeStr: hasScheduledFutureDate ? scheduledFormattedDate : istDetails.nextDayDeliveryDateStr,
         hasMixedDeliveries
       };
     } else if (maxLevel === 2) {
@@ -934,8 +965,17 @@ export class CartService {
       const prod = this.cartProducts[id];
       let groupKey: string;
 
+      const prefDays = DateE.normalizePreferredDays(prod.preferred_days);
       if (prod?.subs_options?.type || prod?.subscribe) {
         groupKey = "Subscriptions";
+      } else if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
+        const nextDate = DateE.getPreferredDaysNextDeliveryDate(prefDays, this.deliveryDate);
+        const dayName = DateE.formatPreferredDaysSummary(prefDays);
+        const dateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
+        prod.scheduled_delivery_date = dateStr;
+        prod.scheduled_delivery_label = dayName;
+        const formattedDate = nextDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        groupKey = `Scheduled Delivery (${formattedDate})`;
       } else if (Number(prod.allow_immediate_10) === 1) {
         groupKey = "10_Mins_Delivery";
       } else if (Number(prod.allow_immediate_30) === 1) {
@@ -1092,7 +1132,12 @@ export class CartService {
         }
       }
 
-      totalPrice = Math.round(totalPrice);
+      const prefDays = DateE.normalizePreferredDays(p.preferred_days);
+      let itemDeliveryDate = '';
+      if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
+        const schedD = DateE.getPreferredDaysNextDeliveryDate(prefDays, this.deliveryDate);
+        itemDeliveryDate = `${schedD.getFullYear()}-${String(schedD.getMonth() + 1).padStart(2, '0')}-${String(schedD.getDate()).padStart(2, '0')}`;
+      }
 
       return {
         id: p.id || p.product_id,
@@ -1101,6 +1146,9 @@ export class CartService {
         price: totalPrice,
         weight: p.weight || p.updated_weight || '',
         img_url: p.img_url || '',
+        preferred_days: prefDays,
+        scheduled_delivery_date: itemDeliveryDate || p.scheduled_delivery_date || '',
+        delivery_date: itemDeliveryDate || p.scheduled_delivery_date || '',
         subscriptionType: p.subs_options?.type || p.subscriptionType || (p.subscribe ? 'range' : 'none'),
         rangeDates: p.subs_options?.rangeSelected ? JSON.stringify(p.subs_options.rangeSelected) : (p.rangeDates || '[]'),
         subscribedDates: p.subs_options?.multiDaySelected ? JSON.stringify(p.subs_options.multiDaySelected) : (p.subscribedDates || '[]'),
@@ -1110,8 +1158,8 @@ export class CartService {
       };
     });
 
-    const activeAddress = this.loginS.user?.address || 
-      (this.loginS.user?.addresses && this.loginS.user.addresses[0]) || 
+    const activeAddress = this.loginS.user?.address ||
+      (this.loginS.user?.addresses && this.loginS.user.addresses[0]) ||
       (isOffline ? { name: this.loginS.user?.name || 'Walk-in Customer', address: 'Store Counter / In-Store Direct Sale', pincode: '600095' } : {});
 
     this.apiS.postApi("orders/place_order.php", {

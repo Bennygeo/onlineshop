@@ -44,7 +44,8 @@
           <th>Unit / Weight</th>
           <th>Selling Price</th>
           <th>MRP</th>
-          <th>GST %</th>
+          <th>GST</th>
+          <th>Delivery Days</th>
           <th>Stock Qty</th>
           <th>Avg Cost</th>
           <th>Inventory</th>
@@ -69,6 +70,12 @@
           <td><span class="price-val">₹ {{ p.price }}</span></td>
           <td><span class="orig-price-val">₹ {{ p.original_price }}</span></td>
           <td><span class="gst-badge">{{ p.gst_percent !== undefined ? p.gst_percent : 5 }}%</span></td>
+          <td>
+            <span class="pref-days-badge" [class.custom-schedule]="getPreferredDaysBadge(p) !== 'All Days'">
+              <span class="material-icons size-13">event_available</span>
+              {{ getPreferredDaysBadge(p) }}
+            </span>
+          </td>
           <td>
             <div class="stock-qty-cell">
               <span class="stock-qty-badge" [class.low-stock]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0" [class.zero-stock]="(p.stock_qty || 0) <= 0">
@@ -110,7 +117,7 @@
           </td>
         </tr>
         <tr *ngIf="filteredProducts.length === 0">
-          <td colspan="11" class="no-data">No products found matching criteria.</td>
+          <td colspan="12" class="no-data">No products found matching criteria.</td>
         </tr>
       </tbody>
     </table>
@@ -338,6 +345,29 @@
             </label>
           </div>
         </div>
+
+        <!-- Preferred Delivery Days Configuration -->
+        <div class="form-group full-width preferred-days-section">
+          <div class="section-heading-row">
+            <label class="section-heading">
+              <span class="material-icons">event_note</span> Preferred Delivery Days
+            </label>
+            <button type="button" class="btn-all-days" (click)="setAllDaysPreferred(newProduct)" [class.active]="!newProduct.preferred_days || newProduct.preferred_days.length === 0">
+              <span class="material-icons size-14">all_inclusive</span> All Days (No Restriction)
+            </button>
+          </div>
+          <p class="section-desc">Choose specific days of the week this item is delivered (Mon–Sun). Outside these days, orders forward-schedule to the next valid day.</p>
+          <div class="weekday-chips-grid">
+            <button type="button" *ngFor="let day of weekDaysList" class="weekday-chip" [class.selected]="isDaySelected(newProduct, day)" (click)="togglePreferredDay(newProduct, day)">
+              <span class="material-icons chip-icon">{{ isDaySelected(newProduct, day) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+              <span class="chip-day-name">{{ day }}</span>
+            </button>
+          </div>
+          <div class="pref-days-status-hint">
+            <span class="material-icons size-14">info</span>
+            <span>Current Schedule: <strong>{{ getPreferredDaysBadge(newProduct) }}</strong></span>
+          </div>
+        </div>
       </div>
 
       <div class="modal-footer">
@@ -482,6 +512,29 @@
                 <span class="toggle-card-sub">Quick 1-hour delivery slot</span>
               </div>
             </label>
+          </div>
+        </div>
+
+        <!-- Preferred Delivery Days Configuration -->
+        <div class="form-group full-width preferred-days-section">
+          <div class="section-heading-row">
+            <label class="section-heading">
+              <span class="material-icons">event_note</span> Preferred Delivery Days
+            </label>
+            <button type="button" class="btn-all-days" (click)="setAllDaysPreferred(editingProduct)" [class.active]="!editingProduct.preferred_days || editingProduct.preferred_days.length === 0">
+              <span class="material-icons size-14">all_inclusive</span> All Days (No Restriction)
+            </button>
+          </div>
+          <p class="section-desc">Choose specific days of the week this item is delivered (Mon–Sun). Outside these days, orders forward-schedule to the next valid day.</p>
+          <div class="weekday-chips-grid">
+            <button type="button" *ngFor="let day of weekDaysList" class="weekday-chip" [class.selected]="isDaySelected(editingProduct, day)" (click)="togglePreferredDay(editingProduct, day)">
+              <span class="material-icons chip-icon">{{ isDaySelected(editingProduct, day) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+              <span class="chip-day-name">{{ day }}</span>
+            </button>
+          </div>
+          <div class="pref-days-status-hint">
+            <span class="material-icons size-14">info</span>
+            <span>Current Schedule: <strong>{{ getPreferredDaysBadge(editingProduct) }}</strong></span>
           </div>
         </div>
       </div>

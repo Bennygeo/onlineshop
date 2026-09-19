@@ -12,11 +12,40 @@
     </div>
 
     <div *ngIf="orderInformation?.totalItemsCount > 0">
-        <div class="col-12 row">
-            <div *ngFor="let dte of cartProductsDateWise|keyvalue; let ind=index;">
-                <div class="cart-cont">
+        <!-- Multi-Delivery Schedule Notice -->
+        <div class="col-12 row" *ngIf="hasMultipleDeliveries()" [@fadeInOut] style="margin-bottom: 14px;">
+            <div class="multi-delivery-alert-card">
+                <div class="alert-icon-wrap">
+                    <span class="material-icons">local_shipping</span>
+                </div>
+                <div class="alert-content-wrap">
+                    <div class="alert-badge-row">
+                        <span class="multi-ship-badge">{{ deliveryGroupCount }} Separate Shipments</span>
+                        <span class="ist-time-pill">
+                            <span class="material-icons size-12">schedule</span>
+                            IST Auto-Scheduled
+                        </span>
+                    </div>
+                    <h4 class="alert-title">Multi-Day Delivery Forward Scheduling</h4>
+                    <p class="alert-desc">Your cart contains items assigned to specific delivery weekdays. We have split your order into <strong>{{ deliveryGroupCount }} deliveries</strong> based on each item's valid schedule.</p>
+                </div>
+            </div>
+        </div>
 
-                    <div class="cat_title" *ngIf="dte.key === 'Subscriptions'">Subscriptions</div>
+        <div class="col-12 row">
+            <div *ngFor="let dte of cartProductsDateWise|keyvalue; let ind=index;" style="width: 100%;">
+                <div class="cart-cont delivery-group-container">
+                    <!-- Delivery Batch Header Card -->
+                    <div class="delivery-batch-header" [class.scheduled-batch]="getGroupHeaderInfo(dte.key).isScheduled" [class.subscription-batch]="dte.key === 'Subscriptions'">
+                        <div class="batch-left">
+                            <span class="material-icons batch-icon">{{ getGroupHeaderInfo(dte.key).icon }}</span>
+                            <div class="batch-titles">
+                                <span class="batch-main-title">{{ getGroupHeaderInfo(dte.key).title }}</span>
+                                <span class="batch-sub-title">{{ getGroupHeaderInfo(dte.key).sub }}</span>
+                            </div>
+                        </div>
+                        <span class="batch-count-pill">{{ dte.value?.length }} {{ dte.value?.length === 1 ? 'item' : 'items' }}</span>
+                    </div>
 
                     <div *ngFor="let group of groupProductsByCategory(dte.value); let gIndex=index;" class="cat_group">
                         <div class="sub_cat_title">
@@ -31,14 +60,6 @@
                                 id="cart-list-{{ind}}-{{gIndex}}-{{i}}"></cart>
                         </div>
                     </div>
-
-                    <!-- <div style="padding: 6px; color: #2eb9ac; background: #fdfbfb; z-index: 10;"
-                    (click)="deliveryInfoAction($event)">
-                    <span style="position: relative;left:9px;">Standard delivery charges
-                        applicable.</span>
-                    <span style="margin-left:12px;"><img [src]="'assets/general/info.png'" /></span>
-
-                </div> -->
                 </div>
             </div>
         </div>
@@ -222,7 +243,10 @@
                     </tr>
 
                     <tr>
-                        <th class="tg-col1">Delivery</th>
+                        <th class="tg-col1">
+                            <span>Delivery</span>
+                            <span *ngIf="hasMultipleDeliveries()" style="font-size: 11px; color: #4338ca; font-weight: 600; margin-left: 6px; background: #eef2ff; padding: 1px 6px; border-radius: 4px;">({{ deliveryGroupCount }} Shipments)</span>
+                        </th>
                         <th class="tg-col2">
                             <span *ngIf="orderInformation.totalDeliveryCharges > 0">₹
                                 {{orderInformation.totalDeliveryCharges | number}}</span>

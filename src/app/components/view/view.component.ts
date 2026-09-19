@@ -1,11 +1,30 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { Common } from 'src/app/modal/Common';
 import { User } from 'src/app/modals/user';
 import { CartService } from 'src/app/services/cart.service';
 import { LoginService } from 'src/app/services/login.service';
 import { OrderService } from 'src/app/services/order.service';
+import { AiService, AiMessageResponse } from 'src/app/services/ai.service';
 import { Banner, Product } from 'src/app/utils/types';
 import { Subscription } from 'rxjs';
+
+export interface RestockItem {
+  product: Product;
+  urgency: 'high' | 'medium' | 'low';
+  urgencyBadge: string;
+  reason: string;
+  lastOrderedDays?: number;
+}
+
+export interface DietaryGoal {
+  id: string;
+  label: string;
+  tamilLabel: string;
+  icon: string;
+  badge: string;
+  desc: string;
+  keywords: string[];
+}
 
 @Component({
   selector: 'app-view',
@@ -33,6 +52,81 @@ export class ViewComponent implements OnInit, OnDestroy {
   // Active delivery tracker
   activeUpcomingOrder: any = null;
   walletBalance: number = 0;
+
+  // --- 1. MULTILINGUAL AI VOICE SHOPPING ---
+  showVoiceModal: boolean = false;
+  isListening: boolean = false;
+  voiceLang: string = 'en-IN'; // 'en-IN' | 'ta-IN'
+  voiceTranscript: string = '';
+  isAiVoiceProcessing: boolean = false;
+  aiVoiceReply: string = '';
+  aiVoiceProducts: Array<Product> = [];
+  isSpeaking: boolean = false;
+  speechSupported: boolean = true;
+  voiceToastMsg: string = '';
+  private recognition: any = null;
+
+  sampleVoicePrompts = [
+    { text: '1kg Onion, Tomato & Fresh Milk', lang: 'English' },
+    { text: 'Naalaiku dosai maavu & thakkali venum', lang: 'Tanglish' },
+    { text: 'சாம்பார் வைக்க தேவையான காய்கறிகள்', lang: 'தமிழ்' },
+    { text: 'Diabetic-friendly vegetables pack', lang: 'Diet' }
+  ];
+
+  // --- 2. AI HEALTH & DIETARY CURATIONS ---
+  dietaryGoals: DietaryGoal[] = [
+    {
+      id: 'diabetic',
+      label: 'Diabetic Friendly',
+      tamilLabel: 'சர்க்கரை கட்டுப்பாடு',
+      icon: 'favorite',
+      badge: 'Low Glycemic Index',
+      desc: 'Farm-fresh veggies & bitter greens that support steady blood sugar levels without spikes.',
+      keywords: ['bitter', 'pavakkai', 'ladies finger', 'vendakkai', 'palak', 'methi', 'amla', 'cucumber', 'beans']
+    },
+    {
+      id: 'protein',
+      label: 'High Protein & Fitness',
+      tamilLabel: 'புரத சத்து',
+      icon: 'fitness_center',
+      badge: 'Muscle & Strength',
+      desc: 'Rich in natural plant & dairy protein: fresh milk, curd, sprouts, and dense greens.',
+      keywords: ['milk', 'curd', 'sprout', 'palak', 'drumstick', 'murungai', 'paneer', 'egg']
+    },
+    {
+      id: 'weight',
+      label: 'Weight Care & Detox',
+      tamilLabel: 'உடல் எடை குறைப்பு',
+      icon: 'spa',
+      badge: 'High Hydration & Fiber',
+      desc: 'Zero-fat, water-rich vegetables and refreshing natural hydration for clean vitality.',
+      keywords: ['bottle gourd', 'sorakkai', 'cucumber', 'papaya', 'carrot', 'tender coconut', 'radish', 'lemon']
+    },
+    {
+      id: 'immunity',
+      label: 'Immunity Booster',
+      tamilLabel: 'நோய் எதிர்ப்பு சக்தி',
+      icon: 'local_florist',
+      badge: 'Vitamin C & Antioxidants',
+      desc: 'Natural healing herbs, ginger, citrus, and raw cold-pressed nutrition.',
+      keywords: ['ginger', 'inji', 'garlic', 'poondu', 'lemon', 'mint', 'turmeric', 'tender coconut', 'amla', 'tulsi']
+    },
+    {
+      id: 'kids',
+      label: 'Kids & Toddler Nutrition',
+      tamilLabel: 'குழந்தைகள் நலம்',
+      icon: 'child_care',
+      badge: 'Wholesome Growth',
+      desc: 'Stoneground preservative-free batters, calcium milk, and naturally sweet fruits.',
+      keywords: ['milk', 'batter', 'banana', 'apple', 'carrot', 'curd', 'potato']
+    }
+  ];
+  activeDietaryGoalId: string = 'diabetic';
+  curatedDietaryProducts: Array<Product> = [];
+
+  // --- 3. AI KITCHEN RESTOCK PREDICTOR ---
+  restockPredictions: Array<RestockItem> = [];
+  restockToast: string = '';
 
   private subs: Subscription = new Subscription();
 
@@ -98,7 +192,9 @@ export class ViewComponent implements OnInit, OnDestroy {
   constructor(
     public cartS: CartService,
     public loginS: LoginService,
-    public orderService: OrderService
+    public orderService: OrderService,
+    private aiS: AiService,
+    private cdr: ChangeDetectorRef
   ) {
     this.cartS.headerChangeEvent.next("type1");
 
@@ -130,6 +226,7 @@ export class ViewComponent implements OnInit, OnDestroy {
           this.activeUpcomingOrder = null;
           this.recent_products = [];
           this.walletBalance = 0;
+          this.calculateRestockPredictions();
         }
       })
     );
@@ -185,6 +282,8 @@ export class ViewComponent implements OnInit, OnDestroy {
             this.cartS.readRecommendedProducts(tableName).subscribe((data: any) => {
               this.recommended_products = data || [];
               this.syncProductUnits(this.recommended_products);
+              this.filterDietaryProducts(this.activeDietaryGoalId);
+              this.calculateRestockPredictions();
             });
             this.loadBatterProducts(tableName);
           }
@@ -215,7 +314,10 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   loadRecentPurchases() {
     const mobile = this.loginS.user?.mobile;
-    if (!mobile) return;
+    if (!mobile) {
+      this.calculateRestockPredictions();
+      return;
+    }
     this.cartS.readRecentPurchases(mobile).subscribe({
       next: (data: any) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -224,9 +326,11 @@ export class ViewComponent implements OnInit, OnDestroy {
         } else {
           this.recent_products = [];
         }
+        this.calculateRestockPredictions();
       },
       error: () => {
         this.recent_products = [];
+        this.calculateRestockPredictions();
       }
     });
   }
@@ -237,6 +341,7 @@ export class ViewComponent implements OnInit, OnDestroy {
         if (Array.isArray(data) && data.length > 0) {
           this.batter_products = data;
           this.syncProductUnits(this.batter_products);
+          this.calculateRestockPredictions();
         } else {
           this.batter_products = [];
         }
@@ -251,11 +356,17 @@ export class ViewComponent implements OnInit, OnDestroy {
     this.syncProductUnits(this.recommended_products);
     this.syncProductUnits(this.recent_products);
     this.syncProductUnits(this.batter_products);
+    this.syncProductUnits(this.curatedDietaryProducts);
+    this.syncProductUnits(this.aiVoiceProducts);
+    if (this.restockPredictions && this.restockPredictions.length > 0) {
+      this.syncProductUnits(this.restockPredictions.map(r => r.product));
+    }
   }
 
   syncProductUnits(productList: Array<Product>) {
     if (!productList || !Array.isArray(productList)) return;
     for (let pro of productList) {
+      if (!pro) continue;
       pro.disabled = String(pro.disabled) === 'true';
       if (!pro['unit_price'] || isNaN(Number(pro['unit_price'])) || Number(pro['unit_price']) <= 0) {
         pro['unit_price'] = Number(pro.price || 0);
@@ -285,6 +396,325 @@ export class ViewComponent implements OnInit, OnDestroy {
         pro.unit_name = pro['base_unit_name'];
       }
     }
+  }
+
+  // --- 1. MULTILINGUAL AI VOICE SHOPPING LOGIC (100% Free Browser Web Speech API) ---
+
+  openVoiceModal() {
+    this.showVoiceModal = true;
+    this.voiceTranscript = '';
+    this.aiVoiceReply = '';
+    this.aiVoiceProducts = [];
+    this.initSpeechRecognition();
+    this.startVoiceListening();
+  }
+
+  closeVoiceModal() {
+    this.stopVoiceListening();
+    this.stopSpeaking();
+    this.showVoiceModal = false;
+  }
+
+  setVoiceLanguage(lang: string) {
+    this.voiceLang = lang;
+    if (this.isListening) {
+      this.stopVoiceListening();
+      setTimeout(() => this.startVoiceListening(), 200);
+    }
+  }
+
+  initSpeechRecognition() {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      this.speechSupported = false;
+      return;
+    }
+    this.speechSupported = true;
+
+    try {
+      this.recognition = new SpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = true;
+      this.recognition.lang = this.voiceLang;
+
+      this.recognition.onstart = () => {
+        this.isListening = true;
+        this.cdr.detectChanges();
+      };
+
+      this.recognition.onresult = (event: any) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        this.voiceTranscript = transcript;
+        this.cdr.detectChanges();
+      };
+
+      this.recognition.onerror = (event: any) => {
+        this.isListening = false;
+        this.cdr.detectChanges();
+      };
+
+      this.recognition.onend = () => {
+        this.isListening = false;
+        this.cdr.detectChanges();
+        if (this.voiceTranscript && this.voiceTranscript.trim().length > 1) {
+          this.sendVoiceQuery(this.voiceTranscript);
+        }
+      };
+    } catch (e) {
+      this.speechSupported = false;
+    }
+  }
+
+  startVoiceListening() {
+    if (!this.speechSupported) return;
+    if (!this.recognition) {
+      this.initSpeechRecognition();
+    }
+    this.voiceTranscript = '';
+    try {
+      if (this.recognition) {
+        this.recognition.lang = this.voiceLang;
+        this.recognition.start();
+      }
+    } catch (e) {
+      // If already started, ignore error
+    }
+  }
+
+  stopVoiceListening() {
+    if (this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch (e) { }
+    }
+    this.isListening = false;
+  }
+
+  sendVoiceQuery(queryText?: string) {
+    const text = (queryText || this.voiceTranscript || '').trim();
+    if (!text) return;
+    this.stopVoiceListening();
+    this.voiceTranscript = text;
+    this.isAiVoiceProcessing = true;
+    this.aiVoiceReply = '';
+    this.aiVoiceProducts = [];
+
+    const mobile = this.loginS.user?.mobile || '';
+    this.aiS.askAssistant(text, mobile).subscribe({
+      next: (res: AiMessageResponse) => {
+        this.isAiVoiceProcessing = false;
+        this.aiVoiceReply = res.reply || 'Here are the fresh farm items matching your request!';
+        if (res.suggested_products && res.suggested_products.length > 0) {
+          this.aiVoiceProducts = res.suggested_products.map((p: any) => ({
+            ...p,
+            id: String(p.id),
+            units: this.cartS.cartProducts[p.id]?.units || 0
+          }));
+          this.syncProductUnits(this.aiVoiceProducts);
+        }
+        this.speakReply(this.aiVoiceReply);
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isAiVoiceProcessing = false;
+        this.aiVoiceReply = 'I found these fresh essentials for your kitchen. Check them below!';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  speakReply(text: string) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      // Clean markdown tags for natural speech
+      const cleanText = text.replace(/[*_#`•👉🥘🥗🥞🍵☕🩺🏋️🌿👶💳🚚👋]/g, '').replace(/https?:\/\/\S+/g, '');
+      const utterance = new SpeechSynthesisUtterance(cleanText.slice(0, 220));
+      utterance.lang = this.voiceLang === 'ta-IN' ? 'ta-IN' : 'en-IN';
+      utterance.rate = 1.0;
+      utterance.onstart = () => { this.isSpeaking = true; this.cdr.detectChanges(); };
+      utterance.onend = () => { this.isSpeaking = false; this.cdr.detectChanges(); };
+      utterance.onerror = () => { this.isSpeaking = false; this.cdr.detectChanges(); };
+      window.speechSynthesis.speak(utterance);
+    } catch (e) { }
+  }
+
+  stopSpeaking() {
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) { }
+    }
+    this.isSpeaking = false;
+  }
+
+  addVoiceProductToCart(p: Product) {
+    const currentUnits = p.units || 0;
+    const nextUnits = currentUnits > 0 ? currentUnits + 1 : 1;
+    this.plusMinusValue(nextUnits, p);
+    this.showToast(`Added ${p.name} to Cart`);
+  }
+
+  addAllVoiceProductsToCart() {
+    if (!this.aiVoiceProducts || this.aiVoiceProducts.length === 0) return;
+    for (let p of this.aiVoiceProducts) {
+      if (!p.disabled) {
+        this.plusMinusValue(1, p);
+      }
+    }
+    this.showToast(`Added all ${this.aiVoiceProducts.length} items to cart!`);
+  }
+
+  showToast(msg: string) {
+    this.voiceToastMsg = msg;
+    setTimeout(() => {
+      this.voiceToastMsg = '';
+      this.cdr.detectChanges();
+    }, 3000);
+  }
+
+  // --- 2. AI HEALTH & DIETARY CURATIONS LOGIC (100% Free Smart Deterministic Intelligence) ---
+
+  selectDietaryGoal(goalId: string) {
+    this.activeDietaryGoalId = goalId;
+    this.filterDietaryProducts(goalId);
+  }
+
+  getActiveGoal(): DietaryGoal {
+    return this.dietaryGoals.find(g => g.id === this.activeDietaryGoalId) || this.dietaryGoals[0];
+  }
+
+  filterDietaryProducts(goalId: string) {
+    const goal = this.dietaryGoals.find(g => g.id === goalId) || this.dietaryGoals[0];
+    const sourcePool = [...(this.recommended_products || []), ...(this.batter_products || [])];
+
+    if (sourcePool.length === 0) {
+      this.curatedDietaryProducts = [];
+      return;
+    }
+
+    const filtered = sourcePool.filter(p => {
+      const name = (p.name || '').toLowerCase();
+      const cat = (p.cat || '').toLowerCase();
+      const tamil = (p.tamil_name || '').toLowerCase();
+      return goal.keywords.some(k => name.includes(k) || cat.includes(k) || tamil.includes(k));
+    });
+
+    // Remove duplicates
+    const uniqueMap = new Map<string, Product>();
+    filtered.forEach(item => {
+      if (!uniqueMap.has(item.id)) {
+        uniqueMap.set(item.id, item);
+      }
+    });
+
+    // Fallback: if very few matched, fill from top recommendations
+    if (uniqueMap.size < 3) {
+      sourcePool.slice(0, 6).forEach(item => {
+        if (!uniqueMap.has(item.id)) {
+          uniqueMap.set(item.id, item);
+        }
+      });
+    }
+
+    this.curatedDietaryProducts = Array.from(uniqueMap.values()).slice(0, 8);
+    this.syncProductUnits(this.curatedDietaryProducts);
+  }
+
+  getDietaryTag(product: Product): string {
+    const name = (product.name || '').toLowerCase();
+    if (name.includes('bitter') || name.includes('pavakkai') || name.includes('vendakkai') || name.includes('ladies')) return 'Low Glycemic';
+    if (name.includes('palak') || name.includes('keerai') || name.includes('methi')) return 'Iron & Fiber';
+    if (name.includes('milk') || name.includes('curd') || name.includes('paneer')) return 'Natural Protein';
+    if (name.includes('coconut') || name.includes('sorakkai') || name.includes('cucumber')) return 'Electrolytes';
+    if (name.includes('ginger') || name.includes('garlic') || name.includes('lemon') || name.includes('amla')) return 'Immunity+';
+    if (name.includes('batter')) return 'Stone Ground';
+    return '100% Farm Pure';
+  }
+
+  // --- 3. AI KITCHEN RESTOCK PREDICTOR LOGIC (Heuristic Replenishment Velocity) ---
+
+  calculateRestockPredictions() {
+    const pool = this.recent_products.length > 0
+      ? this.recent_products
+      : [...(this.recommended_products || []), ...(this.batter_products || [])];
+
+    if (!pool || pool.length === 0) {
+      this.restockPredictions = [];
+      return;
+    }
+
+    const predictions: RestockItem[] = [];
+    const usedIds = new Set<string>();
+
+    for (let prod of pool) {
+      if (!prod || usedIds.has(prod.id)) continue;
+      usedIds.add(prod.id);
+
+      const name = (prod.name || '').toLowerCase();
+      let urgency: 'high' | 'medium' | 'low' = 'medium';
+      let urgencyBadge = '🟡 Restock Soon';
+      let reason = 'Essential kitchen staple';
+
+      if (name.includes('milk') || name.includes('curd') || name.includes('batter')) {
+        urgency = 'high';
+        urgencyBadge = '🔴 Need Today';
+        reason = 'Daily fresh morning staple (2-day consumption cycle)';
+      } else if (name.includes('tomato') || name.includes('onion') || name.includes('potato') || name.includes('chilli')) {
+        urgency = 'high';
+        urgencyBadge = '🟠 Low Stock';
+        reason = 'High-frequency daily cooking base (runs out fast)';
+      } else if (name.includes('coriander') || name.includes('keerai') || name.includes('greens') || name.includes('curry')) {
+        urgency = 'high';
+        urgencyBadge = '🔴 Fresh Harvest';
+        reason = 'Best consumed fresh within 48 hours';
+      } else if (name.includes('coconut') || name.includes('ginger') || name.includes('garlic')) {
+        urgency = 'medium';
+        urgencyBadge = '🟡 Restock Soon';
+        reason = 'Weekly seasoning & hydration essential';
+      } else {
+        urgency = 'low';
+        urgencyBadge = '🟢 Replenish';
+        reason = 'Nutritious farm addition to your pantry';
+      }
+
+      predictions.push({
+        product: prod,
+        urgency,
+        urgencyBadge,
+        reason
+      });
+
+      if (predictions.length >= 6) break;
+    }
+
+    // Sort: high urgency first
+    predictions.sort((a, b) => {
+      const rank = { high: 3, medium: 2, low: 1 };
+      return rank[b.urgency] - rank[a.urgency];
+    });
+
+    this.restockPredictions = predictions;
+    this.syncProductUnits(this.restockPredictions.map(r => r.product));
+  }
+
+  restockAllPredictedItems() {
+    if (!this.restockPredictions || this.restockPredictions.length === 0) return;
+    let addedCount = 0;
+    for (let item of this.restockPredictions) {
+      if (!item.product.disabled && (item.product.in_stock !== false)) {
+        this.plusMinusValue(1, item.product);
+        addedCount++;
+      }
+    }
+    this.restockToast = `⚡ Added ${addedCount} predicted essentials to your cart!`;
+    setTimeout(() => {
+      this.restockToast = '';
+      this.cdr.detectChanges();
+    }, 3500);
   }
 
   updateGreeting() {
@@ -319,11 +749,13 @@ export class ViewComponent implements OnInit, OnDestroy {
     return '#' + orderId;
   }
 
-  isTomorrow(d: Date): boolean {
-    if (!d) return true;
+  isTomorrow(d: any): boolean {
+    if (!d) return false;
     const now = new Date();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    return d.getDate() === tomorrow.getDate() && d.getMonth() === tomorrow.getMonth() && d.getFullYear() === tomorrow.getFullYear();
+    const checkDate = (d instanceof Date) ? d : new Date(d);
+    if (isNaN(checkDate.getTime())) return false;
+    return checkDate.getDate() === tomorrow.getDate() && checkDate.getMonth() === tomorrow.getMonth() && checkDate.getFullYear() === tomorrow.getFullYear();
   }
 
   getAddressShortText(): string {
@@ -411,6 +843,9 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopAutoSlide();
+    this.stopVoiceListening();
+    this.stopSpeaking();
     this.subs.unsubscribe();
   }
 }
+

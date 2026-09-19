@@ -175,3 +175,31 @@
         }
     }
 }
+
+.preferred_day_pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+
+    .pref_icon {
+        font-size: 10px;
+    }
+
+    .pref_text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}

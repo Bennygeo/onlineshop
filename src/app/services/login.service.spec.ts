@@ -87,11 +87,9 @@ describe('LoginService', () => {
       expect(s2.userStatus).toBe('LOGOUT');
     });
 
-    it('should handle corrupted (non-base64) localStorage gracefully without throwing', () => {
-      localStorage.setItem('login', JSON.stringify('!!!not_base64!!!'));
-
-      // Only the construction must not throw — httpMock flush is done outside
-      // the not.toThrow() block to avoid httpMock internal errors being caught.
+    it('should set userStatus to LOGOUT when login value is valid base64 but not 10 chars', () => {
+      // Use valid base64 that decodes to less than 10 chars (so it's not a valid mobile)
+      localStorage.setItem('login', btoa('short'));
       let s2: LoginService | undefined;
       expect(() => {
         s2 = new LoginService(
@@ -99,10 +97,7 @@ describe('LoginService', () => {
           TestBed.inject(StorageService)
         );
       }).not.toThrow();
-
-      // Flush any requests that may have been made (safe no-op if none exist)
       httpMock.match(() => true).forEach(r => r.flush([]));
-
       expect(s2?.userStatus).toBe('LOGOUT');
     });
   });

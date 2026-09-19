@@ -63,6 +63,67 @@ export class CartListComponent implements OnInit, OnDestroy {
     return this.cartService.calculateOrderStandardDelivery();
   }
 
+  get deliveryGroupCount(): number {
+    return this.cartProductsDateWise ? Object.keys(this.cartProductsDateWise).length : 0;
+  }
+
+  hasMultipleDeliveries(): boolean {
+    return this.deliveryGroupCount > 1;
+  }
+
+  getGroupHeaderInfo(key: string): { title: string; sub: string; icon: string; isScheduled: boolean } {
+    if (!key) {
+      return { title: 'Standard Delivery', sub: 'Delivery Tomorrow at 7:00 AM IST', icon: 'wb_sunny', isScheduled: false };
+    }
+    if (key.startsWith('Scheduled')) {
+      const datePart = key.replace('Scheduled Delivery', '').replace(/[()]/g, '').trim();
+      return {
+        title: `Scheduled Delivery (${datePart})`,
+        sub: `${datePart} • 7:00 AM Delivery`,
+        icon: 'event_available',
+        isScheduled: true
+      };
+    }
+    if (key === 'Subscriptions') {
+      return {
+        title: 'Recurring Subscriptions',
+        sub: 'Daily & recurring morning deliveries',
+        icon: 'event_repeat',
+        isScheduled: false
+      };
+    }
+    if (key === '10_Mins_Delivery') {
+      return {
+        title: '10 Mins Express Delivery',
+        sub: 'Instant doorstep delivery',
+        icon: 'bolt',
+        isScheduled: false
+      };
+    }
+    if (key === '30_Mins_Delivery') {
+      return {
+        title: '30 Mins Express Delivery',
+        sub: 'Express doorstep delivery',
+        icon: 'speed',
+        isScheduled: false
+      };
+    }
+    if (key === '60_Mins_Delivery') {
+      return {
+        title: '60 Mins Delivery',
+        sub: 'Quick 1-hour delivery',
+        icon: 'schedule',
+        isScheduled: false
+      };
+    }
+    return {
+      title: 'Tomorrow Morning Delivery',
+      sub: 'Delivery Tomorrow at 7:00 AM IST',
+      icon: 'wb_sunny',
+      isScheduled: false
+    };
+  }
+
   refreshDeliveryDetails() {
     this.istDetails = this.cartService.getISTDeliveryDetails();
     this.cartService.calculateOrderStandardDelivery();

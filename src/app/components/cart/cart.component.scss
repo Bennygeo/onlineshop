@@ -232,6 +232,40 @@
                 }
             }
 
+            .cartDeliveryScheduleRow {
+                margin-top: 4px;
+                display: flex;
+                align-items: center;
+
+                .deliveryScheduleTag {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #475569;
+                    background: #f1f5f9;
+                    padding: 2px 7px;
+                    border-radius: 6px;
+                    border: 1px solid #e2e8f0;
+
+                    .size-12 {
+                        font-size: 13px;
+                        color: #64748b;
+                    }
+
+                    &.preferred-day-tag {
+                        color: #4338ca;
+                        background: #eef2ff;
+                        border-color: #c7d2fe;
+
+                        .size-12 {
+                            color: #6366f1;
+                        }
+                    }
+                }
+            }
+
             .subsDatesRow {
                 margin-top: 6px;
 

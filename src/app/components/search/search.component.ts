@@ -6,8 +6,9 @@ import { ApiService } from 'src/app/services/api.service';
 import { CartService } from 'src/app/services/cart.service';
 import { LoginService } from 'src/app/services/login.service';
 import { ProductService } from 'src/app/services/product.service';
+import { AiService, AiMessageResponse, AiSuggestedProduct } from 'src/app/services/ai.service';
 import { DateE } from 'src/app/utils/custom-classes';
-import { Product, ProductOptions, SubProductType, SubsOptions, menuOptions } from 'src/app/utils/types';
+import { Product, ProductOptions, SubsOptions, menuOptions } from 'src/app/utils/types';
 import { Utils } from 'src/app/utils/utils';
 
 @Component({
@@ -50,6 +51,22 @@ export class SearchComponent implements OnInit, OnDestroy {
   availableCategories: Array<{ name: string, count: number }> = [];
   activeCategoryFilter: string = 'ALL';
 
+  // AI Assistant State
+  aiLoading: boolean = false;
+  aiResponse: AiMessageResponse | null = null;
+  aiActivePrompt: string = '';
+  showAiCard: boolean = false;
+  aiSuggestedProducts: Array<Product> = [];
+
+  // AI Recipe / Meal Kits
+  aiRecipeKits = [
+    { label: '🥘 Sambar Kit', query: 'Ingredients for making traditional South Indian Sambar' },
+    { label: '🥗 Fresh Salad Bowl', query: 'Fresh vegetables for a healthy crunchy salad' },
+    { label: '🍲 Veg Kurma Pack', query: 'Vegetables needed for South Indian style Veg Kurma' },
+    { label: '🥞 Dosa & Chutney Kit', query: 'Fresh batter, coconut, and items for Crispy Dosa with Chutney' },
+    { label: '🍵 Immunity Greens Kit', query: 'Fresh ginger, lemon, greens and herbs for health' }
+  ];
+
   // Popular Trending Keywords for 1-Click Search
   trendingKeywords: string[] = [
     'Idli Dosa Batter',
@@ -90,6 +107,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     private _utils: Utils,
     public productService: ProductService,
     public loginService: LoginService,
+    public aiService: AiService,
     public router: Router
   ) {
     this.cartService.headerChangeEvent.next("type6");
@@ -151,6 +169,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.syncProductUnits(this.allResults);
         this.syncProductUnits(this.filteredResults);
         this.syncProductUnits(this.trendingProducts);
+        this.syncProductUnits(this.aiSuggestedProducts);
       })
     );
 
@@ -159,6 +178,7 @@ export class SearchComponent implements OnInit, OnDestroy {
         this.syncProductUnits(this.allResults);
         this.syncProductUnits(this.filteredResults);
         this.syncProductUnits(this.trendingProducts);
+        this.syncProductUnits(this.aiSuggestedProducts);
       })
     );
   }
@@ -200,28 +220,144 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.notFoundFlg = false;
     this.allResults = [];
     this.filteredResults = [];
-    this.searchSubject.next('');
+    this.availableCategories = [];
+    this.activeCategoryFilter = 'ALL';
+    this.showAiCard = false;
+    this.aiResponse = null;
+    this.aiSuggestedProducts = [];
+  }
+
+  askAi(query?: string) {
+    const prompt = (query || this.searchTerm || '').trim();
+    if (!prompt) return;
+
+    this.aiActivePrompt = prompt;
+    this.showAiCard = true;
+    this.aiLoading = true;
+    this.aiResponse = null;
+    this.aiSuggestedProducts = [];
+
+    const userMobile = this.loginService.user?.mobile || '';
+    this.aiService.askAssistant(prompt, userMobile).subscribe({
+      next: (res) => {
+        this.aiLoading = false;
+        this.aiResponse = res;
+        if (res && res.suggested_products && Array.isArray(res.suggested_products)) {
+          this.aiSuggestedProducts = res.suggested_products.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            tamil_name: p.tamil_name || p.name,
+            main_category: p.cat || 'Vegetables',
+            sub_category: p.sub_cat || 'General',
+            cat: p.cat || 'Vegetables',
+            sub_cat: p.sub_cat || 'General',
+            whole_sale_price: Number(p.price || 0),
+            profit_percent: 0,
+            show_off_percent: 0,
+            price: Number(p.price || 0),
+            total_price: Number(p.price || 0),
+            original_price: Number(p.original_price || p.price || 0),
+            original_weight: Number(p.weight || 500),
+            weight: Number(p.weight || 500),
+            updated_weight: Number(p.weight || 500),
+            img_url: p.img_url || 'assets/categories/Thinkspot_veggiesIcon.png',
+            base_unit: 1,
+            units: 0,
+            original_unit_name: p.unit_name || p.unit || 'grams',
+            unit_name: p.unit_name || p.unit || 'grams',
+            index: 0,
+            offer: 0,
+            disabled: false,
+            in_stock: true,
+            packing_charges: 0,
+            delivery_charges: 0,
+            subscribe: false
+          } as Product));
+          this.syncProductUnits(this.aiSuggestedProducts);
+        } else {
+          this.aiSuggestedProducts = [];
+        }
+      },
+      error: () => {
+        this.aiLoading = false;
+        this.aiResponse = {
+          status: 'fallback',
+          reply: 'Unable to reach AI assistant right now. Please try again or browse our categories!',
+          source: 'offline',
+          suggested_products: []
+        };
+        this.aiSuggestedProducts = [];
+      }
+    });
+  }
+
+  closeAiCard() {
+    this.showAiCard = false;
+    this.aiResponse = null;
+    this.aiSuggestedProducts = [];
+  }
+
+  getAiProductCartQty(id: string): number {
+    return this.cartService.cartProducts[id]?.units || 0;
+  }
+
+  addAiProductToCart(item: any) {
+    const product: any = {
+      id: item.id,
+      name: item.name,
+      tamil_name: item.tamil_name || item.name,
+      price: String(item.price),
+      original_price: Number(item.original_price || item.price),
+      weight: Number(item.weight || 500),
+      unit_name: item.unit_name || item.unit || 'grams',
+      updated_weight: Number(item.weight || 500),
+      units: 1,
+      disabled: false,
+      img_url: item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png',
+      cat: item.cat || 'Vegetables',
+      sub_cat: item.sub_cat || 'General',
+      subscribe: false,
+      in_stock: true
+    };
+
+    const currentQty = this.cartService.cartProducts[item.id]?.units || 0;
+    this.cartService.cartUpdateEvent.next({
+      cart: this.cartService.cartProducts,
+      product: product,
+      unit: currentQty + 1
+    });
   }
 
   processSearchResults(products: Array<Product>) {
-    this.allResults = products;
+    this.allResults = products.map(p => ({
+      ...p,
+      price: Number(p.price || 0),
+      original_price: Number(p.original_price || p.price || 0),
+      units: 0
+    }));
+
     this.syncProductUnits(this.allResults);
 
-    // Compute category counts
-    const catMap: { [cat: string]: number } = {};
-    products.forEach(p => {
-      const c = p.cat || 'General';
-      catMap[c] = (catMap[c] || 0) + 1;
-    });
+    // Group available categories
+    const catCounts: { [cat: string]: number } = {};
+    for (let p of this.allResults) {
+      const cat = p.cat || 'Other';
+      catCounts[cat] = (catCounts[cat] || 0) + 1;
+    }
 
-    this.availableCategories = Object.keys(catMap).map(c => ({
-      name: c,
-      count: catMap[c]
+    this.availableCategories = Object.keys(catCounts).map(cat => ({
+      name: cat,
+      count: catCounts[cat]
     }));
 
     this.activeCategoryFilter = 'ALL';
     this.filteredResults = [...this.allResults];
     this.notFoundFlg = this.filteredResults.length === 0;
+
+    // If no direct keyword match found, automatically ask AI in the background
+    if (this.notFoundFlg && this.searchTerm.trim().length >= 3) {
+      this.askAi(this.searchTerm);
+    }
   }
 
   filterByCategory(categoryName: string) {

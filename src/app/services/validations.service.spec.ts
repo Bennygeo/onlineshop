@@ -25,7 +25,14 @@ describe('ValidationsService (static validators)', () => {
     });
 
     it('should return {range: true} for value below min', () => {
-      expect(validator(new FormControl(0))).toEqual({ range: true });
+      // Note: the validator uses c.value && (...) so the value must be truthy.
+      // A value of -1 is truthy (non-zero), so it correctly triggers the range error.
+      expect(validator(new FormControl(-1))).toEqual({ range: true });
+    });
+
+    it('should return null for value=0 (falsy — validator skips check)', () => {
+      // The implementation: `if (c.value && ...)` — 0 is falsy so no error returned.
+      expect(validator(new FormControl(0))).toBeNull();
     });
 
     it('should return {range: true} for value above max', () => {

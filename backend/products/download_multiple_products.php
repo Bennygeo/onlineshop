@@ -34,11 +34,11 @@ try {
     $products = [];
 
     try {
-        $stmt = $pdo->prepare("SELECT id, name, tamil_name, cat, sub_cat, price, original_price, weight, unit_name, img_url, disabled, subscribe_flg AS subscribe_flg, subscribe_flg AS subscribeFlg, index_num AS `index`, offer, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60 FROM {$table_name} WHERE id IN ($placeholders)");
+        $stmt = $pdo->prepare("SELECT id, name, tamil_name, cat, sub_cat, price, original_price, weight, unit_name, img_url, disabled, subscribe_flg AS subscribe_flg, subscribe_flg AS subscribeFlg, index_num AS `index`, offer, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60, preferred_days FROM {$table_name} WHERE id IN ($placeholders)");
         $stmt->execute($ids);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $eCol) {
-        $stmt = $pdo->prepare("SELECT id, name, tamil_name, cat, sub_cat, price, original_price, weight, unit_name, img_url, disabled, subscribe_flg AS subscribe_flg, subscribe_flg AS subscribeFlg, index_num AS `index`, offer, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60 FROM products WHERE id IN ($placeholders)");
+        $stmt = $pdo->prepare("SELECT id, name, tamil_name, cat, sub_cat, price, original_price, weight, unit_name, img_url, disabled, subscribe_flg AS subscribe_flg, subscribe_flg AS subscribeFlg, index_num AS `index`, offer, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60, preferred_days FROM products WHERE id IN ($placeholders)");
         $stmt->execute($ids);
         $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -57,7 +57,7 @@ try {
         foreach ($fallbackTables as $fbTable) {
             if ($fbTable === $table_name) continue;
             try {
-                $stmtFb = $pdo->prepare("SELECT id, name, tamil_name, cat, sub_cat, price, original_price, weight, unit_name, img_url, disabled, subscribe_flg AS subscribe_flg, subscribe_flg AS subscribeFlg, index_num AS `index`, offer, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60 FROM {$fbTable} WHERE id IN ($mPlaceholders)");
+                $stmtFb = $pdo->prepare("SELECT id, name, tamil_name, cat, sub_cat, price, original_price, weight, unit_name, img_url, disabled, subscribe_flg AS subscribe_flg, subscribe_flg AS subscribeFlg, index_num AS `index`, offer, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60, preferred_days FROM {$fbTable} WHERE id IN ($mPlaceholders)");
                 $stmtFb->execute(array_values($missingIds));
                 $fbRows = $stmtFb->fetchAll(PDO::FETCH_ASSOC);
                 foreach ($fbRows as $fbP) {
@@ -72,13 +72,31 @@ try {
     foreach ($products as &$p) {
         $p['price'] = floatval($p['price'] ?? 0);
         $p['original_price'] = floatval(!empty($p['original_price']) ? $p['original_price'] : $p['price']);
-        $p['stock_qty'] = isset($p['stock_qty']) ? floatval($p['stock_qty']) : 0.0;
-        $p['in_stock'] = (!isset($p['in_stock']) || (int)$p['in_stock'] === 1) && ($p['stock_qty'] > 0);
+        $p['stock_qty'] = isset($p['stock_qty']) ? floatval($p['stock_qty']) : 100.0;
+        $isStockZero = (isset($p['in_stock']) && ((int)$p['in_stock'] === 0 || $p['in_stock'] === false || $p['in_stock'] === '0'));
+        $p['in_stock'] = !$isStockZero;
+        if ($p['in_stock'] && $p['stock_qty'] <= 0) {
+            $p['stock_qty'] = 100.0;
+        }
         $p['gst_percent'] = isset($p['gst_percent']) ? floatval($p['gst_percent']) : 5.00;
         $p['allow_next_day'] = isset($p['allow_next_day']) ? (int)$p['allow_next_day'] : 1;
         $p['allow_immediate_10'] = isset($p['allow_immediate_10']) ? (int)$p['allow_immediate_10'] : 0;
         $p['allow_immediate_30'] = isset($p['allow_immediate_30']) ? (int)$p['allow_immediate_30'] : 0;
         $p['allow_immediate_60'] = isset($p['allow_immediate_60']) ? (int)$p['allow_immediate_60'] : 0;
+
+        $rawPref = $p['preferred_days'] ?? '[]';
+        if (is_array($rawPref)) {
+            $p['preferred_days'] = $rawPref;
+        } elseif (is_string($rawPref) && !empty($rawPref)) {
+            $decoded = json_decode($rawPref, true);
+            if (is_array($decoded)) {
+                $p['preferred_days'] = array_values(array_filter($decoded));
+            } else {
+                $p['preferred_days'] = array_values(array_filter(array_map('trim', explode(',', $rawPref))));
+            }
+        } else {
+            $p['preferred_days'] = [];
+        }
     }
 
     $cart = [];

@@ -66,6 +66,10 @@ export type Product = {
     allow_immediate_30?: number | boolean;
     allow_immediate_60?: number | boolean;
 
+    preferred_days?: string[] | string;
+    scheduled_delivery_date?: string;
+    scheduled_delivery_label?: string;
+
     packing_charges: number;
     delivery_charges: number;
 

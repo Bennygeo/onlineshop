@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "backend": "php -S localhost:8000 -t backend",
     "start:delivery": "ng serve delivery-app --port 4201",
     "build": "ng build --base-href /thinkspot/",
     "build:delivery": "ng build delivery-app",

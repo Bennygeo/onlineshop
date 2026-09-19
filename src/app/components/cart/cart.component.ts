@@ -66,6 +66,44 @@ export class CartComponent {
 
   }
 
+  getScheduledDeliveryInfo(): { label: string; icon: string; isPreferredDay: boolean } | null {
+    if (!this.product) return null;
+    const prefDays = this.product.preferred_days ? (Array.isArray(this.product.preferred_days) ? this.product.preferred_days : []) : [];
+    
+    if (prefDays.length > 0 && prefDays.length < 7) {
+      let dObj: Date;
+      if (this.product.scheduled_delivery_date) {
+        dObj = new Date(this.product.scheduled_delivery_date);
+      } else {
+        dObj = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      }
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const target = new Date(dObj.getFullYear(), dObj.getMonth(), dObj.getDate());
+      const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays > 1) {
+        const formatted = dObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        return {
+          label: `${formatted} • 7:00 AM Delivery`,
+          icon: 'event_available',
+          isPreferredDay: true
+        };
+      }
+    }
+
+    if (Number(this.product.allow_immediate_10) === 1) {
+      return { label: '10 Mins Express Delivery', icon: 'bolt', isPreferredDay: false };
+    }
+    if (Number(this.product.allow_immediate_30) === 1) {
+      return { label: '30 Mins Express Delivery', icon: 'speed', isPreferredDay: false };
+    }
+    if (Number(this.product.allow_immediate_60) === 1) {
+      return { label: '60 Mins Delivery', icon: 'schedule', isPreferredDay: false };
+    }
+
+    return { label: 'Delivery Tomorrow 7:00 AM IST', icon: 'wb_sunny', isPreferredDay: false };
+  }
+
   viewDates(evt): void {
     this.viewDatesFlg = true;
   }

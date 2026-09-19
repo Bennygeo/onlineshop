@@ -30,6 +30,7 @@ $allow_next_day = isset($data['allow_next_day']) ? intval($data['allow_next_day'
 $allow_immediate_10 = isset($data['allow_immediate_10']) ? intval($data['allow_immediate_10']) : 0;
 $allow_immediate_30 = isset($data['allow_immediate_30']) ? intval($data['allow_immediate_30']) : 0;
 $allow_immediate_60 = isset($data['allow_immediate_60']) ? intval($data['allow_immediate_60']) : 0;
+$preferred_days = isset($data['preferred_days']) ? (is_array($data['preferred_days']) ? json_encode(array_values($data['preferred_days'])) : trim($data['preferred_days'])) : '[]';
 
 if (!$name) {
     sendJson(['error' => 'Product name is required'], 400);
@@ -63,7 +64,8 @@ foreach ($tables as $table) {
         "ALTER TABLE {$table} ADD COLUMN allow_next_day INT DEFAULT 1",
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_10 INT DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_30 INT DEFAULT 0",
-        "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0"
+        "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0",
+        "ALTER TABLE {$table} ADD COLUMN preferred_days VARCHAR(255) DEFAULT '[]'"
     ];
     foreach ($columnDefs as $sqlDef) {
         try {
@@ -74,14 +76,14 @@ foreach ($tables as $table) {
     try {
         $stmt = $pdo->prepare("
             INSERT INTO {$table} 
-            (id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, show_off_percent, weight, original_weight, unit_name, original_unit_name, img_url, disabled, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, show_off_percent, weight, original_weight, unit_name, original_unit_name, img_url, disabled, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60, preferred_days) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $id, $name, $tamil_name, $cat, $sub_cat, $price, $original_price,
             $stock_price, $profit_percent, $show_off_percent, $weight, $weight,
             $unit_name, $original_unit_name, $img_url, $disabled, $in_stock, $stock_qty, $gst_percent,
-            $allow_next_day, $allow_immediate_10, $allow_immediate_30, $allow_immediate_60
+            $allow_next_day, $allow_immediate_10, $allow_immediate_30, $allow_immediate_60, $preferred_days
         ]);
         $successCnt++;
     } catch (Exception $e) {

@@ -43,6 +43,14 @@
                     <span>Only {{ product.stock_qty }} {{ product.unit_name || 'kg' }} available in stock</span>
                 </span>
             </div>
+
+            <!-- Scheduled Delivery Tag per Product -->
+            <div class="cartDeliveryScheduleRow" *ngIf="getScheduledDeliveryInfo()">
+                <span class="deliveryScheduleTag" [class.preferred-day-tag]="getScheduledDeliveryInfo()?.isPreferredDay">
+                    <span class="material-icons-round size-12">{{ getScheduledDeliveryInfo()?.icon }}</span>
+                    <span>{{ getScheduledDeliveryInfo()?.label }}</span>
+                </span>
+            </div>
         </div>
 
         <!-- Actions: Counter & Delete -->

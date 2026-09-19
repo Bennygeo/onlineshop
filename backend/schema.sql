@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `original_unit_name` VARCHAR(50) DEFAULT 'grams',
   `img_url` VARCHAR(255) DEFAULT NULL,
   `disabled` TINYINT(1) DEFAULT 0,
+  `preferred_days` VARCHAR(255) DEFAULT '[]',
   `index_num` INT DEFAULT 0,
   `offer` INT DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

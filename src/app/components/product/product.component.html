@@ -26,8 +26,12 @@
 
         <div *ngIf="!product['disable']">
             <div class="std_delivery">
-                Delivery: <span [style.color]="(product.allow_immediate_30 == 1 || product.allow_immediate_10 == 1 || product.allow_immediate_60 == 1) ? '#0d9488' : '#e87517'" style="font-weight: 600;"
+                Delivery: <span [style.color]="(product.scheduled_delivery_label) ? '#4338ca' : ((product.allow_immediate_30 == 1 || product.allow_immediate_10 == 1 || product.allow_immediate_60 == 1) ? '#0d9488' : '#e87517')" style="font-weight: 600;"
                     class="font-11">{{product["delivery_date_enhanced"]}}</span>
+            </div>
+            <div *ngIf="product.scheduled_delivery_label" class="preferred_day_pill" [title]="product.scheduled_delivery_label">
+                <span class="pref_icon">📅</span>
+                <span class="pref_text">{{product.scheduled_delivery_label}}</span>
             </div>
         </div>
 

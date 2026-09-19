@@ -615,3 +615,301 @@
 
 .size-14 { font-size: 14px !important; }
 .size-16 { font-size: 16px !important; }
+.size-18 { font-size: 18px !important; }
+
+/* ----------------------------------------------------
+   AI ASSISTANT CARD & BUTTONS
+---------------------------------------------------- */
+.ai-sparkle-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    transition: all 0.2s ease;
+
+    .sparkle-icon {
+        font-size: 16px;
+        color: #fef08a;
+    }
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
+    }
+}
+
+.ai-assistant-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #d1fae5;
+    box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.1), 0 8px 10px -6px rgba(16, 185, 129, 0.1);
+    margin-bottom: 24px;
+    overflow: hidden;
+
+    .ai-card-header {
+        background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+        color: #ffffff;
+        padding: 12px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        .ai-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            .ai-badge-icon {
+                color: #34d399;
+                font-size: 20px;
+            }
+
+            .ai-badge-title {
+                font-weight: 600;
+                font-size: 14px;
+            }
+
+            .ai-model-tag {
+                background: rgba(255, 255, 255, 0.15);
+                color: #a7f3d0;
+                font-size: 11px;
+                padding: 2px 8px;
+                border-radius: 10px;
+                font-weight: 500;
+            }
+        }
+
+        .ai-close-btn {
+            background: transparent;
+            border: none;
+            color: #a7f3d0;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+
+            &:hover {
+                color: #ffffff;
+            }
+        }
+    }
+
+    .ai-loading-box {
+        padding: 30px 20px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        color: #475569;
+        font-size: 14px;
+
+        .ai-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+    }
+
+    .ai-content-body {
+        padding: 20px;
+
+        .ai-reply-text {
+            color: #334155;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        .ai-suggested-products {
+            border-top: 1px dashed #e2e8f0;
+            padding-top: 16px;
+
+            .suggested-heading {
+                font-size: 13px;
+                font-weight: 700;
+                color: #065f46;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                margin: 0 0 12px 0;
+            }
+
+            .ai-product-chips-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+                gap: 12px;
+
+                .ai-prod-chip {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
+                    background: #ffffff;
+                    border: 1.5px solid #bbf7d0;
+                    border-radius: 14px;
+                    padding: 8px 12px;
+                    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.06);
+                    transition: all 0.2s ease;
+
+                    .chip-left {
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        min-width: 0;
+                        flex: 1;
+
+                        .chip-thumb {
+                            width: 38px;
+                            height: 38px;
+                            object-fit: contain;
+                            border-radius: 8px;
+                            background: #f8fafc;
+                            padding: 2px;
+                            border: 1px solid #e2e8f0;
+                            flex-shrink: 0;
+                        }
+
+                        .chip-info {
+                            display: flex;
+                            flex-direction: column;
+                            min-width: 0;
+                            gap: 2px;
+
+                            .chip-name {
+                                font-size: 13px;
+                                font-weight: 700;
+                                color: #1e293b;
+                                white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                            }
+
+                            .chip-pricing {
+                                display: flex;
+                                align-items: baseline;
+                                gap: 6px;
+
+                                .chip-price {
+                                    font-size: 13px;
+                                    font-weight: 800;
+                                    color: #0f766e;
+                                }
+
+                                .chip-unit {
+                                    font-size: 11px;
+                                    color: #64748b;
+                                }
+                            }
+                        }
+                    }
+
+                    .chip-action {
+                        flex-shrink: 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: flex-end;
+                    }
+
+                    &:hover {
+                        border-color: #86efac;
+                        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.12);
+                    }
+                }
+            }
+        }
+    }
+}
+
+.ai-kits-section {
+    .ai-sparkle-icon {
+        color: #10b981;
+    }
+
+    .new-pill {
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 6px;
+        text-transform: uppercase;
+    }
+
+    .ai-kit-pill {
+        background: #f0fdf4;
+        border: 1px solid #86efac;
+        color: #166534;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: #dcfce7;
+            transform: translateY(-1px);
+        }
+    }
+}
+
+.ask-ai-inline-btn {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #047857;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    &:hover {
+        background: #d1fae5;
+    }
+}
+
+.ai-fallback-action {
+    margin: 16px 0;
+
+    .ask-ai-primary-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+
+        &:hover {
+            opacity: 0.95;
+        }
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

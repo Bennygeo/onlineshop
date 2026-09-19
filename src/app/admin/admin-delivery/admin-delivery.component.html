@@ -416,13 +416,13 @@
         <div class="calc-explanation">
           <span class="material-icons info-icon">info</span>
           <div *ngIf="refundMode === 'weight'">
-            <strong>Partial Weight Delivery:</strong> ₹{{ getFinalRefundAmount() | number }} will be credited directly to customer's ThinkSpot Wallet with audit details (<strong>{{ deliveredWeight }}{{ unitName }} delivered</strong>, <strong>{{ missingWeight }}{{ unitName }} deficit</strong>).
+            <strong>Partial Weight Delivery:</strong> ₹{{ getFinalRefundAmount() | number }} will be credited directly to customer's BAGAVATHI Wallet with audit details (<strong>{{ deliveredWeight }}{{ unitName }} delivered</strong>, <strong>{{ missingWeight }}{{ unitName }} deficit</strong>).
           </div>
           <div *ngIf="refundMode === 'quantity'">
-            <strong>Full Item Missing:</strong> ₹{{ getFinalRefundAmount() | number }} for {{ refundMissingQty }}x item will be credited to customer's ThinkSpot Wallet.
+            <strong>Full Item Missing:</strong> ₹{{ getFinalRefundAmount() | number }} for {{ refundMissingQty }}x item will be credited to customer's BAGAVATHI Wallet.
           </div>
           <div *ngIf="refundMode === 'custom'">
-            <strong>Custom Adjustment:</strong> ₹{{ getFinalRefundAmount() | number }} will be credited directly to customer's ThinkSpot Wallet.
+            <strong>Custom Adjustment:</strong> ₹{{ getFinalRefundAmount() | number }} will be credited directly to customer's BAGAVATHI Wallet.
           </div>
         </div>
       </div>

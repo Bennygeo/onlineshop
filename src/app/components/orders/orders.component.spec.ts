@@ -8,6 +8,7 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { StorageService } from 'src/app/services/storage.service';
 import { ApiService } from 'src/app/services/api.service';
+import { Utils } from 'src/app/utils/utils';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 
 // ─────────────────────────────────────────────────────────
@@ -58,7 +59,7 @@ describe('OrdersComponent', () => {
         { provide: LoginService, useValue: mockLoginService },
         ApiService,
         StorageService,
-        { provide: 'Utils', useValue: {} },
+        Utils,
       ],
     }).compileComponents();
 
@@ -197,6 +198,13 @@ describe('OrdersComponent', () => {
     it('should return next-day badge for empty/null delivery option', () => {
       const badge = component.getDeliveryOptionBadge('');
       expect(badge.label).toBe('Tomorrow 7:00 AM IST');
+    });
+
+    it('should return scheduled badge for future delivery date (e.g. Thu, Sep 24)', () => {
+      const futureDate = new Date(2026, 8, 24); // Sep 24, 2026 (Thu)
+      const badge = component.getDeliveryOptionBadge({ delivery_option: 'NEXT_DAY_7AM', delivery_date: futureDate });
+      expect(badge.label).toBe('Thu, Sep 24 • 7:00 AM Delivery');
+      expect(badge.class).toBe('opt-scheduled');
     });
   });
 

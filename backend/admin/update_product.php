@@ -35,6 +35,7 @@ $allow_next_day = isset($data['allow_next_day']) ? intval($data['allow_next_day'
 $allow_immediate_10 = isset($data['allow_immediate_10']) ? intval($data['allow_immediate_10']) : null;
 $allow_immediate_30 = isset($data['allow_immediate_30']) ? intval($data['allow_immediate_30']) : null;
 $allow_immediate_60 = isset($data['allow_immediate_60']) ? intval($data['allow_immediate_60']) : null;
+$preferred_days = isset($data['preferred_days']) ? (is_array($data['preferred_days']) ? json_encode(array_values($data['preferred_days'])) : trim($data['preferred_days'])) : null;
 
 if (!$pdo) {
     sendJson(['error' => 'Database connection unavailable'], 500);
@@ -59,7 +60,8 @@ foreach ($tables as $table) {
         "ALTER TABLE {$table} ADD COLUMN allow_next_day INT DEFAULT 1",
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_10 INT DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_30 INT DEFAULT 0",
-        "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0"
+        "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0",
+        "ALTER TABLE {$table} ADD COLUMN preferred_days VARCHAR(255) DEFAULT '[]'"
     ];
     foreach ($columnDefs as $sqlDef) {
         try {
@@ -96,6 +98,7 @@ foreach ($tables as $table) {
         if ($allow_immediate_10 !== null) { $updates[] = "allow_immediate_10 = ?"; $params[] = $allow_immediate_10; }
         if ($allow_immediate_30 !== null) { $updates[] = "allow_immediate_30 = ?"; $params[] = $allow_immediate_30; }
         if ($allow_immediate_60 !== null) { $updates[] = "allow_immediate_60 = ?"; $params[] = $allow_immediate_60; }
+        if ($preferred_days !== null) { $updates[] = "preferred_days = ?"; $params[] = $preferred_days; }
 
         if (!empty($updates)) {
             $sql = "UPDATE {$table} SET " . implode(", ", $updates) . " WHERE id = ?" . ($name ? " OR name = ?" : "");
@@ -125,7 +128,8 @@ sendJson([
         'allow_next_day' => $allow_next_day,
         'allow_immediate_10' => $allow_immediate_10,
         'allow_immediate_30' => $allow_immediate_30,
-        'allow_immediate_60' => $allow_immediate_60
+        'allow_immediate_60' => $allow_immediate_60,
+        'preferred_days' => $preferred_days
     ]
 ]);
 

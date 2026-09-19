@@ -29,13 +29,24 @@
                 </div>
             </div>
 
-            <!-- Interactive Search Bar Trigger -->
+            <!-- Interactive Search & AI Voice Bar Trigger -->
             <div class="search-bar-trigger" (click)="goToSearch()">
                 <span class="material-icons search-icon">search</span>
-                <span class="search-placeholder">Search fresh veggies, milk, batter, fruits...</span>
-                <span class="search-action-badge">
-                    <span class="material-icons size-16">arrow_forward</span>
-                </span>
+                <span class="search-placeholder">Search veggies, milk, batter, fruits...</span>
+
+                <div class="search-actions-group">
+                    <!-- 100% Free AI Voice Shopping Trigger -->
+                    <button class="voice-search-trigger-btn" (click)="openVoiceModal(); $event.stopPropagation()"
+                        title="Shop with Voice AI (English / தமிழ்)">
+                        <span class="material-icons voice-mic-icon">mic</span>
+                        <span class="voice-btn-label">Voice AI</span>
+                        <span class="voice-pulse-ring"></span>
+                    </button>
+
+                    <span class="search-action-badge">
+                        <span class="material-icons size-16">arrow_forward</span>
+                    </span>
+                </div>
             </div>
         </div>
     </div>
@@ -84,8 +95,74 @@
                 </div>
             </div>
 
-            <!-- 3. BUY AGAIN / RECENTLY PURCHASED SECTION (Shown if user has past orders) -->
-            <div class="section-block recent-purchases-section" *ngIf="recent_products && recent_products.length > 0">
+            <!-- 3. AI KITCHEN RESTOCK PREDICTOR (Smart Reorder Engine) -->
+            <div class="section-block ai-restock-section" *ngIf="restockPredictions && restockPredictions.length > 0">
+                <div class="section-header-row">
+                    <div class="section-title-wrap">
+                        <span class="material-icons section-title-icon restock-icon">auto_mode</span>
+                        <div>
+                            <div class="ai-badge-row">
+                                <h2 class="section-title">AI Kitchen Restock Predictor</h2>
+                                <span class="ai-sparkle-pill">⚡ Smart Predict</span>
+                            </div>
+                            <p class="section-subtitle">Staples likely running low based on your kitchen consumption
+                                cycle</p>
+                        </div>
+                    </div>
+                    <button class="restock-all-btn" (click)="restockAllPredictedItems()"
+                        title="Add all recommended items to cart">
+                        <span class="material-icons size-16">bolt</span>
+                        <span>1-Tap Restock All</span>
+                    </button>
+                </div>
+
+                <!-- Toast notification for restock -->
+                <div class="ai-mini-toast" *ngIf="restockToast">
+                    <span class="material-icons">check_circle</span>
+                    <span>{{ restockToast }}</span>
+                </div>
+
+                <div class="products-grid-scroll">
+                    <div class="product-item-card restock-card" *ngFor="let item of restockPredictions"
+                        [class.urgent-card]="item.urgency === 'high'">
+                        <div class="prod-badge"
+                            [ngClass]="item.urgency === 'high' ? 'restock-badge-high' : 'restock-badge-med'">
+                            {{ item.urgencyBadge }}
+                        </div>
+                        <div class="prod-img-box">
+                            <img [src]="item.product.img_url || 'assets/general/no_image.png'" class="prod-img"
+                                [alt]="item.product.name"
+                                onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                        </div>
+                        <div class="prod-details">
+                            <h4 class="prod-name" [title]="item.product.name">{{ item.product.name }}</h4>
+                            <div class="prod-weight">{{ item.product.updated_weight || item.product.weight }} {{
+                                item.product.unit_name || '' }}</div>
+                            <div class="restock-reason-text">{{ item.reason }}</div>
+                            <div class="prod-price-row">
+                                <span class="price-val">₹{{ item.product.price }}</span>
+                                <span class="original-price-val"
+                                    *ngIf="item.product.original_price > item.product.price">₹{{
+                                    item.product.original_price }}</span>
+                            </div>
+                        </div>
+
+                        <div class="prod-action-wrap">
+                            <plus-minus [caption]="" [inputVal]="(item.product['units'] || 0)" [stepVal]="1"
+                                [minVal]="0" (onChange)="plusMinusValue($event, item.product)"
+                                *ngIf="!item.product.disabled && (item.product.in_stock !== false && item.product.in_stock !== 0 && (item.product.stock_qty === undefined || item.product.stock_qty > 0)); else NotAvailableRestock">
+                            </plus-minus>
+                            <ng-template #NotAvailableRestock>
+                                <span class="not-avail-tag">Out of stock</span>
+                            </ng-template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. BUY AGAIN / RECENT PURCHASES (If different from restock) -->
+            <div class="section-block recent-purchases-section"
+                *ngIf="recent_products && recent_products.length > 0 && restockPredictions.length === 0">
                 <div class="section-header-row">
                     <div class="section-title-wrap">
                         <span class="material-icons section-title-icon reorder-icon">history</span>
@@ -129,7 +206,7 @@
                 </div>
             </div>
 
-            <!-- 4. CATEGORY EXPLORER -->
+            <!-- 5. CATEGORY EXPLORER -->
             <div class="section-block categories-section">
                 <div class="section-header-row">
                     <div class="section-title-wrap">
@@ -154,7 +231,7 @@
                 </div>
             </div>
 
-            <!-- 5. FEATURED HERO PROMO CAROUSEL -->
+            <!-- 6. FEATURED HERO PROMO CAROUSEL -->
             <div class="hero-banner-container">
                 <div class="banner-carousel" [style.transform]="'translateX(-' + (activeSlideIndex * 100) + '%)'">
                     <div class="banner-slide" *ngFor="let slide of heroSlides; let i = index"
@@ -190,7 +267,87 @@
                 </div>
             </div>
 
-            <!-- 6. FRESHLY GROUND BATTERS SECTION -->
+            <!-- 7. AI HEALTH & DIETARY CURATIONS HUB -->
+            <div class="section-block ai-dietary-section">
+                <div class="section-header-row">
+                    <div class="section-title-wrap">
+                        <span class="material-icons section-title-icon health-icon">health_and_safety</span>
+                        <div>
+                            <div class="ai-badge-row">
+                                <h2 class="section-title">AI Health & Dietary Curations</h2>
+                                <span class="ai-diet-pill">🥗 Nutrition AI</span>
+                            </div>
+                            <p class="section-subtitle">Curated farm-fresh produce aligned with your personal wellness
+                                goals</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Goal Selector Pills -->
+                <div class="diet-goals-scroll">
+                    <button class="diet-goal-chip" *ngFor="let goal of dietaryGoals"
+                        [class.active]="goal.id === activeDietaryGoalId" (click)="selectDietaryGoal(goal.id)">
+                        <span class="material-icons goal-icon">{{ goal.icon }}</span>
+                        <div class="goal-text-group">
+                            <span class="goal-label">{{ goal.label }}</span>
+                            <span class="goal-tamil-sub">{{ goal.tamilLabel }}</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Active Goal Highlight Banner -->
+                <div class="active-goal-banner">
+                    <div class="banner-left">
+                        <span class="material-icons banner-goal-icon">{{ getActiveGoal().icon }}</span>
+                        <div>
+                            <div class="goal-banner-title">
+                                <strong>{{ getActiveGoal().label }}</strong> &bull; <span class="badge-tag">{{
+                                    getActiveGoal().badge }}</span>
+                            </div>
+                            <div class="goal-banner-desc">{{ getActiveGoal().desc }}</div>
+                        </div>
+                    </div>
+                    <button class="voice-ask-diet-btn"
+                        (click)="openVoiceModal(); sendVoiceQuery(getActiveGoal().label + ' meal plan')"
+                        title="Ask AI Chef about this diet">
+                        <span class="material-icons size-16">psychology</span>
+                        <span>Ask AI Chef</span>
+                    </button>
+                </div>
+
+                <!-- Dietary Curated Products Horizontal Scroll -->
+                <div class="products-grid-scroll" *ngIf="curatedDietaryProducts && curatedDietaryProducts.length > 0">
+                    <div class="product-item-card diet-prod-card" *ngFor="let product of curatedDietaryProducts">
+                        <div class="prod-badge diet-badge">{{ getDietaryTag(product) }}</div>
+                        <div class="prod-img-box">
+                            <img [src]="product.img_url || 'assets/general/no_image.png'" class="prod-img"
+                                [alt]="product.name" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                        </div>
+                        <div class="prod-details">
+                            <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
+                            <div class="prod-weight">{{ product.updated_weight || product.weight }} {{ product.unit_name
+                                || '' }}</div>
+                            <div class="prod-price-row">
+                                <span class="price-val">₹{{ product.price }}</span>
+                                <span class="original-price-val" *ngIf="product.original_price > product.price">₹{{
+                                    product.original_price }}</span>
+                            </div>
+                        </div>
+
+                        <div class="prod-action-wrap">
+                            <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
+                                (onChange)="plusMinusValue($event, product)"
+                                *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailableDiet">
+                            </plus-minus>
+                            <ng-template #NotAvailableDiet>
+                                <span class="not-avail-tag">Out of stock</span>
+                            </ng-template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. FRESHLY GROUND BATTERS SECTION -->
             <div class="section-block batter-section" *ngIf="batter_products && batter_products.length > 0">
                 <div class="section-header-row">
                     <div class="section-title-wrap">
@@ -236,7 +393,7 @@
                 </div>
             </div>
 
-            <!-- 7. FARM-FRESH RECOMMENDED PICKS -->
+            <!-- 9. FARM-FRESH RECOMMENDED PICKS -->
             <div class="section-block recommended-section">
                 <div class="section-header-row">
                     <div class="section-title-wrap">
@@ -278,7 +435,7 @@
                 </div>
             </div>
 
-            <!-- 8. WHY CHOOSE THINKSPOT (Freshness Promise) -->
+            <!-- 10. WHY CHOOSE THINKSPOT (Freshness Promise) -->
             <div class="section-block freshness-promise-block">
                 <h3 class="promise-heading">The Thinkspot Freshness Promise</h3>
                 <div class="promise-cards-grid">
@@ -313,5 +470,133 @@
             <div class="bottom-spacer" *ngIf="cartS.isCart$ | async"></div>
 
         </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 100% FREE MULTILINGUAL AI VOICE SHOPPING MODAL & SOUNDWAVE DRAWER -->
+<!-- ========================================================================= -->
+<div class="voice-modal-backdrop" *ngIf="showVoiceModal" (click)="closeVoiceModal()">
+    <div class="voice-modal-sheet" (click)="$event.stopPropagation()">
+
+        <!-- Header & Language Switcher -->
+        <div class="voice-sheet-header">
+            <div class="sheet-title-group">
+                <div class="sheet-icon-circle">
+                    <span class="material-icons">mic</span>
+                </div>
+                <div>
+                    <h3 class="sheet-title">Thinkspot AI Voice Shopping</h3>
+                    <p class="sheet-subtitle">Speak freely in English, தமிழ் (Tamil) or Tanglish</p>
+                </div>
+            </div>
+            <button class="sheet-close-btn" (click)="closeVoiceModal()" aria-label="Close voice shopping">
+                <span class="material-icons">close</span>
+            </button>
+        </div>
+
+        <!-- Language Selector Chips -->
+        <div class="voice-lang-selector">
+            <span class="lang-selector-label">Language:</span>
+            <button class="lang-pill" [class.active]="voiceLang === 'en-IN'" (click)="setVoiceLanguage('en-IN')">
+                <span>English (India)</span>
+            </button>
+            <button class="lang-pill" [class.active]="voiceLang === 'ta-IN'" (click)="setVoiceLanguage('ta-IN')">
+                <span>தமிழ் (Tamil)</span>
+            </button>
+        </div>
+
+        <!-- Central Mic & Soundwave Animation Area -->
+        <div class="voice-center-stage">
+            <div class="mic-wave-container" [class.listening]="isListening" [class.processing]="isAiVoiceProcessing"
+                (click)="isListening ? stopVoiceListening() : startVoiceListening()">
+                <div class="wave-ring ring-1"></div>
+                <div class="wave-ring ring-2"></div>
+                <div class="wave-ring ring-3"></div>
+                <button class="big-mic-button" [attr.aria-label]="isListening ? 'Stop listening' : 'Start listening'">
+                    <span class="material-icons big-mic-icon">{{ isAiVoiceProcessing ? 'psychology' : (isListening ?
+                        'mic' : 'mic_none') }}</span>
+                </button>
+            </div>
+
+            <div class="mic-status-text">
+                <span *ngIf="isListening" class="status-listening">🎙️ Listening... Speak now</span>
+                <span *ngIf="isAiVoiceProcessing" class="status-processing">✨ AI Chef analyzing recipe & grocery
+                    items...</span>
+                <span *ngIf="!isListening && !isAiVoiceProcessing && !voiceTranscript" class="status-idle">Tap
+                    microphone to speak</span>
+            </div>
+
+            <!-- Live Transcript Bubble -->
+            <div class="transcript-bubble" *ngIf="voiceTranscript">
+                <span class="transcript-quote">"{{ voiceTranscript }}"</span>
+            </div>
+
+            <!-- Toast alert inside modal -->
+            <div class="modal-toast" *ngIf="voiceToastMsg">
+                <span class="material-icons">check_circle</span>
+                <span>{{ voiceToastMsg }}</span>
+            </div>
+        </div>
+
+        <!-- Quick Sample Voice Prompts -->
+        <div class="sample-prompts-tray" *ngIf="!isAiVoiceProcessing && !aiVoiceReply">
+            <span class="prompts-title">Try saying:</span>
+            <div class="prompts-list">
+                <button class="prompt-chip" *ngFor="let sample of sampleVoicePrompts"
+                    (click)="sendVoiceQuery(sample.text)">
+                    <span class="prompt-tag">{{ sample.lang }}</span>
+                    <span class="prompt-text">{{ sample.text }}</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- AI Reply & Product Results Tray -->
+        <div class="ai-results-tray" *ngIf="aiVoiceReply || (aiVoiceProducts && aiVoiceProducts.length > 0)">
+
+            <!-- AI Assistant Response Box -->
+            <div class="ai-reply-card" *ngIf="aiVoiceReply">
+                <div class="ai-reply-header">
+                    <span class="material-icons ai-sparkle-icon">auto_awesome</span>
+                    <span class="ai-header-title">Thinkspot AI Chef</span>
+                    <button class="tts-toggle-btn" (click)="isSpeaking ? stopSpeaking() : speakReply(aiVoiceReply)"
+                        [title]="isSpeaking ? 'Stop speaking' : 'Read aloud'">
+                        <span class="material-icons">{{ isSpeaking ? 'volume_up' : 'volume_mute' }}</span>
+                        <span>{{ isSpeaking ? 'Playing...' : 'Listen' }}</span>
+                    </button>
+                </div>
+                <div class="ai-reply-body" [innerHTML]="aiVoiceReply.replace('\n', '<br>')"></div>
+            </div>
+
+            <!-- Suggested Products Direct Cart List -->
+            <div class="ai-products-section" *ngIf="aiVoiceProducts && aiVoiceProducts.length > 0">
+                <div class="results-header-row">
+                    <span class="results-title">Matched Farm Essentials ({{ aiVoiceProducts.length }})</span>
+                    <button class="add-all-voice-btn" (click)="addAllVoiceProductsToCart()">
+                        <span class="material-icons size-16">add_shopping_cart</span>
+                        <span>Add All ({{ aiVoiceProducts.length }}) to Cart</span>
+                    </button>
+                </div>
+
+                <div class="voice-products-grid">
+                    <div class="voice-product-card" *ngFor="let prod of aiVoiceProducts">
+                        <img [src]="prod.img_url || 'assets/general/no_image.png'" class="vp-img" [alt]="prod.name"
+                            onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                        <div class="vp-info">
+                            <span class="vp-name">{{ prod.name }}</span>
+                            <span class="vp-weight">{{ prod.updated_weight || prod.weight }} {{ prod.unit_name || ''
+                                }}</span>
+                            <span class="vp-price">₹{{ prod.price }}</span>
+                        </div>
+                        <button class="vp-add-btn" (click)="addVoiceProductToCart(prod)">
+                            <span class="material-icons size-16">{{ (prod.units && prod.units > 0) ? 'done' : 'add'
+                                }}</span>
+                            <span>{{ (prod.units && prod.units > 0) ? (prod.units + ' Added') : 'Add' }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>

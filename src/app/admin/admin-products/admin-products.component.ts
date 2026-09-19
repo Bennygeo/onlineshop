@@ -215,6 +215,8 @@ export class AdminProductsComponent implements OnInit {
     });
   }
 
+  weekDaysList = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
   // --- Product Modals ---
   openAddModal() {
     const defaultCat = this.categoryOptions.length > 0 ? this.categoryOptions[0].key : 'Vegetables';
@@ -239,13 +241,57 @@ export class AdminProductsComponent implements OnInit {
       allow_next_day: 1,
       allow_immediate_10: 0,
       allow_immediate_30: 0,
-      allow_immediate_60: 0
+      allow_immediate_60: 0,
+      preferred_days: []
     };
     this.isAddModalOpen = true;
   }
 
   closeAddModal() {
     this.isAddModalOpen = false;
+  }
+
+  // Preferred days helper methods
+  isDaySelected(productObj: any, day: string): boolean {
+    if (!productObj || !productObj.preferred_days) return false;
+    const days = Array.isArray(productObj.preferred_days) ? productObj.preferred_days : [];
+    return days.includes(day);
+  }
+
+  togglePreferredDay(productObj: any, day: string): void {
+    if (!productObj) return;
+    if (!Array.isArray(productObj.preferred_days)) {
+      productObj.preferred_days = [];
+    }
+    const idx = productObj.preferred_days.indexOf(day);
+    if (idx > -1) {
+      productObj.preferred_days.splice(idx, 1);
+    } else {
+      productObj.preferred_days.push(day);
+    }
+  }
+
+  setAllDaysPreferred(productObj: any): void {
+    if (!productObj) return;
+    productObj.preferred_days = [];
+  }
+
+  getPreferredDaysBadge(productObj: any): string {
+    if (!productObj || !productObj.preferred_days) return 'All Days';
+    let days: string[] = [];
+    if (Array.isArray(productObj.preferred_days)) {
+      days = productObj.preferred_days;
+    } else if (typeof productObj.preferred_days === 'string') {
+      try {
+        const p = JSON.parse(productObj.preferred_days);
+        if (Array.isArray(p)) days = p;
+      } catch (e) {
+        days = productObj.preferred_days.split(',').map(s => s.trim());
+      }
+    }
+    if (!days || days.length === 0 || days.length >= 7) return 'All Days';
+    if (days.length === 1) return `${days[0]} only`;
+    return days.map(d => d.slice(0, 3)).join(', ');
   }
 
   submitAddProduct() {
@@ -273,6 +319,19 @@ export class AdminProductsComponent implements OnInit {
 
   openEditModal(product: any) {
     const fallbackCat = this.categoryOptions.length > 0 ? this.categoryOptions[0].key : 'Vegetables';
+    let pDays: string[] = [];
+    if (Array.isArray(product.preferred_days)) {
+      pDays = [...product.preferred_days];
+    } else if (typeof product.preferred_days === 'string' && product.preferred_days.trim()) {
+      try {
+        const p = JSON.parse(product.preferred_days);
+        if (Array.isArray(p)) pDays = p;
+        else pDays = product.preferred_days.split(',').map((s: string) => s.trim());
+      } catch (e) {
+        pDays = product.preferred_days.split(',').map((s: string) => s.trim());
+      }
+    }
+
     this.editingProduct = { 
       ...product,
       cat: product.cat || product.main_category || fallbackCat,
@@ -285,7 +344,8 @@ export class AdminProductsComponent implements OnInit {
       allow_next_day: (product.allow_next_day !== 0 && product.allow_next_day !== false) ? 1 : 0,
       allow_immediate_10: (product.allow_immediate_10 == 1) ? 1 : 0,
       allow_immediate_30: (product.allow_immediate_30 == 1) ? 1 : 0,
-      allow_immediate_60: (product.allow_immediate_60 == 1) ? 1 : 0
+      allow_immediate_60: (product.allow_immediate_60 == 1) ? 1 : 0,
+      preferred_days: pDays
     };
     this.isEditModalOpen = true;
   }

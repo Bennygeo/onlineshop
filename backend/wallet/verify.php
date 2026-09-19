@@ -16,17 +16,45 @@ if ($pdo) {
             $pdo->exec("ALTER TABLE wallets ADD COLUMN status VARCHAR(20) DEFAULT 'authorized'");
         } catch (Exception $e) {}
 
+        // Check 1: Idempotency check by paymentId in wallets table
+        if (!empty($paymentId)) {
+            $checkPaymentStmt = $pdo->prepare("SELECT id, amount, status FROM wallets WHERE description LIKE ? AND status = 'authorized' LIMIT 1");
+            $checkPaymentStmt->execute(["%{$paymentId}%"]);
+            $existingWallet = $checkPaymentStmt->fetch();
+            if ($existingWallet) {
+                sendJson([
+                    'status' => 'success',
+                    'message' => 'Payment already verified and credited to wallet (idempotent)',
+                    'payment_id' => $paymentId,
+                    'amount' => (float)$existingWallet['amount'],
+                    'payment_status' => 'authorized',
+                    'already_processed' => true
+                ]);
+                exit;
+            }
+        }
+
         // Find matching razorpay order if exists
         if ($orderId) {
-            $stmt = $pdo->prepare("SELECT mobile, amount FROM razorpay_orders WHERE order_id = ?");
+            $stmt = $pdo->prepare("SELECT mobile, amount, status FROM razorpay_orders WHERE order_id = ?");
             $stmt->execute([$orderId]);
             $order = $stmt->fetch();
             if ($order) {
+                // Check 2: Idempotency check by orderId if already authorized
+                if ($order['status'] === 'authorized' && $statusParam === 'authorized') {
+                    sendJson([
+                        'status' => 'success',
+                        'message' => 'Razorpay order already authorized and credited (idempotent)',
+                        'payment_id' => $paymentId,
+                        'amount' => (float)$order['amount'],
+                        'payment_status' => 'authorized',
+                        'already_processed' => true
+                    ]);
+                    exit;
+                }
+
                 if (!$mobile) $mobile = $order['mobile'];
                 $amountRupees = (float)$order['amount'];
-
-                $updateStmt = $pdo->prepare("UPDATE razorpay_orders SET status = ?, payment_id = ? WHERE order_id = ?");
-                $updateStmt->execute([$statusParam, $paymentId, $orderId]);
             }
         }
 
@@ -60,6 +88,13 @@ if ($pdo) {
             $desc = "Razorpay payment cancelled ({$paymentId})";
         }
 
+        $pdo->beginTransaction();
+
+        if ($orderId) {
+            $updateStmt = $pdo->prepare("UPDATE razorpay_orders SET status = ?, payment_id = ? WHERE order_id = ?");
+            $updateStmt->execute([$statusParam, $paymentId, $orderId]);
+        }
+
         // Insert wallet credit/transaction record
         $walletStmt = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description, status) VALUES (?, ?, 'CREDIT', ?, ?)");
         $walletStmt->execute([
@@ -68,6 +103,8 @@ if ($pdo) {
             $desc,
             $statusParam
         ]);
+
+        $pdo->commit();
 
         sendJson([
             'status' => 'success',
@@ -78,6 +115,9 @@ if ($pdo) {
         ]);
         exit;
     } catch (Exception $e) {
+        if ($pdo && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         sendJson(['error' => $e->getMessage()], 500);
         exit;
     }
@@ -87,4 +127,3 @@ sendJson([
     'status' => 'success',
     'message' => 'Payment verified successfully (mock mode)'
 ]);
-

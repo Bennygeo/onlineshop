@@ -120,7 +120,8 @@ $alterCols = [
     "ALTER TABLE order_items ADD COLUMN subsStatus VARCHAR(50) DEFAULT 'active'",
     "ALTER TABLE order_items ADD COLUMN pausedDates TEXT",
     "ALTER TABLE order_items ADD COLUMN startDate VARCHAR(50) DEFAULT ''",
-    "ALTER TABLE order_items ADD COLUMN endDate VARCHAR(50) DEFAULT ''"
+    "ALTER TABLE order_items ADD COLUMN endDate VARCHAR(50) DEFAULT ''",
+    "ALTER TABLE order_items ADD COLUMN delivery_date DATE DEFAULT NULL"
 ];
 foreach ($alterCols as $sql) {
     try { $pdo->exec($sql); } catch (Exception $e) {}
@@ -137,6 +138,55 @@ foreach ($prodTables as $pTbl) {
     try { $pdo->exec("ALTER TABLE {$pTbl} ADD COLUMN allow_immediate_10 INT DEFAULT 0"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE {$pTbl} ADD COLUMN allow_immediate_30 INT DEFAULT 0"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE {$pTbl} ADD COLUMN allow_immediate_60 INT DEFAULT 0"); } catch (Exception $e) {}
+    try { $pdo->exec("ALTER TABLE {$pTbl} ADD COLUMN preferred_days VARCHAR(255) DEFAULT '[]'"); } catch (Exception $e) {}
+}
+
+/**
+ * Calculate the next valid delivery date in Asia/Kolkata IST based on preferred days.
+ */
+function calculateNextPreferredDeliveryDate($preferredDays, $defaultDeliveryDate) {
+    if (empty($preferredDays)) {
+        return $defaultDeliveryDate;
+    }
+    
+    $daysList = [];
+    if (is_array($preferredDays)) {
+        $daysList = $preferredDays;
+    } elseif (is_string($preferredDays)) {
+        $dec = json_decode($preferredDays, true);
+        if (is_array($dec)) {
+            $daysList = $dec;
+        } else {
+            $daysList = explode(',', $preferredDays);
+        }
+    }
+    
+    $normalized = [];
+    foreach ($daysList as $d) {
+        $clean = strtolower(trim((string)$d));
+        if ($clean) {
+            $normalized[] = $clean;
+        }
+    }
+    
+    if (empty($normalized)) {
+        return $defaultDeliveryDate;
+    }
+    
+    // Check next 7 days starting from defaultDeliveryDate (usually tomorrow)
+    $startTs = strtotime($defaultDeliveryDate);
+    for ($i = 0; $i < 7; $i++) {
+        $checkTs = strtotime("+{$i} days", $startTs);
+        $dayFull = strtolower(date('l', $checkTs));
+        $dayShort = strtolower(date('D', $checkTs));
+        foreach ($normalized as $pref) {
+            if ($pref === $dayFull || $pref === $dayShort || strpos($dayFull, $pref) === 0) {
+                return date('Y-m-d', $checkTs);
+            }
+        }
+    }
+    
+    return $defaultDeliveryDate;
 }
 
 // 2. Calculate total order amount for balance verification
@@ -316,50 +366,109 @@ try {
     $sgst = isset($details['sgst']) ? (float)$details['sgst'] : 0.0;
     $gst_percent = isset($details['gst_percent']) ? (float)$details['gst_percent'] : 5.0;
 
-    if ($existing && $existing['status'] === 'CART') {
-        $stmtUpd = $pdo->prepare("
-            UPDATE orders 
-            SET mobile = ?, address_json = ?, total_amount = ?, payment_type = ?, 
-                order_source = ?, created_by = ?,
-                status = 'PLACED', delivery_date = ?, delivery_inst = ?, delivery_mode = ?, 
-                delivery_option = ?, delivery_expected_at = ?, delivery_cutoff_ist = ?,
-                gst_amount = ?, cgst = ?, sgst = ?, gst_percent = ? 
-            WHERE order_id = ?
-        ");
-        $stmtUpd->execute([
-            $mobile, $address_json, $total_amount, $payment_type, 
-            $order_source, $created_by,
-            $delivery_date, $delivery_inst, $delivery_mode, 
-            $delivery_option, $delivery_expected_at, $delivery_cutoff_ist,
-            $gst_amount, $cgst, $sgst, $gst_percent, $order_id
-        ]);
-    } else {
-        if ($existing && $existing['status'] !== 'CART') {
-            $order_id = 'ORD_' . date('YmdHis') . '_' . rand(100, 999);
+    // Resolve delivery date per item based on preferred_days and IST forward scheduling
+    $deliveryGroups = [];
+    if (!empty($items) && is_array($items)) {
+        foreach ($items as &$it) {
+            $pId = isset($it['id']) ? $it['id'] : (isset($it['product_id']) ? $it['product_id'] : '');
+            $itemDate = isset($it['delivery_date']) && !empty($it['delivery_date']) ? $it['delivery_date'] : (isset($it['scheduled_delivery_date']) ? $it['scheduled_delivery_date'] : null);
+            if (!$itemDate) {
+                $prefDays = isset($it['preferred_days']) ? $it['preferred_days'] : null;
+                if ($prefDays === null && $pId) {
+                    foreach ($prodTables as $pTbl) {
+                        try {
+                            $stP = $pdo->prepare("SELECT preferred_days FROM {$pTbl} WHERE id = ? LIMIT 1");
+                            $stP->execute([$pId]);
+                            $rowP = $stP->fetch(PDO::FETCH_ASSOC);
+                            if ($rowP && isset($rowP['preferred_days'])) {
+                                $prefDays = $rowP['preferred_days'];
+                                break;
+                            }
+                        } catch (Exception $eP) {}
+                    }
+                }
+                $itemDate = calculateNextPreferredDeliveryDate($prefDays, $delivery_date);
+            }
+            $it['delivery_date'] = $itemDate;
+            if (!isset($deliveryGroups[$itemDate])) {
+                $deliveryGroups[$itemDate] = [];
+            }
+            $deliveryGroups[$itemDate][] = $it;
         }
-        $stmtIns = $pdo->prepare("
-            INSERT INTO orders 
-            (order_id, mobile, address_json, total_amount, payment_type, order_source, created_by, status, delivery_date, delivery_inst, delivery_mode, delivery_option, delivery_expected_at, delivery_cutoff_ist, gst_amount, cgst, sgst, gst_percent) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'PLACED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmtIns->execute([
-            $order_id, $mobile, $address_json, $total_amount, $payment_type, 
-            $order_source, $created_by,
-            $delivery_date, $delivery_inst, $delivery_mode, 
-            $delivery_option, $delivery_expected_at, $delivery_cutoff_ist,
-            $gst_amount, $cgst, $sgst, $gst_percent
-        ]);
+        unset($it);
     }
 
-    if (!empty($items) && is_array($items)) {
-        // Delete any existing items for this order_id to avoid duplicate lines
+    if (empty($deliveryGroups)) {
+        $deliveryGroups[$delivery_date] = $items;
+    }
+
+    $allGroupDates = array_keys($deliveryGroups);
+    $primaryDeliveryDate = $allGroupDates[0];
+    $createdOrderIds = [];
+
+    $groupIndex = 0;
+    foreach ($deliveryGroups as $grpDate => $grpItems) {
+        $currOrderId = ($groupIndex === 0) ? $order_id : ($order_id . '_' . ($groupIndex + 1));
+        $createdOrderIds[] = $currOrderId;
+        
+        // Calculate group total
+        $grpTotal = 0;
+        foreach ($grpItems as $gIt) {
+            $gQty = isset($gIt['qty']) ? (int)$gIt['qty'] : (isset($gIt['quantity']) ? (int)$gIt['quantity'] : (isset($gIt['units']) ? (int)$gIt['units'] : 1));
+            $gPrice = isset($gIt['price']) ? round((float)$gIt['price']) : 0;
+            if (isset($gIt['unit_price']) && (float)$gIt['unit_price'] > 0 && $gPrice == round((float)$gIt['unit_price'])) {
+                $gPrice = round((float)$gIt['unit_price'] * $gQty);
+            }
+            $grpTotal += $gPrice;
+        }
+        $grpTotal = round($grpTotal);
+        if ($groupIndex === 0 && count($deliveryGroups) === 1 && $total_amount > 0) {
+            $grpTotal = $total_amount;
+        }
+
+        $grpExpectedAt = $grpDate . ' 07:00:00';
+        if ($delivery_option !== 'NEXT_DAY_7AM') {
+            $grpExpectedAt = $delivery_expected_at ?: ($grpDate . ' 07:00:00');
+        }
+
+        if ($groupIndex === 0 && $existing && $existing['status'] === 'CART') {
+            $stmtUpd = $pdo->prepare("
+                UPDATE orders 
+                SET mobile = ?, address_json = ?, total_amount = ?, payment_type = ?, 
+                    order_source = ?, created_by = ?,
+                    status = 'PLACED', delivery_date = ?, delivery_inst = ?, delivery_mode = ?, 
+                    delivery_option = ?, delivery_expected_at = ?, delivery_cutoff_ist = ?,
+                    gst_amount = ?, cgst = ?, sgst = ?, gst_percent = ? 
+                WHERE order_id = ?
+            ");
+            $stmtUpd->execute([
+                $mobile, $address_json, $grpTotal, $payment_type, 
+                $order_source, $created_by,
+                $grpDate, $delivery_inst, $delivery_mode, 
+                $delivery_option, $grpExpectedAt, $delivery_cutoff_ist,
+                $gst_amount, $cgst, $sgst, $gst_percent, $currOrderId
+            ]);
+        } else {
+            $stmtIns = $pdo->prepare("
+                INSERT INTO orders 
+                (order_id, mobile, address_json, total_amount, payment_type, order_source, created_by, status, delivery_date, delivery_inst, delivery_mode, delivery_option, delivery_expected_at, delivery_cutoff_ist, gst_amount, cgst, sgst, gst_percent) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'PLACED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmtIns->execute([
+                $currOrderId, $mobile, $address_json, $grpTotal, $payment_type, 
+                $order_source, $created_by,
+                $grpDate, $delivery_inst, $delivery_mode, 
+                $delivery_option, $grpExpectedAt, $delivery_cutoff_ist,
+                $gst_amount, $cgst, $sgst, $gst_percent
+            ]);
+        }
+
+        // Insert items for this order/shipment
         $delItems = $pdo->prepare("DELETE FROM order_items WHERE order_id = ?");
-        $delItems->execute([$order_id]);
+        $delItems->execute([$currOrderId]);
 
-        $calculatedOrderTotal = 0;
-
-        $stmtItem = $pdo->prepare("INSERT INTO order_items (order_id, product_id, product_name, quantity, price, weight, subscriptionType, rangeDates, subscribedDates, subsStatus, startDate, endDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        foreach ($items as $item) {
+        $stmtItem = $pdo->prepare("INSERT INTO order_items (order_id, product_id, product_name, quantity, price, weight, subscriptionType, rangeDates, subscribedDates, subsStatus, startDate, endDate, delivery_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        foreach ($grpItems as $item) {
             $prod_id = isset($item['id']) ? $item['id'] : (isset($item['product_id']) ? $item['product_id'] : '');
             $prod_name = isset($item['name']) ? $item['name'] : (isset($item['product_name']) ? $item['product_name'] : '');
             $qty = isset($item['qty']) ? (int)$item['qty'] : (isset($item['quantity']) ? (int)$item['quantity'] : (isset($item['units']) ? (int)$item['units'] : 1));
@@ -370,6 +479,7 @@ try {
             $subsStatus = isset($item['subsStatus']) ? $item['subsStatus'] : 'active';
             $startDate = isset($item['startDate']) ? $item['startDate'] : '';
             $endDate = isset($item['endDate']) ? $item['endDate'] : '';
+            $iDeliveryDate = isset($item['delivery_date']) ? $item['delivery_date'] : $grpDate;
 
             $daysCount = 1;
             if ($rangeDates && $rangeDates !== '[]') {
@@ -384,17 +494,14 @@ try {
             if (isset($item['unit_price']) && (float)$item['unit_price'] > 0 && $price == round((float)$item['unit_price'])) {
                 $price = round((float)$item['unit_price'] * $qty * $daysCount);
             }
-
             $price = round($price);
-            $calculatedOrderTotal += $price;
 
             if ($prod_id) {
-                $stmtItem->execute([$order_id, $prod_id, $prod_name, $qty, $price, $weight, $subType, $rangeDates, $subsDates, $subsStatus, $startDate, $endDate]);
+                $stmtItem->execute([$currOrderId, $prod_id, $prod_name, $qty, $price, $weight, $subType, $rangeDates, $subsDates, $subsStatus, $startDate, $endDate, $iDeliveryDate]);
 
                 // Deduct ordered quantity from product inventory stock across all product tables
                 $deductQty = $qty * $daysCount;
                 
-                // Find existing stock level across all tables to avoid relying on stale default 100 values
                 $foundStocks = [];
                 foreach ($prodTables as $pTbl) {
                     try {
@@ -425,12 +532,7 @@ try {
             }
         }
 
-        $calculatedOrderTotal = round($calculatedOrderTotal);
-        if ($calculatedOrderTotal > 0 && $total_amount <= 0) {
-            $total_amount = $calculatedOrderTotal;
-            $updTotal = $pdo->prepare("UPDATE orders SET total_amount = ? WHERE order_id = ?");
-            $updTotal->execute([$calculatedOrderTotal, $order_id]);
-        }
+        $groupIndex++;
     }
 
     $walletId = null;
