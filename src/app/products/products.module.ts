@@ -22,12 +22,14 @@ import { ReplaceAll } from '../pipes/replace-all.pipe';
 import { SharedModule } from '../shared/shared.module';
 import { SearchComponent } from '../components/search/search.component';
 import { CalendarComponent } from '../components/calendar/calendar.component';
+import { ProductDetailComponent } from '../components/product-detail/product-detail.component';
 
 @NgModule({
   declarations: [
     //producty
     ProductComponent,
     ProductListComponent,
+    ProductDetailComponent,
     //cart
     CartComponent,
     CartListComponent,

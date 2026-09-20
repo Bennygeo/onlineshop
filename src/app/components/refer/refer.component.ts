@@ -46,14 +46,14 @@ export class ReferComponent {
   getShareMessage(): string {
     const mobile = this.loginS.user?.mobile || '';
     const code = this.referralId || '';
-    const repoUrl = `http://thinkspot.in/?mobile=${mobile}&id=${code}&type=WELCOME`;
-    return `Hey! Join me on Thinkspot for 100% fresh, natural food & daily essentials delivered right to your doorstep. 🥬🍏\n\n🎁 Get ${this.discountPct}% CASHBACK on your first order when you sign up with my code: *${code}*\n\nDownload now: ${repoUrl}`;
+    const repoUrl = `http://tomorrowneeds.in/?mobile=${mobile}&id=${code}&type=WELCOME`;
+    return `Hey! Join me on TomorrowNeeds for 100% fresh, natural food & daily essentials delivered right to your doorstep. 🥬🍏\n\n🎁 Get ${this.discountPct}% CASHBACK on your first order when you sign up with my code: *${code}*\n\nDownload now: ${repoUrl}`;
   }
 
   getReferralLink(): string {
     const mobile = this.loginS.user?.mobile || '';
     const code = this.referralId || '';
-    return `http://thinkspot.in/?mobile=${mobile}&id=${code}&type=WELCOME`;
+    return `http://tomorrowneeds.in/?mobile=${mobile}&id=${code}&type=WELCOME`;
   }
 
   copyCode(): void {
@@ -103,7 +103,7 @@ export class ReferComponent {
 
   shareNative(): void {
     const shareData = {
-      title: 'Thinkspot Fresh Foods - Referral',
+      title: 'TomorrowNeeds Fresh Foods - Referral',
       text: this.getShareMessage(),
       url: this.getReferralLink()
     };

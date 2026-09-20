@@ -81,7 +81,7 @@ export class RazorpayService {
             <div style="display: flex; align-items: center; justify-content: space-between;">
               <div>
                 <span style="background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Razorpay Test Mode</span>
-                <h3 style="margin: 6px 0 2px 0; font-size: 18px; font-weight: 600; color: #ffffff;">Thinkspot</h3>
+                <h3 style="margin: 6px 0 2px 0; font-size: 18px; font-weight: 600; color: #ffffff;">TomorrowNeeds</h3>
                 <p style="margin: 0; font-size: 12px; color: #94a3b8;">Wallet Recharge Simulation</p>
               </div>
               <div style="text-align: right;">
@@ -97,7 +97,7 @@ export class RazorpayService {
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; color: #334155;">
               <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                 <span style="color: #64748b;">User:</span>
-                <span style="font-weight: 600; color: #0f172a;">${user.name || 'Thinkspot Customer'}</span>
+                <span style="font-weight: 600; color: #0f172a;">${user.name || 'TomorrowNeeds Customer'}</span>
               </div>
               <div style="display: flex; justify-content: space-between;">
                 <span style="color: #64748b;">Mobile:</span>
@@ -168,7 +168,7 @@ export class RazorpayService {
     return {
       "key": order['key'],
       "amount": order.final_amount,
-      "name": 'Thinkspot',
+      "name": 'TomorrowNeeds',
       "currency": order.currency,
       "order_id": order.order_id,
       "image": 'https://thinkspot.in/assets/Thinkspot_logo_WTG.png',
@@ -177,9 +177,9 @@ export class RazorpayService {
         ref.handlePayment(response);
       },
       "prefill": {
-        "name": user.name || "Thinkspot user",
+        "name": user.name || "TomorrowNeeds user",
         "contact": user.mobile || "7200015551",
-        "email": user.mail || "thinkspotdb@gmail.com"
+        "email": user.mail || "support@tomorrowneeds.in"
       },
 
       "theme": {

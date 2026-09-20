@@ -1,6 +1,6 @@
 <?php
 /**
- * Thinkspot AI Assistant Endpoint
+ * TomorrowNeeds AI Assistant Endpoint
  * 
  * Supports:
  *  - Google Gemini (gemini-3.6-flash / gemini-1.5-flash) via GEMINI_API_KEY
@@ -29,12 +29,12 @@ if ($pdo) {
 // Prepare concise catalog sample for the AI context
 $sampleCatalog = [];
 foreach (array_slice($availableProducts, 0, 60) as $p) {
-    $cleanName = trim(preg_replace('/^thinkspot\s+/i', '', $p['name']));
+    $cleanName = trim(preg_replace('/^(tomorrowneeds|thinkspot)\s+/i', '', $p['name']));
     $sampleCatalog[] = "{$cleanName} (₹{$p['price']}, {$p['weight']}{$p['unit_name']})";
 }
 $catalogStr = implode(', ', $sampleCatalog);
 
-$systemPrompt = "You are 'Thinkspot AI Chef & Shopping Assistant', the friendly cooking and fresh grocery guide for Thinkspot Farm Fresh in Chennai / Tamil Nadu.
+$systemPrompt = "You are 'TomorrowNeeds AI Chef & Shopping Assistant', the friendly cooking and fresh grocery guide for TomorrowNeeds Farm Fresh in Chennai / Tamil Nadu.
 Your goal is to assist customers with:
 1. Authentic recipes and dish ideas (e.g. Sambar, Veg Kurma, Crunchy Salad, Dosa & Chutney, Rasam, Biryani, Soup, Tea, Poriyal, Dal).
 2. Suggesting fresh ingredients available in our store (Vegetables, Fruits, Batters, Dairy, Cold-pressed Oils, Greens & Herbs).
@@ -159,14 +159,14 @@ if (empty($reply)) {
                . "• **Cold-Pressed Gingelly / Sesame Oil** for golden crisp roast\n\n"
                . "👉 *Add to cart for an effortless South Indian breakfast!*";
     } else if (strpos($lower, 'subscription') !== false || strpos($lower, 'delivery') !== false) {
-        $reply = "🚚 **Thinkspot Subscription & Delivery:**\n"
+        $reply = "🚚 **TomorrowNeeds Subscription & Delivery:**\n"
                . "• **Morning 7 AM Delivery**: Daily fresh milk, veggies, and batter delivered right to your doorstep.\n"
                . "• **Flexible Scheduling**: Choose daily, alternate days, or custom calendar dates.\n"
                . "• **Pause & Resume Anytime**: Manage your deliveries in the Subscriptions tab without extra charges!";
     } else if (strpos($lower, 'refund') !== false || strpos($lower, 'cancel') !== false) {
         $reply = "💳 **Cancellations & Instant Refunds:**\n"
                . "• You can cancel individual items or entire orders from the **Orders** page before delivery.\n"
-               . "• For Wallet/Prepaid orders, the exact refund is credited back to your **Thinkspot Wallet** instantly.";
+               . "• For Wallet/Prepaid orders, the exact refund is credited back to your **TomorrowNeeds Wallet** instantly.";
     } else if (strpos($lower, 'soup') !== false) {
         $reply = "🍵 **Fresh Healthy Soup Bowl:**\n"
                . "• **Country Tomatoes, Sweet Corn, and Tender Carrots**\n"
@@ -202,7 +202,7 @@ if (empty($reply)) {
                . "• **Tender Coconut & Citrus Fruits**\n\n"
                . "👉 *Boost your immunity naturally with farm-fresh produce!*";
     } else {
-        $reply = "👋 Hello! I am your **Thinkspot AI Chef & Voice Shopping Assistant**.\n\n"
+        $reply = "👋 Hello! I am your **TomorrowNeeds AI Chef & Voice Shopping Assistant**.\n\n"
                . "I can help you with:\n"
                . "1. 🎙️ **Voice Order & Grocery Search**: Speak in English, தமிழ் (Tamil), or Tanglish (e.g., *'1kg thakkali, paal, dosai maavu'*).\n"
                . "2. 🥘 **Recipe Kits**: Sambar, Kurma, Rasam, Chutney, Soup, and Poriyal bundles.\n"
@@ -270,7 +270,7 @@ foreach ($tanglishMap as $tamilTerm => $englishTerm) {
 
 // Stop words that shouldn't match as single isolated words
 $genericStopWords = [
-    'thinkspot', 'fresh', 'farm', 'gram', 'grams', 'pack', 'small', 'big', 'kg', 'unit',
+    'tomorrowneeds', 'thinkspot', 'fresh', 'farm', 'gram', 'grams', 'pack', 'small', 'big', 'kg', 'unit',
     'red', 'white', 'green', 'yellow', 'black', 'raw', 'long', 'sweet', 'organic', 'leaf', 'leaves',
     'super', 'pure', 'rich', 'best', 'good', 'item', 'items', 'with', 'for', 'and', 'the', 'from', 'your', 'powder',
     'venum', 'thevai', 'naalaiku', 'kaalaila', 'kudukavum', 'kudu', 'order', 'please', 'add', 'want', 'need', 'give'
@@ -306,7 +306,7 @@ foreach ($recipeIngredients as $key => $ingredients) {
 
 $scoredProducts = [];
 foreach ($availableProducts as $prod) {
-    $cleanName = strtolower(trim(preg_replace('/^thinkspot\s+/i', '', $prod['name'])));
+    $cleanName = strtolower(trim(preg_replace('/^(tomorrowneeds|thinkspot)\s+/i', '', $prod['name'])));
     $rawName = strtolower($prod['name']);
     $tamilName = strtolower($prod['tamil_name'] ?? '');
 

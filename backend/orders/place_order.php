@@ -20,6 +20,14 @@ $delivery_option = isset($details['delivery_option']) ? trim($details['delivery_
 $delivery_cutoff_ist = '12:00 Midnight IST';
 $delivery_expected_at = null;
 
+// Operating hours for instant 10, 30, 60 mins deliveries: 8:00 AM (8) to 8:00 PM (20) IST
+$currentIstHour = (int)date('G');
+$isImmediateOperatingHours = ($currentIstHour >= 8 && $currentIstHour < 20);
+
+if (!$isImmediateOperatingHours && in_array($delivery_option, ['IMMEDIATE_10', 'IMMEDIATE_30', 'IMMEDIATE_60'])) {
+    $delivery_option = 'NEXT_DAY_7AM';
+}
+
 if ($delivery_option === 'IMMEDIATE_10') {
     $delivery_expected_at = date('Y-m-d H:i:s', strtotime('+10 minutes'));
     $delivery_date = date('Y-m-d', strtotime($delivery_expected_at));
@@ -38,7 +46,7 @@ if ($delivery_option === 'IMMEDIATE_10') {
     } else {
         $delivery_date = date('Y-m-d', strtotime('+1 day'));
     }
-    $delivery_expected_at = $delivery_date . ' 07:00:00';
+    // Will be adjusted for weekly_off_day after weeklyOffDay is loaded
 }
 
 $items = isset($details['items']) ? $details['items'] : (isset($details['products']) ? $details['products'] : []);
@@ -142,11 +150,40 @@ foreach ($prodTables as $pTbl) {
 }
 
 /**
+ * Fetch weekly off day from store settings
+ */
+$weeklyOffDay = 'None';
+try {
+    $stmtSet = $pdo->query("SELECT `value` FROM store_settings WHERE `key` = 'weekly_off_day'");
+    if ($stmtSet && $r = $stmtSet->fetch(PDO::FETCH_ASSOC)) {
+        $weeklyOffDay = trim($r['value']);
+    }
+} catch (Exception $e) {}
+
+function adjustDeliveryDateForWeeklyOff($dateStr, $weeklyOffDay) {
+    if (!$dateStr || empty($weeklyOffDay) || strtolower($weeklyOffDay) === 'none') {
+        return $dateStr;
+    }
+    $ts = strtotime($dateStr);
+    for ($k = 0; $k < 7; $k++) {
+        $dayName = strtolower(date('l', $ts));
+        $offName = strtolower($weeklyOffDay);
+        if ($dayName === $offName || strpos($dayName, $offName) === 0) {
+            $ts = strtotime('+1 day', $ts);
+        } else {
+            break;
+        }
+    }
+    return date('Y-m-d', $ts);
+}
+
+/**
  * Calculate the next valid delivery date in Asia/Kolkata IST based on preferred days.
  */
-function calculateNextPreferredDeliveryDate($preferredDays, $defaultDeliveryDate) {
+function calculateNextPreferredDeliveryDate($preferredDays, $defaultDeliveryDate, $weeklyOffDay = 'None') {
+    $baseDate = adjustDeliveryDateForWeeklyOff($defaultDeliveryDate, $weeklyOffDay);
     if (empty($preferredDays)) {
-        return $defaultDeliveryDate;
+        return $baseDate;
     }
     
     $daysList = [];
@@ -170,15 +207,19 @@ function calculateNextPreferredDeliveryDate($preferredDays, $defaultDeliveryDate
     }
     
     if (empty($normalized)) {
-        return $defaultDeliveryDate;
+        return $baseDate;
     }
     
-    // Check next 7 days starting from defaultDeliveryDate (usually tomorrow)
-    $startTs = strtotime($defaultDeliveryDate);
+    // Check next 7 days starting from baseDate
+    $startTs = strtotime($baseDate);
     for ($i = 0; $i < 7; $i++) {
         $checkTs = strtotime("+{$i} days", $startTs);
         $dayFull = strtolower(date('l', $checkTs));
         $dayShort = strtolower(date('D', $checkTs));
+        $offName = strtolower($weeklyOffDay);
+        if (!empty($weeklyOffDay) && $offName !== 'none' && ($dayFull === $offName || $dayShort === $offName || strpos($dayFull, $offName) === 0)) {
+            continue; // skip weekly off day
+        }
         foreach ($normalized as $pref) {
             if ($pref === $dayFull || $pref === $dayShort || strpos($dayFull, $pref) === 0) {
                 return date('Y-m-d', $checkTs);
@@ -186,7 +227,12 @@ function calculateNextPreferredDeliveryDate($preferredDays, $defaultDeliveryDate
         }
     }
     
-    return $defaultDeliveryDate;
+    return $baseDate;
+}
+
+if ($delivery_option === 'NEXT_DAY_7AM') {
+    $delivery_date = adjustDeliveryDateForWeeklyOff($delivery_date, $weeklyOffDay);
+    $delivery_expected_at = $delivery_date . ' 07:00:00';
 }
 
 // 2. Calculate total order amount for balance verification
@@ -243,7 +289,7 @@ if (!empty($items) && is_array($items) && !$isOffline) {
             $prodRow = null;
             foreach ($prodTables as $pTbl) {
                 try {
-                    $stmtProd = $pdo->prepare("SELECT id, name, unit_name, in_stock, stock_qty, disabled, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60 FROM {$pTbl} WHERE id = ? OR name = ? LIMIT 1");
+                    $stmtProd = $pdo->prepare("SELECT id, name, unit_name, in_stock, stock_qty, is_unlimited, disabled, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60 FROM {$pTbl} WHERE id = ? OR name = ? LIMIT 1");
                     $stmtProd->execute([$prod_id, $prod_name]);
                     $r = $stmtProd->fetch(PDO::FETCH_ASSOC);
                     if ($r) {
@@ -253,15 +299,17 @@ if (!empty($items) && is_array($items) && !$isOffline) {
                 } catch (Exception $e) {}
             }
 
+            $isProdUnlimited = (isset($prodRow['is_unlimited']) && ((int)$prodRow['is_unlimited'] === 1 || $prodRow['is_unlimited'] === true));
+
             if (!$prodRow || (isset($prodRow['disabled']) && (int)$prodRow['disabled'] === 1)) {
                 $displayName = $prodRow['name'] ?? ($prod_name ?: 'Selected item');
                 $stockErrors[] = "Product '{$displayName}' is currently unavailable.";
                 $outOfStockItems[] = ['product_id' => $prod_id, 'product_name' => $displayName, 'reason' => 'disabled'];
-            } elseif (isset($prodRow['in_stock']) && (int)$prodRow['in_stock'] === 0) {
+            } elseif (!$isProdUnlimited && isset($prodRow['in_stock']) && (int)$prodRow['in_stock'] === 0) {
                 $displayName = $prodRow['name'] ?? ($prod_name ?: 'Selected item');
                 $stockErrors[] = "'{$displayName}' is currently out of stock.";
                 $outOfStockItems[] = ['product_id' => $prod_id, 'product_name' => $displayName, 'reason' => 'out_of_stock', 'available_stock' => 0];
-            } elseif (isset($prodRow['stock_qty']) && floatval($prodRow['stock_qty']) > 0 && $requiredQty > floatval($prodRow['stock_qty'])) {
+            } elseif (!$isProdUnlimited && isset($prodRow['stock_qty']) && floatval($prodRow['stock_qty']) > 0 && $requiredQty > floatval($prodRow['stock_qty'])) {
                 $displayName = $prodRow['name'] ?? ($prod_name ?: 'Selected item');
                 $avail = floatval($prodRow['stock_qty']);
                 $unit = $prodRow['unit_name'] ?: 'units';
@@ -503,31 +551,39 @@ try {
                 $deductQty = $qty * $daysCount;
                 
                 $foundStocks = [];
+                $isItemUnlimited = false;
                 foreach ($prodTables as $pTbl) {
                     try {
-                        $stmtChk = $pdo->prepare("SELECT stock_qty FROM {$pTbl} WHERE id = ? OR name = ?");
+                        $stmtChk = $pdo->prepare("SELECT stock_qty, is_unlimited FROM {$pTbl} WHERE id = ? OR name = ?");
                         $stmtChk->execute([$prod_id, $prod_name]);
                         $row = $stmtChk->fetch(PDO::FETCH_ASSOC);
-                        if ($row && isset($row['stock_qty'])) {
-                            $foundStocks[] = floatval($row['stock_qty']);
+                        if ($row) {
+                            if (isset($row['is_unlimited']) && ((int)$row['is_unlimited'] === 1 || $row['is_unlimited'] === true)) {
+                                $isItemUnlimited = true;
+                            }
+                            if (isset($row['stock_qty'])) {
+                                $foundStocks[] = floatval($row['stock_qty']);
+                            }
                         }
                     } catch (Exception $e) {}
                 }
                 
-                $effectiveStock = !empty($foundStocks) ? min($foundStocks) : 0;
-                $newStock = max(0.0, $effectiveStock - $deductQty);
-                $newInStock = ($newStock > 0) ? 1 : 0;
+                if (!$isItemUnlimited) {
+                    $effectiveStock = !empty($foundStocks) ? min($foundStocks) : 0;
+                    $newStock = max(0.0, $effectiveStock - $deductQty);
+                    $newInStock = ($newStock > 0) ? 1 : 0;
 
-                foreach ($prodTables as $pTbl) {
-                    try {
-                        $stockUpd = $pdo->prepare("
-                            UPDATE {$pTbl} 
-                            SET stock_qty = ?,
-                                in_stock = ?
-                            WHERE id = ? OR name = ?
-                        ");
-                        $stockUpd->execute([$newStock, $newInStock, $prod_id, $prod_name]);
-                    } catch (Exception $stEx) {}
+                    foreach ($prodTables as $pTbl) {
+                        try {
+                            $stockUpd = $pdo->prepare("
+                                UPDATE {$pTbl} 
+                                SET stock_qty = ?,
+                                    in_stock = ?
+                                WHERE id = ? OR name = ?
+                            ");
+                            $stockUpd->execute([$newStock, $newInStock, $prod_id, $prod_name]);
+                        } catch (Exception $stEx) {}
+                    }
                 }
             }
         }

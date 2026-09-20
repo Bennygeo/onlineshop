@@ -58,7 +58,7 @@ export class AppComponent implements OnInit {
         const hash = window.location.hash || "";
         this.isAdminPage = url.startsWith("/admin") || hash.includes("admin") || window.location.pathname.includes("admin");
 
-        if (url === "/home/view" || url === "/products/search") {
+        if (url === "/home/view" || url === "/products/search" || url.includes("/products/details") || url.includes("/products/detail") || url.includes("/product/")) {
           this.bottombarClass = "type1";
         } else if (url.search("/products/category/") != 1) {
           this.bottombarClass = "type2";

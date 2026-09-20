@@ -1,0 +1,397 @@
+<div class="product-detail-page">
+
+    <!-- 1. STICKY TOP APP HEADER -->
+    <header class="detail-top-nav">
+        <div class="nav-left">
+            <button class="nav-icon-btn back-btn" (click)="goBack()" title="Go Back">
+                <span class="material-icons">arrow_back</span>
+            </button>
+            <div class="header-brand-wrap" (click)="router.navigate(['/home/view'])">
+                <img src="assets/home/logo_wo.png" alt="TomorrowNeeds" class="nav-logo" />
+            </div>
+        </div>
+
+        <div class="nav-actions">
+            <!-- Share Button -->
+            <button class="nav-icon-btn share-btn" (click)="shareProduct()" title="Share this product">
+                <span class="material-icons">share</span>
+            </button>
+
+            <!-- Search Button -->
+            <button class="nav-icon-btn search-btn" (click)="goToSearch()" title="Search products">
+                <span class="material-icons">search</span>
+            </button>
+
+            <!-- Cart Button with Live Counter Badge -->
+            <button class="nav-icon-btn cart-btn" (click)="goToCart()" title="View Cart">
+                <span class="material-icons">shopping_cart</span>
+                <span class="cart-badge" *ngIf="totalCartItems > 0">{{ totalCartItems }}</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 2. LOADING SHIMMER STATE -->
+    <div class="detail-container shimmer-wrap" *ngIf="loading">
+        <div class="shimmer-hero-grid">
+            <div class="shimmer-img shine"></div>
+            <div class="shimmer-info">
+                <div class="shimmer-line line-lg shine"></div>
+                <div class="shimmer-line line-md shine"></div>
+                <div class="shimmer-line line-sm shine"></div>
+                <div class="shimmer-line line-btn shine"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. ERROR / NOT FOUND STATE -->
+    <div class="detail-container error-wrap" *ngIf="!loading && (errorMessage || !product)">
+        <div class="error-card">
+            <span class="material-icons error-icon">search_off</span>
+            <h3>Product Not Found</h3>
+            <p>{{ errorMessage || 'The requested product could not be located or may be out of season.' }}</p>
+            <button class="action-primary-btn" (click)="router.navigate(['/home/view'])">
+                <span class="material-icons">home</span> Return to Home
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. PRODUCT MAIN CONTENT AREA -->
+    <main class="detail-container main-content" *ngIf="!loading && product">
+
+        <!-- Breadcrumb Category Tag -->
+        <nav class="breadcrumb-bar" *ngIf="product.cat">
+            <span class="crumb-link" (click)="router.navigate(['/home/view'])">Home</span>
+            <span class="crumb-sep">›</span>
+            <span class="crumb-link" (click)="navigateToCategory(product.cat)">{{ product.cat }}</span>
+            <span class="crumb-sep" *ngIf="product.sub_cat">›</span>
+            <span class="crumb-current" *ngIf="product.sub_cat">{{ product.sub_cat }}</span>
+        </nav>
+
+        <!-- Top Product Hero Showcase Grid -->
+        <section class="product-hero-card">
+            
+            <!-- Left: Image Box with Badges -->
+            <div class="hero-image-col">
+                <div class="image-showcase-box">
+                    <div class="badge-float-group">
+                        <span class="hero-badge discount-badge" *ngIf="product.offer_percentage && product.offer_percentage > 0">
+                            {{ product.offer_percentage }}% OFF
+                        </span>
+                        <span class="hero-badge organic-badge">100% Farm Fresh</span>
+                    </div>
+
+                    <img [src]="product.img_url || 'assets/general/no_image.png'" 
+                         [alt]="product.name" 
+                         class="main-prod-img"
+                         onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+
+                    <div class="out-of-stock-overlay" *ngIf="!product.is_unlimited && (product.in_stock === false || product.in_stock === 0 || (product.stock_qty !== undefined && product.stock_qty <= 0))">
+                        <span>Out of Stock</span>
+                    </div>
+                </div>
+
+                <!-- Share CTA Banner below Image -->
+                <div class="share-prompt-strip" (click)="shareProduct()">
+                    <span class="material-icons size-18">share</span>
+                    <span>Share fresh deals with friends & family</span>
+                    <span class="material-icons size-16 arrow-icon">arrow_forward_ios</span>
+                </div>
+            </div>
+
+            <!-- Right: Product Core Details & Actions -->
+            <div class="hero-details-col">
+                <div class="category-meta-tag" *ngIf="product.cat">{{ product.cat }}</div>
+                <h1 class="product-title">{{ product.name }}</h1>
+                <h2 class="product-tamil-title" *ngIf="product.tamil_name">{{ product.tamil_name }}</h2>
+
+                <div class="weight-pack-badge">
+                    <span class="material-icons size-16">scale</span>
+                    <span>{{ product.updated_weight || product.weight }} {{ product.unit_name || 'grams' }}</span>
+                </div>
+
+                <!-- Price & MRP Section -->
+                <div class="price-display-block">
+                    <div class="price-row">
+                        <span class="current-price">₹{{ numPrice | number:'1.0-0' }}</span>
+                        <span class="mrp-price" *ngIf="numOriginalPrice > numPrice">
+                            ₹{{ numOriginalPrice | number:'1.0-0' }}
+                        </span>
+                        <span class="savings-pill" *ngIf="priceDiff > 0">
+                            Save ₹{{ priceDiff | number:'1.0-0' }}
+                        </span>
+                    </div>
+                    <div class="tax-info-label">(Inclusive of all taxes & GST)</div>
+                </div>
+
+                <!-- Delivery Speed Estimate -->
+                <div class="delivery-speed-banner">
+                    <div class="speed-icon-box">
+                        <span class="material-icons">local_shipping</span>
+                    </div>
+                    <div class="speed-info-text">
+                        <div class="speed-title">
+                            Delivery by <span class="highlight-date">{{ product.delivery_date_enhanced || 'Scheduled Delivery' }}</span>
+                        </div>
+                        <div class="speed-sub">Direct farm-to-kitchen doorstep delivery</div>
+                    </div>
+                </div>
+
+                <!-- Add to Cart / Plus-Minus Action Row -->
+                <div class="action-cta-row" *ngIf="!product.disabled && (product.is_unlimited || (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0))); else outOfStockTemplate">
+                    
+                    <!-- Direct Add to Cart Big Button when quantity is 0 -->
+                    <button class="add-to-cart-cta-btn" 
+                            *ngIf="(!product.units || product.units === 0)" 
+                            (click)="plusMinusValue(1)">
+                        <span class="material-icons">add_shopping_cart</span>
+                        <span>Add to Cart</span>
+                    </button>
+
+                    <!-- Plus-Minus Stepper when quantity > 0 -->
+                    <div class="quantity-controller-wrap" *ngIf="product.units && product.units > 0">
+                        <label class="qty-label">Quantity:</label>
+                        <plus-minus [caption]="" 
+                                    [inputVal]="product.units" 
+                                    [stepVal]="1" 
+                                    [minVal]="0" 
+                                    [maxVal]="product.is_unlimited ? 99 : (product.stock_qty || 10)"
+                                    (onChange)="plusMinusValue($event)">
+                        </plus-minus>
+                    </div>
+
+                    <!-- Subscribe / Calendar Delivery Button -->
+                    <button class="subscribe-cta-btn" 
+                            *ngIf="product.subscribeFlg" 
+                            (click)="viewSubscription($event)">
+                        <span class="material-icons">event_repeat</span>
+                        <span>Subscribe & Save</span>
+                    </button>
+                </div>
+
+                <ng-template #outOfStockTemplate>
+                    <div class="out-of-stock-alert">
+                        <span class="material-icons">do_not_disturb</span>
+                        <span>Currently Out of Stock. Will be restocked soon!</span>
+                    </div>
+                </ng-template>
+
+                <!-- Key Guarantee Features Grid -->
+                <div class="trust-features-grid">
+                    <div class="trust-item">
+                        <span class="material-icons trust-icon">eco</span>
+                        <div class="trust-text">
+                            <strong>100% Organically Sourced</strong>
+                            <span>From verified regional farmers</span>
+                        </div>
+                    </div>
+                    <div class="trust-item">
+                        <span class="material-icons trust-icon">verified</span>
+                        <div class="trust-text">
+                            <strong>Hygiene Checked</strong>
+                            <span>Ozone cleaned & contact-less pack</span>
+                        </div>
+                    </div>
+                    <div class="trust-item">
+                        <span class="material-icons trust-icon">autorenew</span>
+                        <div class="trust-text">
+                            <strong>No-Questions Return</strong>
+                            <span>Instant replacement or refund</span>
+                        </div>
+                    </div>
+                    <div class="trust-item">
+                        <span class="material-icons trust-icon">alarm_on</span>
+                        <div class="trust-text">
+                            <strong>Morning Fresh Pluck</strong>
+                            <span>Harvested less than 24h ago</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- 5. DETAILED INFORMATION SECTIONS / TABS -->
+        <section class="details-tabs-section">
+            
+            <div class="tab-header-strip">
+                <button class="tab-nav-btn" [class.active]="activeTab === 'overview'" (click)="activeTab = 'overview'">
+                    <span class="material-icons">info</span>
+                    <span>Overview & Highlights</span>
+                </button>
+                <button class="tab-nav-btn" [class.active]="activeTab === 'nutrition'" (click)="activeTab = 'nutrition'">
+                    <span class="material-icons">favorite</span>
+                    <span>Health & Nutrition</span>
+                </button>
+                <button class="tab-nav-btn" [class.active]="activeTab === 'storage'" (click)="activeTab = 'storage'">
+                    <span class="material-icons">kitchen</span>
+                    <span>Storage Guide</span>
+                </button>
+                <button class="tab-nav-btn" [class.active]="activeTab === 'recipes'" (click)="activeTab = 'recipes'">
+                    <span class="material-icons">restaurant</span>
+                    <span>Culinary & Uses</span>
+                </button>
+            </div>
+
+            <div class="tab-body-card">
+
+                <!-- Tab 1: Overview & Highlights -->
+                <div class="tab-pane" *ngIf="activeTab === 'overview'">
+                    <div class="meta-facts-grid">
+                        <div class="fact-box" *ngIf="product.origin">
+                            <span class="fact-label">Origin & Farm Source</span>
+                            <span class="fact-value">{{ product.origin }}</span>
+                        </div>
+                        <div class="fact-box" *ngIf="product.shelf_life">
+                            <span class="fact-label">Optimal Shelf Life</span>
+                            <span class="fact-value">{{ product.shelf_life }}</span>
+                        </div>
+                        <div class="fact-box" *ngIf="product.cat">
+                            <span class="fact-label">Category</span>
+                            <span class="fact-value">{{ product.cat }} ({{ product.sub_cat || 'Fresh' }})</span>
+                        </div>
+                        <div class="fact-box">
+                            <span class="fact-label">Packaging Standard</span>
+                            <span class="fact-value">Food Grade Eco-Friendly Pouch</span>
+                        </div>
+                    </div>
+
+                    <h3 class="pane-subheading">Key Product Highlights</h3>
+                    <ul class="bullet-list" *ngIf="product.highlights && product.highlights.length > 0; else defaultHighlights">
+                        <li *ngFor="let item of product.highlights">{{ item }}</li>
+                    </ul>
+                    <ng-template #defaultHighlights>
+                        <ul class="bullet-list" *ngIf="product.shortdesc">
+                            <li *ngFor="let item of product.shortdesc.split('$')">{{ item }}</li>
+                        </ul>
+                        <p *ngIf="!product.shortdesc" class="placeholder-text">Fresh harvest organic quality delivered directly from farms.</p>
+                    </ng-template>
+                </div>
+
+                <!-- Tab 2: Health & Nutrition -->
+                <div class="tab-pane" *ngIf="activeTab === 'nutrition'">
+                    <h3 class="pane-subheading">Nutritional Breakdown & Benefits</h3>
+                    <div class="nutrition-cards-grid" *ngIf="product.nutrients && product.nutrients.length > 0">
+                        <div class="nutrient-pill-card" *ngFor="let nut of product.nutrients">
+                            <span class="nut-label">{{ nut.label }}</span>
+                            <span class="nut-val">{{ nut.value }}</span>
+                        </div>
+                    </div>
+                    <ul class="bullet-list" *ngIf="(!product.nutrients || product.nutrients.length === 0) && product.longdesc1">
+                        <li *ngFor="let item of product.longdesc1.split('#')">{{ item }}</li>
+                    </ul>
+                    <div class="health-note-callout">
+                        <span class="material-icons">health_and_safety</span>
+                        <span>Packed with natural vitamins, minerals, and dietary antioxidants essential for daily immunity and active wellness.</span>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Freshness & Storage -->
+                <div class="tab-pane" *ngIf="activeTab === 'storage'">
+                    <h3 class="pane-subheading">Freshness Preservation & Storage Tips</h3>
+                    <ul class="bullet-list storage-list" *ngIf="product.storage_tips && product.storage_tips.length > 0; else fallbackStorage">
+                        <li *ngFor="let tip of product.storage_tips">
+                            <span class="material-icons tip-check-icon">check_circle</span>
+                            <span>{{ tip }}</span>
+                        </li>
+                    </ul>
+                    <ng-template #fallbackStorage>
+                        <ul class="bullet-list storage-list" *ngIf="product.longdesc2">
+                            <li *ngFor="let tip of product.longdesc2.split('#')">
+                                <span class="material-icons tip-check-icon">check_circle</span>
+                                <span>{{ tip }}</span>
+                            </li>
+                        </ul>
+                    </ng-template>
+                </div>
+
+                <!-- Tab 4: Recipes & Culinary Uses -->
+                <div class="tab-pane" *ngIf="activeTab === 'recipes'">
+                    <h3 class="pane-subheading">Culinary Recommendations & Pairs</h3>
+                    <ul class="bullet-list culinary-list" *ngIf="product.culinary_uses && product.culinary_uses.length > 0; else fallbackCulinary">
+                        <li *ngFor="let use of product.culinary_uses">
+                            <span class="material-icons recipe-bullet-icon">soup_kitchen</span>
+                            <span>{{ use }}</span>
+                        </li>
+                    </ul>
+                    <ng-template #fallbackCulinary>
+                        <ul class="bullet-list culinary-list" *ngIf="product.longdesc3">
+                            <li *ngFor="let use of product.longdesc3.split('#')">
+                                <span class="material-icons recipe-bullet-icon">soup_kitchen</span>
+                                <span>{{ use }}</span>
+                            </li>
+                        </ul>
+                    </ng-template>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- 6. RELATED / SIMILAR PRODUCTS RECOMMENDATION CAROUSEL -->
+        <section class="related-products-section" *ngIf="product.related_products && product.related_products.length > 0">
+            <div class="section-title-bar">
+                <div class="title-with-icon">
+                    <span class="material-icons">recommend</span>
+                    <h2>You May Also Like</h2>
+                </div>
+                <span class="category-link" (click)="navigateToCategory(product.cat)">
+                    See All {{ product.cat }} <span class="material-icons size-14">arrow_forward</span>
+                </span>
+            </div>
+
+            <div class="related-scroll-grid">
+                <div class="related-card" *ngFor="let rel of product.related_products">
+                    <div class="card-thumb-wrap" (click)="navigateToProduct(rel.id)">
+                        <img [src]="rel.img_url || 'assets/general/no_image.png'" 
+                             [alt]="rel.name" 
+                             class="rel-img"
+                             onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                    </div>
+                    <div class="rel-info" (click)="navigateToProduct(rel.id)">
+                        <h4 class="rel-name" [title]="rel.name">{{ rel.name }}</h4>
+                        <div class="rel-weight">{{ rel.weight }} {{ rel.unit_name || 'g' }}</div>
+                        <div class="rel-price-row">
+                            <span class="rel-price">₹{{ rel.price | number:'1.0-0' }}</span>
+                            <span class="rel-mrp" *ngIf="rel.original_price && rel.original_price > rel.price">
+                                ₹{{ rel.original_price | number:'1.0-0' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="rel-action">
+                        <plus-minus [caption]="" 
+                                    [inputVal]="rel.units || 0" 
+                                    [stepVal]="1" 
+                                    [minVal]="0"
+                                    (onChange)="plusMinusValue($event, rel)"
+                                    *ngIf="!rel.disabled && (rel.in_stock !== false && rel.in_stock !== 0); else outOfStockRel">
+                        </plus-minus>
+                        <ng-template #outOfStockRel>
+                            <span class="rel-soldout">Sold out</span>
+                        </ng-template>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 7. SUBSCRIPTION CALENDAR POPUP -->
+    <div class="popup_parent" *ngIf="product && product.subscribe">
+        <div class="popup_cont">
+            <div class="popup-close-btn" (click)="closeSubscriptionModal()">
+                <span class="material-icons">close</span>
+            </div>
+            <app-calendar [data]="{ productsOptions: productsOptions, subsOptions: subsOptions }" 
+                          (changesEvent)="closeSubscriptionModal()">
+            </app-calendar>
+        </div>
+    </div>
+
+    <!-- 9. TOAST NOTIFICATION FOR SHARING -->
+    <div class="toast-snackbar" [class.show]="showShareToast">
+        <span class="material-icons toast-icon">check_circle</span>
+        <span>{{ toastMessage }}</span>
+    </div>
+
+</div>

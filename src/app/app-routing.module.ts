@@ -17,6 +17,16 @@ const routes: Routes = [
     loadChildren: () => import('./products/products.module').then(m => m.ProductsModule)
   },
   {
+    path: 'product/:id',
+    redirectTo: 'products/details/:id',
+    pathMatch: 'full'
+  },
+  {
+    path: 'p/:id',
+    redirectTo: 'products/details/:id',
+    pathMatch: 'full'
+  },
+  {
     path: 'home',
     loadChildren: () => import('./home/home.module').then(m => m.HomeModule),
   },

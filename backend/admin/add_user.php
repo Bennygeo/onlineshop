@@ -50,7 +50,7 @@ try {
         $stmtW = $pdo->prepare("SELECT id FROM wallets WHERE mobile = ? LIMIT 1");
         $stmtW->execute([$mobile]);
         if (!$stmtW->fetch()) {
-            $insW = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description, status) VALUES (?, 0, 'CREDIT', 'Welcome to ThinkSpot', 'authorized')");
+            $insW = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description, status) VALUES (?, 0, 'CREDIT', 'Welcome to TomorrowNeeds', 'authorized')");
             $insW->execute([$mobile]);
         }
     } catch (Exception $eW) {}

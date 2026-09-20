@@ -32,7 +32,8 @@ export class AiService {
   constructor(private api: ApiService) {}
 
   /**
-   * Send user query / recipe request to Thinkspot AI
+   * Send user query / recipe request to TomorrowNeeds AI
+   * Falls back to offline recipes if backend API is unreachable
    */
   askAssistant(message: string, mobile?: string): Observable<AiMessageResponse> {
     const payload = {

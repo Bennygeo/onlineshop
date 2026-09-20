@@ -99,9 +99,18 @@ function ensureSchemaColumns($pdo) {
             "allow_next_day INT DEFAULT 1",
             "allow_immediate_10 INT DEFAULT 0",
             "allow_immediate_30 INT DEFAULT 0",
-            "allow_immediate_60 INT DEFAULT 0"
+            "allow_immediate_60 INT DEFAULT 0",
+            "is_unlimited TINYINT(1) DEFAULT 0"
         ]
     ];
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `store_settings` (
+            `key` VARCHAR(100) PRIMARY KEY,
+            `value` TEXT,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )");
+    } catch (Exception $e) {}
 
     foreach ($columns as $table => $cols) {
         foreach ($cols as $colDef) {

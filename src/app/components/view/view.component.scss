@@ -473,6 +473,130 @@
 }
 
 /* ----------------------------------------------------
+   4B. WEEKLY STORE OFF DAY NOTICE BANNER
+---------------------------------------------------- */
+.weekly-leave-banner {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 45%, #f0fdfa 100%);
+    border: 1.5px solid #a7f3d0;
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin-bottom: 22px;
+    box-shadow: 0 4px 18px rgba(16, 185, 129, 0.08);
+
+    .leave-banner-glow {
+        position: absolute;
+        top: -30px;
+        right: -30px;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(circle, rgba(52, 211, 153, 0.25) 0%, rgba(255, 255, 255, 0) 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .leave-banner-body {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .leave-banner-icon-box {
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+
+        .material-icons {
+            font-size: 24px;
+        }
+    }
+
+    .leave-banner-details {
+        flex: 1;
+
+        .leave-banner-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+
+            .leave-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                background: #dcfce7;
+                color: #15803d;
+                font-size: 11px;
+                font-weight: 700;
+                padding: 2px 8px;
+                border-radius: 6px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+
+            .leave-day-tag {
+                display: inline-flex;
+                align-items: center;
+                background: #059669;
+                color: #ffffff;
+                font-size: 11px;
+                font-weight: 700;
+                padding: 2px 9px;
+                border-radius: 6px;
+            }
+        }
+
+        .leave-banner-title {
+            margin: 0 0 4px 0;
+            font-size: 15px;
+            font-weight: 800;
+            color: #065f46;
+            letter-spacing: -0.2px;
+        }
+
+        .leave-banner-desc {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #047857;
+
+            strong {
+                color: #064e3b;
+                font-weight: 700;
+            }
+        }
+    }
+
+    @media (max-width: 640px) {
+        padding: 14px 16px;
+
+        .leave-banner-icon-box {
+            width: 38px;
+            height: 38px;
+            .material-icons { font-size: 20px; }
+        }
+
+        .leave-banner-title {
+            font-size: 14px;
+        }
+
+        .leave-banner-desc {
+            font-size: 12px;
+        }
+    }
+}
+
+/* ----------------------------------------------------
    5. SECTION BLOCKS & HEADINGS
 ---------------------------------------------------- */
 .section-block {
@@ -805,9 +929,9 @@
 ---------------------------------------------------- */
 .products-grid-scroll {
     display: flex;
-    gap: 14px;
+    gap: 12px;
     overflow-x: auto;
-    padding: 6px 2px 14px 2px;
+    padding: 4px 2px 12px 2px;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
 
@@ -822,11 +946,11 @@
 
     .product-item-card {
         flex: 0 0 auto;
-        width: 156px;
+        width: 152px;
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 12px;
+        border-radius: 14px;
+        padding: 10px 10px 12px 10px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -841,11 +965,13 @@
             background: #ecfdf5;
             color: #065f46;
             border: 1px solid #a7f3d0;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: 700;
-            padding: 1px 6px;
-            border-radius: 6px;
+            padding: 2px 6px;
+            border-radius: 4px;
             text-transform: uppercase;
+            line-height: 1.2;
+            z-index: 1;
 
             &.reorder-badge {
                 background: #fef3c7;
@@ -861,22 +987,22 @@
         }
 
         .prod-img-box {
-            height: 90px;
+            height: 82px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 12px 0 8px 0;
+            margin: 10px 0 8px 0;
 
             .prod-img {
-                max-width: 80px;
-                max-height: 80px;
+                max-width: 78px;
+                max-height: 78px;
                 object-fit: contain;
                 transition: transform 0.25s ease;
             }
         }
 
         .prod-details {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
 
             .prod-name {
                 font-size: 13px;
@@ -894,14 +1020,27 @@
             .prod-weight {
                 font-size: 11px;
                 color: #64748b;
-                margin-bottom: 6px;
+                margin-bottom: 4px;
+                line-height: 1.2;
             }
 
             .prod-price-row {
+                display: flex;
+                align-items: baseline;
+                gap: 6px;
+                line-height: 1.2;
+
                 .price-val {
                     font-size: 15px;
                     font-weight: 800;
-                    color: #0f766e;
+                    color: $price_clr;
+                }
+
+                .original-price-val {
+                    font-size: 12px;
+                    text-decoration: line-through;
+                    color: #aaa;
+                    font-weight: 500;
                 }
             }
         }
@@ -912,7 +1051,7 @@
             justify-content: center;
 
             .not-avail-tag {
-                font-size: 11px;
+                font-size: 10.5px;
                 color: #dc2626;
                 font-weight: 700;
                 background: #fee2e2;
@@ -923,11 +1062,11 @@
 
         &:hover {
             border-color: #cbd5e1;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
 
             .prod-img-box .prod-img {
-                transform: scale(1.08);
+                transform: scale(1.06);
             }
         }
     }
@@ -1799,11 +1938,31 @@
                                 color: #64748b;
                             }
 
-                            .vp-price {
-                                font-size: 12px;
-                                font-weight: 800;
-                                color: #059669;
+                            .vp-price-row {
+                                display: flex;
+                                align-items: baseline;
+                                gap: 5px;
+
+                                .vp-price {
+                                    font-size: 12.5px;
+                                    font-weight: 800;
+                                    color: #059669;
+                                }
+
+                                .vp-orig-price {
+                                    font-size: 10px;
+                                    text-decoration: line-through;
+                                    color: #aaa;
+                                    font-weight: 500;
+                                }
                             }
+                        }
+
+                        .vp-action-wrap {
+                            display: flex;
+                            align-items: center;
+                            justify-content: flex-end;
+                            flex-shrink: 0;
                         }
 
                         .vp-add-btn {
@@ -1867,5 +2026,257 @@
     }
     to {
         transform: translateY(0);
+    }
+}
+
+/* ==========================================================================
+   OFF-DAY FIRST LOGIN / VISIT POPUP MODAL
+   ========================================================================== */
+.off-day-popup-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    animation: popupFadeIn 0.3s ease forwards;
+}
+
+.off-day-popup-card {
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    background: linear-gradient(155deg, #ffffff 0%, #f0fdf4 100%);
+    border: 1px solid rgba(16, 185, 129, 0.28);
+    border-radius: 24px;
+    padding: 24px 22px 20px 22px;
+    box-shadow: 0 25px 50px -12px rgba(6, 78, 59, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+    overflow: hidden;
+    animation: popupScaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+    .popup-close-btn {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        background: rgba(255, 255, 255, 0.9);
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 2;
+
+        &:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            transform: scale(1.05);
+        }
+
+        .material-icons {
+            font-size: 18px;
+        }
+    }
+
+    .popup-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 14px;
+
+        .popup-icon-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+            flex-shrink: 0;
+
+            .material-icons {
+                font-size: 24px;
+            }
+        }
+
+        .popup-header-tags {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+
+            .popup-tag-pill {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                background: #ecfdf5;
+                border: 1px solid #a7f3d0;
+                color: #047857;
+                font-size: 11px;
+                font-weight: 700;
+                padding: 4px 9px;
+                border-radius: 8px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+
+            .popup-off-pill {
+                display: inline-flex;
+                align-items: center;
+                background: #059669;
+                color: #ffffff;
+                font-size: 11px;
+                font-weight: 700;
+                padding: 4px 10px;
+                border-radius: 8px;
+                box-shadow: 0 2px 6px rgba(5, 150, 105, 0.25);
+            }
+        }
+    }
+
+    .popup-body {
+        .popup-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: #064e3b;
+            margin: 0 0 6px 0;
+            line-height: 1.3;
+        }
+
+        .popup-desc {
+            font-size: 13px;
+            color: #334155;
+            line-height: 1.45;
+            margin: 0 0 14px 0;
+
+            strong {
+                color: #065f46;
+            }
+        }
+
+        .popup-delivery-highlight {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
+            border: 1px solid #86efac;
+            border-radius: 14px;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+
+            .highlight-icon {
+                width: 32px;
+                height: 32px;
+                border-radius: 10px;
+                background: #059669;
+                color: #ffffff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+
+                .material-icons {
+                    font-size: 18px;
+                }
+            }
+
+            .highlight-text {
+                .highlight-title {
+                    font-size: 12px;
+                    font-weight: 700;
+                    color: #065f46;
+                    margin-bottom: 2px;
+                }
+
+                .highlight-subtitle {
+                    font-size: 12px;
+                    color: #166534;
+                    line-height: 1.35;
+
+                    strong {
+                        color: #047857;
+                        font-weight: 700;
+                    }
+                }
+            }
+        }
+    }
+
+    .popup-footer {
+        .popup-action-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 14px;
+            padding: 12px 20px;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+            transition: all 0.2s ease;
+
+            &:hover {
+                background: linear-gradient(135deg, #047857 0%, #064e3b 100%);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 18px rgba(5, 150, 105, 0.42);
+            }
+
+            &:active {
+                transform: translateY(0);
+            }
+        }
+    }
+
+    .popup-progress-track {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: rgba(5, 150, 105, 0.12);
+
+        .popup-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            transition: width 50ms linear;
+        }
+    }
+}
+
+@keyframes popupFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes popupScaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
     }
 }

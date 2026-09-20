@@ -103,7 +103,7 @@ try {
         $addr = $addresses[$mob] ?? null;
         $bal = $walletBalances[$mob] ?? 0;
 
-        $displayName = !empty($u['name']) && $u['name'] !== 'Customer' && $u['name'] !== 'Thinkspot User'
+        $displayName = !empty($u['name']) && $u['name'] !== 'Customer' && $u['name'] !== 'Thinkspot User' && $u['name'] !== 'TomorrowNeeds User'
             ? $u['name'] 
             : (!empty($addr['name']) ? $addr['name'] : (!empty($u['name']) ? $u['name'] : 'Customer'));
 

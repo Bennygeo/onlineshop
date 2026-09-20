@@ -29,7 +29,7 @@ export class LocationService {
               `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
               {
                 headers: {
-                  'User-Agent': 'ThinkspotApp/1.0'
+                  'User-Agent': 'TomorrowNeedsApp/1.0'
                 }
               }
             );

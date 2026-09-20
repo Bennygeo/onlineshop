@@ -65,6 +65,7 @@ export type Product = {
     allow_immediate_10?: number | boolean;
     allow_immediate_30?: number | boolean;
     allow_immediate_60?: number | boolean;
+    is_unlimited?: boolean | number;
 
     preferred_days?: string[] | string;
     scheduled_delivery_date?: string;
@@ -97,8 +98,40 @@ export type Product = {
 
     subs_options?: SubsOptions;
 
+    // Extended product details properties
+    origin?: string;
+    shelf_life?: string;
+    highlights?: Array<string>;
+    nutrients?: Array<{ label: string; value: string }>;
+    storage_tips?: Array<string>;
+    culinary_uses?: Array<string>;
+    related_products?: Array<Product>;
+    shortdesc?: string;
+    shortdesctitle?: string;
+    longdesc1?: string;
+    longdesc1title?: string;
+    longdesc2?: string;
+    longdesc2title?: string;
+    longdesc3?: string;
+    longdesc3title?: string;
+
     //Check weather the product available for the current zone
     zoneAvailability?: boolean;
+}
+
+export interface NutrientItem {
+    label: string;
+    value: string;
+}
+
+export interface ProductDetail extends Product {
+    origin?: string;
+    shelf_life?: string;
+    highlights?: string[];
+    nutrients?: NutrientItem[];
+    storage_tips?: string[];
+    culinary_uses?: string[];
+    related_products?: Product[];
 }
 
 //Subscription Options
@@ -390,4 +423,9 @@ export interface UserType {
     defaultAddressID: number;
     email?: string;
     referralCode?: string
+}
+
+export interface StoreSettings {
+    weekly_off_day?: string;
+    [key: string]: any;
 }

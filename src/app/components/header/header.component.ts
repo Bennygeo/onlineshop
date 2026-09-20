@@ -119,7 +119,7 @@ export class HeaderComponent implements OnInit {
           this.addressName = this.user.address?.name;
           this.userName = this.user.address?.name;
         } else {
-          this.userName = "Thinkspot user";
+          this.userName = "TomorrowNeeds user";
           this.addressName = "600095";
           // this.addressFlg = true;
 
@@ -140,7 +140,7 @@ export class HeaderComponent implements OnInit {
           this.userName = this.user.address?.name;
           this.addressName = this.loginS.user.address?.name;
         } else {
-          this.userName = "Thinkspot user";
+          this.userName = "TomorrowNeeds user";
           this.addressName = "600095";
           this.addressFlg = true;
         }

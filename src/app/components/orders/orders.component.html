@@ -85,9 +85,7 @@
                                 <span class="material-icons size-14">{{ getDeliveryOptionBadge(item).icon }}</span>
                                 <span>{{ getDeliveryOptionBadge(item).label }}</span>
                             </div>
-                            <div class="hero-timing-text">
-                                <span class="delivery-date-bold">{{ (item.delivery_option && item.delivery_option.startsWith('IMMEDIATE_') ? safeDate(item.created_at) : safeDate(item.delivery_date)) | date:'EEE, MMM d' }}</span>
-                                <span class="meta-dot">&bull;</span>
+                            <div class="hero-timing-text" *ngIf="item.delivery_option && item.delivery_option.startsWith('IMMEDIATE_')">
                                 <span class="eta-highlight">{{ getDeliveryEtaText(item) }}</span>
                             </div>
                         </div>

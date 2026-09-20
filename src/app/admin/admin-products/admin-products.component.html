@@ -16,11 +16,38 @@
     </div>
   </div>
 
+  <!-- Weekly Leave & Store Operations Settings Card -->
+  <div class="store-leave-card">
+    <div class="leave-card-content">
+      <div class="leave-icon-badge">
+        <span class="material-icons">event_busy</span>
+      </div>
+      <div class="leave-info-text">
+        <h4>Weekly Store Leave Day</h4>
+        <p>Give yourself and your team a scheduled rest day. Selecting a day (e.g. Friday) will automatically shift orders placed the day before (Thursday) for morning delivery on Saturday (7:00 AM IST) and notify customers on the Home page.</p>
+      </div>
+    </div>
+    <div class="leave-card-action">
+      <label>Store Off Day:</label>
+      <select [(ngModel)]="weeklyOffDay">
+        <option value="None">None (Open 7 Days)</option>
+        <option *ngFor="let day of weekDaysList" [value]="day">{{ day }} Off</option>
+      </select>
+      <button class="save-leave-btn" (click)="saveWeeklyLeaveSetting()" [disabled]="storeSettingsSaving">
+        <span class="material-icons size-16">{{ storeSettingsSaving ? 'sync' : 'save' }}</span>
+        <span>{{ storeSettingsSaving ? 'Saving...' : 'Save Setting' }}</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Filter Controls -->
   <div class="controls-bar">
     <div class="search-input-box">
       <span class="material-icons">search</span>
       <input type="text" placeholder="Search product name or Tamil name..." [(ngModel)]="searchQuery" (input)="filterProducts()" />
+      <button class="clear-search-btn" *ngIf="searchQuery" (click)="searchQuery = ''; filterProducts()">
+        <span class="material-icons size-16">close</span>
+      </button>
     </div>
 
     <div class="category-filter">
@@ -34,8 +61,28 @@
     </div>
   </div>
 
-  <!-- Products Table -->
-  <div class="table-container">
+  <!-- Mobile Quick Summary Stats Bar -->
+  <div class="admin-quick-stats-bar">
+    <div class="stat-pill total">
+      <span class="stat-num">{{ totalProductsCount }}</span>
+      <span class="stat-label">Total</span>
+    </div>
+    <div class="stat-pill in-stock">
+      <span class="stat-num">{{ inStockProductsCount }}</span>
+      <span class="stat-label">In Stock</span>
+    </div>
+    <div class="stat-pill out-of-stock" *ngIf="outOfStockProductsCount > 0">
+      <span class="stat-num">{{ outOfStockProductsCount }}</span>
+      <span class="stat-label">Out of Stock</span>
+    </div>
+    <div class="stat-pill hidden-stat" *ngIf="hiddenProductsCount > 0">
+      <span class="stat-num">{{ hiddenProductsCount }}</span>
+      <span class="stat-label">Hidden</span>
+    </div>
+  </div>
+
+  <!-- Desktop Products Table (Visible on lg/desktop screens >= 992px) -->
+  <div class="table-container desktop-table-view">
     <table class="admin-table">
       <thead>
         <tr>
@@ -78,7 +125,11 @@
           </td>
           <td>
             <div class="stock-qty-cell">
-              <span class="stock-qty-badge" [class.low-stock]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0" [class.zero-stock]="(p.stock_qty || 0) <= 0">
+              <span *ngIf="p.is_unlimited == 1 || p.is_unlimited === true" class="stock-qty-badge unlimited-stock" title="Directly purchased from market next morning">
+                <span class="material-icons size-14">all_inclusive</span>
+                <span>Market Sourced</span>
+              </span>
+              <span *ngIf="!(p.is_unlimited == 1 || p.is_unlimited === true)" class="stock-qty-badge" [class.low-stock]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0" [class.zero-stock]="(p.stock_qty || 0) <= 0">
                 <span class="material-icons size-14">{{ (p.stock_qty || 0) > 0 ? 'inventory' : 'production_quantity_limits' }}</span>
                 <span>{{ p.stock_qty !== undefined ? p.stock_qty : 0 }} {{ p.unit_name || 'kg' }}</span>
               </span>
@@ -121,6 +172,114 @@
         </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Mobile Products Card Feed (Optimized for Phones & Tablets < 992px) -->
+  <div class="admin-product-cards-mobile">
+    <div class="mobile-product-card" *ngFor="let p of filteredProducts" [class.is-disabled]="p.disabled">
+      
+      <!-- Top Row: Thumbnail + Product Name + Tamil Name + Category Tag -->
+      <div class="card-header-row">
+        <div class="thumb-wrap">
+          <img [src]="p.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ p.name }}" class="card-thumb" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+        </div>
+        <div class="card-title-block">
+          <div class="title-cat-line">
+            <span class="card-prod-name">{{ p.name }}</span>
+            <span class="cat-badge-sm">{{ getCategoryLabel(p.cat || p.main_category) }}</span>
+          </div>
+          <div class="card-prod-tamil" *ngIf="p.tamil_name">{{ p.tamil_name }}</div>
+          <div class="card-id-tag">ID: #{{ p.id }}</div>
+        </div>
+      </div>
+
+      <!-- Pricing & Unit Specs Grid -->
+      <div class="card-specs-grid">
+        <div class="spec-cell">
+          <span class="spec-label">Selling Price</span>
+          <span class="spec-val price-highlight">₹ {{ p.price }}</span>
+        </div>
+        <div class="spec-cell">
+          <span class="spec-label">MRP</span>
+          <span class="spec-val mrp-val">₹ {{ p.original_price }}</span>
+        </div>
+        <div class="spec-cell">
+          <span class="spec-label">Pack / Unit</span>
+          <span class="spec-val">{{ p.weight }} {{ p.unit_name || 'g' }}</span>
+        </div>
+        <div class="spec-cell">
+          <span class="spec-label">GST Rate</span>
+          <span class="spec-val">{{ p.gst_percent !== undefined ? p.gst_percent : 5 }}%</span>
+        </div>
+      </div>
+
+      <!-- Stock & Average Cost Summary Row -->
+      <div class="card-stock-cost-row">
+        <div class="stock-indicator">
+          <span *ngIf="p.is_unlimited == 1 || p.is_unlimited === true" class="mobile-stock-badge unlimited">
+            <span class="material-icons size-13">all_inclusive</span> Market Sourced
+          </span>
+          <span *ngIf="!(p.is_unlimited == 1 || p.is_unlimited === true)" class="mobile-stock-badge"
+                [class.low]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0"
+                [class.out]="(p.stock_qty || 0) <= 0">
+            <span class="material-icons size-13">{{ (p.stock_qty || 0) > 0 ? 'inventory' : 'production_quantity_limits' }}</span>
+            <span>Stock: {{ p.stock_qty !== undefined ? p.stock_qty : 0 }} {{ p.unit_name || 'kg' }}</span>
+          </span>
+        </div>
+
+        <div class="cost-indicator">
+          <span class="cost-label">Avg Cost:</span>
+          <span class="cost-amount">₹ {{ (p.stock_price !== undefined ? p.stock_price : (p.avg_cost || 0)) | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Custom Delivery Days Schedule (if applicable) -->
+      <div class="card-delivery-pill" *ngIf="getPreferredDaysBadge(p) !== 'All Days'">
+        <span class="material-icons size-13">event_available</span>
+        <span>Delivery: <strong>{{ getPreferredDaysBadge(p) }}</strong></span>
+      </div>
+
+      <!-- Quick 1-Tap Toggle Switches (In Stock / Out of Stock, Visible / Hidden) -->
+      <div class="card-toggles-row">
+        <button class="mobile-toggle-btn stock-toggle" 
+                [class.in-stock]="p.in_stock !== false && p.in_stock !== 0" 
+                [class.out-of-stock]="p.in_stock === false || p.in_stock === 0" 
+                (click)="toggleStockStatus(p)">
+          <span class="material-icons size-15">{{ (p.in_stock !== false && p.in_stock !== 0) ? 'check_circle' : 'remove_shopping_cart' }}</span>
+          <span>{{ (p.in_stock !== false && p.in_stock !== 0) ? 'In Stock' : 'Out of Stock' }}</span>
+        </button>
+
+        <button class="mobile-toggle-btn visibility-toggle" 
+                [class.visible-active]="!p.disabled" 
+                [class.visible-disabled]="p.disabled" 
+                (click)="toggleVisibilityStatus(p)">
+          <span class="material-icons size-15">{{ p.disabled ? 'visibility_off' : 'visibility' }}</span>
+          <span>{{ p.disabled ? 'Hidden' : 'Live' }}</span>
+        </button>
+      </div>
+
+      <!-- Bottom Actions Toolbar -->
+      <div class="card-actions-toolbar">
+        <button class="m-action-btn add-stock" (click)="openAddStockModal(p)">
+          <span class="material-icons size-16">add_box</span>
+          <span>+ Stock</span>
+        </button>
+        <button class="m-action-btn history" (click)="openPurchaseHistoryModal(p)">
+          <span class="material-icons size-16">history</span>
+          <span>Logs</span>
+        </button>
+        <button class="m-action-btn edit" (click)="openEditModal(p)">
+          <span class="material-icons size-16">edit</span>
+          <span>Edit Product</span>
+        </button>
+      </div>
+
+    </div>
+
+    <div class="mobile-no-data" *ngIf="filteredProducts.length === 0">
+      <span class="material-icons size-36">search_off</span>
+      <p>No products found matching criteria.</p>
+    </div>
   </div>
 
   <!-- Category Management Modal -->
@@ -276,7 +435,44 @@
           <small class="field-hint">e.g. 0%, 5%, 12%, 18%</small>
         </div>
 
-        <div class="form-group">
+        <!-- Stock Management Radio Option -->
+        <div class="form-group full-width stock-option-container">
+          <label class="section-heading">
+            <span class="material-icons">inventory_2</span> Stock Management Option
+          </label>
+          <p class="section-desc">By default, no stock option / limit is set (Market Sourced). Select "Manage Stock" to track specific physical inventory.</p>
+          
+          <div class="stock-radio-cards-grid">
+            <label class="stock-radio-card" [class.selected]="newProduct.is_unlimited == 1 || newProduct.is_unlimited === true">
+              <input type="radio" name="new_stock_tracking_mode" [value]="1" [ngModel]="newProduct.is_unlimited" (ngModelChange)="newProduct.is_unlimited = 1" />
+              <div class="radio-card-body">
+                <div class="radio-card-title">
+                  <span class="material-icons">all_inclusive</span>
+                  <span>No Stock Option (Default)</span>
+                </div>
+                <span class="radio-card-sub">Market sourced next morning. Always available with no quantity limits.</span>
+              </div>
+            </label>
+
+            <label class="stock-radio-card" [class.selected]="newProduct.is_unlimited == 0 || newProduct.is_unlimited === false">
+              <input type="radio" name="new_stock_tracking_mode" [value]="0" [ngModel]="newProduct.is_unlimited" (ngModelChange)="newProduct.is_unlimited = 0" />
+              <div class="radio-card-body">
+                <div class="radio-card-title">
+                  <span class="material-icons">inventory</span>
+                  <span>Manage Stock (Track Inventory)</span>
+                </div>
+                <span class="radio-card-sub">Enable inventory count, set stock quantity & manage out-of-stock.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" *ngIf="newProduct.is_unlimited != 1 && newProduct.is_unlimited !== true">
+          <label>Initial Stock Quantity ({{ newProduct.unit_name || 'kg' }}) *</label>
+          <input type="number" [(ngModel)]="newProduct.stock_qty" placeholder="100" min="0" />
+        </div>
+
+        <div class="form-group" *ngIf="newProduct.is_unlimited != 1 && newProduct.is_unlimited !== true">
           <label>Inventory Availability *</label>
           <select [(ngModel)]="newProduct.in_stock">
             <option [ngValue]="1">In Stock (Available for purchase)</option>
@@ -445,7 +641,44 @@
           <small class="field-hint">e.g. 0%, 5%, 12%, 18%</small>
         </div>
 
-        <div class="form-group">
+        <!-- Stock Management Radio Option -->
+        <div class="form-group full-width stock-option-container">
+          <label class="section-heading">
+            <span class="material-icons">inventory_2</span> Stock Management Option
+          </label>
+          <p class="section-desc">By default, no stock option / limit is set (Market Sourced). Select "Manage Stock" to track specific physical inventory.</p>
+          
+          <div class="stock-radio-cards-grid">
+            <label class="stock-radio-card" [class.selected]="editingProduct.is_unlimited == 1 || editingProduct.is_unlimited === true">
+              <input type="radio" name="edit_stock_tracking_mode" [value]="1" [ngModel]="editingProduct.is_unlimited" (ngModelChange)="editingProduct.is_unlimited = 1" />
+              <div class="radio-card-body">
+                <div class="radio-card-title">
+                  <span class="material-icons">all_inclusive</span>
+                  <span>No Stock Option (Default)</span>
+                </div>
+                <span class="radio-card-sub">Market sourced next morning. Always available with no quantity limits.</span>
+              </div>
+            </label>
+
+            <label class="stock-radio-card" [class.selected]="editingProduct.is_unlimited == 0 || editingProduct.is_unlimited === false">
+              <input type="radio" name="edit_stock_tracking_mode" [value]="0" [ngModel]="editingProduct.is_unlimited" (ngModelChange)="editingProduct.is_unlimited = 0" />
+              <div class="radio-card-body">
+                <div class="radio-card-title">
+                  <span class="material-icons">inventory</span>
+                  <span>Manage Stock (Track Inventory)</span>
+                </div>
+                <span class="radio-card-sub">Enable inventory count, set stock quantity & manage out-of-stock.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" *ngIf="editingProduct.is_unlimited != 1 && editingProduct.is_unlimited !== true">
+          <label>Current Stock Quantity ({{ editingProduct.unit_name || 'kg' }}) *</label>
+          <input type="number" [(ngModel)]="editingProduct.stock_qty" min="0" />
+        </div>
+
+        <div class="form-group" *ngIf="editingProduct.is_unlimited != 1 && editingProduct.is_unlimited !== true">
           <label>Inventory Availability *</label>
           <select [(ngModel)]="editingProduct.in_stock">
             <option [ngValue]="1">In Stock (Available for purchase)</option>

@@ -95,6 +95,28 @@
                 </div>
             </div>
 
+            <!-- WEEKLY STORE OFF DAY NOTICE BANNER -->
+            <div class="weekly-leave-banner" *ngIf="isWeeklyOffActive">
+                <div class="leave-banner-glow"></div>
+                <div class="leave-banner-body">
+                    <div class="leave-banner-icon-box">
+                        <span class="material-icons">spa</span>
+                    </div>
+                    <div class="leave-banner-details">
+                        <div class="leave-banner-top">
+                            <span class="leave-badge">
+                                <span class="material-icons size-13">event_busy</span> Weekly Store Schedule
+                            </span>
+                            <span class="leave-day-tag">{{ weeklyOffDay }}s Off</span>
+                        </div>
+                        <h3 class="leave-banner-title">Prioritizing Team & Employee Well-Being</h3>
+                        <p class="leave-banner-desc">
+                            Concerning our staff and delivery team's health, our store takes a weekly break on <strong>{{ weeklyOffDay }}s</strong>. Orders placed on <strong>{{ previousDayToWeeklyOff }}</strong> will be freshly delivered on <strong>{{ nextOperatingDayAfterOff }} morning at 7:00 AM IST</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <!-- 3. AI KITCHEN RESTOCK PREDICTOR (Smart Reorder Engine) -->
             <div class="section-block ai-restock-section" *ngIf="restockPredictions && restockPredictions.length > 0">
                 <div class="section-header-row">
@@ -129,21 +151,21 @@
                             [ngClass]="item.urgency === 'high' ? 'restock-badge-high' : 'restock-badge-med'">
                             {{ item.urgencyBadge }}
                         </div>
-                        <div class="prod-img-box">
+                        <div class="prod-img-box" (click)="viewProductDetail(item.product)" style="cursor: pointer;">
                             <img [src]="item.product.img_url || 'assets/general/no_image.png'" class="prod-img"
                                 [alt]="item.product.name"
                                 onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
                         </div>
-                        <div class="prod-details">
+                        <div class="prod-details" (click)="viewProductDetail(item.product)" style="cursor: pointer;">
                             <h4 class="prod-name" [title]="item.product.name">{{ item.product.name }}</h4>
                             <div class="prod-weight">{{ item.product.updated_weight || item.product.weight }} {{
                                 item.product.unit_name || '' }}</div>
                             <div class="restock-reason-text">{{ item.reason }}</div>
                             <div class="prod-price-row">
-                                <span class="price-val">₹{{ item.product.price }}</span>
+                                <span class="price-val">₹{{ item.product.price | number:'1.0-0' }}</span>
                                 <span class="original-price-val"
-                                    *ngIf="item.product.original_price > item.product.price">₹{{
-                                    item.product.original_price }}</span>
+                                    *ngIf="item.product.original_price && item.product.original_price > item.product.price">₹{{
+                                    item.product.original_price | number:'1.0-0' }}</span>
                             </div>
                         </div>
 
@@ -180,16 +202,19 @@
                 <div class="products-grid-scroll">
                     <div class="product-item-card" *ngFor="let product of recent_products">
                         <div class="prod-badge reorder-badge">Previous Order</div>
-                        <div class="prod-img-box">
+                        <div class="prod-img-box" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <img [src]="product.img_url || 'assets/general/no_image.png'" class="prod-img"
                                 [alt]="product.name" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
                         </div>
-                        <div class="prod-details">
+                        <div class="prod-details" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
                             <div class="prod-weight">{{ product.updated_weight || product.weight }} {{ product.unit_name
                                 || '' }}</div>
                             <div class="prod-price-row">
-                                <span class="price-val">₹{{ product.price }}</span>
+                                <span class="price-val">₹{{ product.price | number:'1.0-0' }}</span>
+                                <span class="original-price-val"
+                                    *ngIf="product.original_price && product.original_price > product.price">₹{{
+                                    product.original_price | number:'1.0-0' }}</span>
                             </div>
                         </div>
 
@@ -328,14 +353,16 @@
                             <div class="prod-weight">{{ product.updated_weight || product.weight }} {{ product.unit_name
                                 || '' }}</div>
                             <div class="prod-price-row">
-                                <span class="price-val">₹{{ product.price }}</span>
-                                <span class="original-price-val" *ngIf="product.original_price > product.price">₹{{
-                                    product.original_price }}</span>
+                                <span class="price-val">₹{{ product.price | number:'1.0-0' }}</span>
+                                <span class="original-price-val" *ngIf="product.original_price && product.original_price > product.price">₹{{
+                                    product.original_price | number:'1.0-0' }}</span>
                             </div>
                         </div>
 
                         <div class="prod-action-wrap">
                             <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
+                                [maxVal]="(product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 10"
+                                [disabled]="product['disabled'] || product['disable']"
                                 (onChange)="plusMinusValue($event, product)"
                                 *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailableDiet">
                             </plus-minus>
@@ -366,17 +393,19 @@
                 <div class="products-grid-scroll">
                     <div class="product-item-card batter-card" *ngFor="let product of batter_products">
                         <div class="prod-badge batter-badge">Stone Ground</div>
-                        <div class="prod-img-box">
+                        <div class="prod-img-box" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <img [src]="product.img_url || 'assets/categories/Thinkspot_BatterIcon.png'"
                                 class="prod-img" [alt]="product.name"
                                 onerror="this.src='assets/categories/Thinkspot_BatterIcon.png'" />
                         </div>
-                        <div class="prod-details">
+                        <div class="prod-details" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
                             <div class="prod-weight">{{ product.updated_weight || product.weight }} {{ product.unit_name
                                 || 'grams' }}</div>
                             <div class="prod-price-row">
-                                <span class="price-val">₹{{ product.price }}</span>
+                                <span class="price-val">₹{{ product.price | number:'1.0-0' }}</span>
+                                <span class="original-price-val" *ngIf="product.original_price && product.original_price > product.price">₹{{
+                                    product.original_price | number:'1.0-0' }}</span>
                             </div>
                         </div>
 
@@ -408,16 +437,18 @@
                 <div class="products-grid-scroll" *ngIf="recommended_products && recommended_products.length > 0">
                     <div class="product-item-card" *ngFor="let product of recommended_products">
                         <div class="prod-badge">Farm Direct</div>
-                        <div class="prod-img-box">
+                        <div class="prod-img-box" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <img [src]="product.img_url || 'assets/general/no_image.png'" class="prod-img"
                                 [alt]="product.name" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
                         </div>
-                        <div class="prod-details">
+                        <div class="prod-details" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
                             <div class="prod-weight">{{ product.updated_weight || product.weight }} {{ product.unit_name
                                 || '' }}</div>
                             <div class="prod-price-row">
-                                <span class="price-val">₹{{ product.price }}</span>
+                                <span class="price-val">₹{{ product.price | number:'1.0-0' }}</span>
+                                <span class="original-price-val" *ngIf="product.original_price && product.original_price > product.price">₹{{
+                                    product.original_price | number:'1.0-0' }}</span>
                             </div>
                         </div>
 
@@ -435,9 +466,9 @@
                 </div>
             </div>
 
-            <!-- 10. WHY CHOOSE THINKSPOT (Freshness Promise) -->
+            <!-- 10. WHY CHOOSE TOMORROWNEEDS (Freshness Promise) -->
             <div class="section-block freshness-promise-block">
-                <h3 class="promise-heading">The Thinkspot Freshness Promise</h3>
+                <h3 class="promise-heading">The TomorrowNeeds Freshness Promise</h3>
                 <div class="promise-cards-grid">
                     <div class="promise-card">
                         <div class="promise-icon-wrap">
@@ -486,7 +517,7 @@
                     <span class="material-icons">mic</span>
                 </div>
                 <div>
-                    <h3 class="sheet-title">Thinkspot AI Voice Shopping</h3>
+                    <h3 class="sheet-title">TomorrowNeeds AI Voice Shopping</h3>
                     <p class="sheet-subtitle">Speak freely in English, தமிழ் (Tamil) or Tanglish</p>
                 </div>
             </div>
@@ -558,7 +589,7 @@
             <div class="ai-reply-card" *ngIf="aiVoiceReply">
                 <div class="ai-reply-header">
                     <span class="material-icons ai-sparkle-icon">auto_awesome</span>
-                    <span class="ai-header-title">Thinkspot AI Chef</span>
+                    <span class="ai-header-title">TomorrowNeeds AI Chef</span>
                     <button class="tts-toggle-btn" (click)="isSpeaking ? stopSpeaking() : speakReply(aiVoiceReply)"
                         [title]="isSpeaking ? 'Stop speaking' : 'Read aloud'">
                         <span class="material-icons">{{ isSpeaking ? 'volume_up' : 'volume_mute' }}</span>
@@ -586,17 +617,74 @@
                             <span class="vp-name">{{ prod.name }}</span>
                             <span class="vp-weight">{{ prod.updated_weight || prod.weight }} {{ prod.unit_name || ''
                                 }}</span>
-                            <span class="vp-price">₹{{ prod.price }}</span>
+                            <div class="vp-price-row">
+                                <span class="vp-price">₹{{ prod.price | number:'1.0-0' }}</span>
+                                <span class="vp-orig-price" *ngIf="prod.original_price && prod.original_price > prod.price">₹{{ prod.original_price | number:'1.0-0' }}</span>
+                            </div>
                         </div>
-                        <button class="vp-add-btn" (click)="addVoiceProductToCart(prod)">
-                            <span class="material-icons size-16">{{ (prod.units && prod.units > 0) ? 'done' : 'add'
-                                }}</span>
-                            <span>{{ (prod.units && prod.units > 0) ? (prod.units + ' Added') : 'Add' }}</span>
-                        </button>
+                        <div class="vp-action-wrap">
+                            <plus-minus [caption]="" [inputVal]="(prod.units || 0)" [stepVal]="1" [minVal]="0"
+                                [maxVal]="(prod.stock_qty !== undefined && prod.stock_qty !== null) ? prod.stock_qty : 10"
+                                [disabled]="prod['disabled'] || prod['disable']"
+                                (onChange)="plusMinusValue($event, prod)">
+                            </plus-minus>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- WEEKLY OFF DAY FIRST LOGIN / VISIT AUTO-DISMISS POPUP -->
+<div class="off-day-popup-backdrop" *ngIf="showOffDayPopup" (click)="closeOffDayPopup()">
+    <div class="off-day-popup-card" (click)="$event.stopPropagation()">
+        <button class="popup-close-btn" (click)="closeOffDayPopup()" aria-label="Close Announcement">
+            <span class="material-icons">close</span>
+        </button>
+
+        <div class="popup-header">
+            <div class="popup-icon-badge">
+                <span class="material-icons">spa</span>
+            </div>
+            <div class="popup-header-tags">
+                <span class="popup-tag-pill">
+                    <span class="material-icons size-13">event_busy</span> Store Weekly Schedule
+                </span>
+                <span class="popup-off-pill">Tomorrow ({{ weeklyOffDay }}) Off</span>
+            </div>
+        </div>
+
+        <div class="popup-body">
+            <h3 class="popup-title">Store Weekly Rest Notice</h3>
+            <p class="popup-desc">
+                To care for our dedicated farm partners and delivery team's health, our store will be closed tomorrow (<strong>{{ weeklyOffDay }}</strong>).
+            </p>
+            
+            <div class="popup-delivery-highlight">
+                <div class="highlight-icon">
+                    <span class="material-icons">local_shipping</span>
+                </div>
+                <div class="highlight-text">
+                    <div class="highlight-title">Orders placed today ({{ todayDayName }})</div>
+                    <div class="highlight-subtitle">
+                        Delivered fresh on <strong>{{ nextOperatingDayAfterOff }} morning at 7:00 AM IST</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="popup-footer">
+            <button class="popup-action-btn" (click)="closeOffDayPopup()">
+                <span>Got It, Continue Shopping</span>
+                <span class="material-icons size-16">arrow_forward</span>
+            </button>
+        </div>
+
+        <!-- Auto Dismiss Countdown Bar -->
+        <div class="popup-progress-track">
+            <div class="popup-progress-fill" [style.width.%]="offDayPopupProgress"></div>
+        </div>
     </div>
 </div>

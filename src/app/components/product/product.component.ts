@@ -53,6 +53,10 @@ export class ProductComponent implements OnInit, OnChanges {
   }
 
   ngOnInit() {
+    this.cartS.storeSettingsUpdateEvent.subscribe(() => {
+      this.init();
+    });
+
     this.product.changeInProduct.subscribe({
       next: (product: Product) => {
         if (product.subscribe) {
@@ -69,8 +73,7 @@ export class ProductComponent implements OnInit, OnChanges {
       error: (err: Error) => {
         alert("Subscription write error.")
       }
-    })
-
+    });
   }
 
   init() {
@@ -79,11 +82,14 @@ export class ProductComponent implements OnInit, OnChanges {
 
     this.product.disabled = (String(this.product['disabled']) == 'true') ? true : false;
 
+    const isUnlimited = (this.product.is_unlimited === 1 || this.product.is_unlimited === true || String(this.product['is_unlimited']) === '1');
+    this.product.is_unlimited = isUnlimited;
+
     if (this.product['stock_qty'] !== undefined && this.product['stock_qty'] !== null) {
       this.product.stock_qty = parseFloat(String(this.product['stock_qty']));
     }
-    const hasStock = (this.product.stock_qty === undefined || this.product.stock_qty === null || this.product.stock_qty > 0);
-    const inStockFlag = (this.product['in_stock'] !== false && String(this.product['in_stock']) !== '0' && this.product['in_stock'] !== 0);
+    const hasStock = isUnlimited || (this.product.stock_qty === undefined || this.product.stock_qty === null || this.product.stock_qty > 0);
+    const inStockFlag = isUnlimited || (this.product['in_stock'] !== false && String(this.product['in_stock']) !== '0' && this.product['in_stock'] !== 0);
     this.product.in_stock = inStockFlag && hasStock;
 
     const _quantity = (this.product.units * 1) || 1;
@@ -121,7 +127,7 @@ export class ProductComponent implements OnInit, OnChanges {
     // Handle Preferred Delivery Days Forward Scheduling
     const prefDays = DateE.normalizePreferredDays(this.product.preferred_days);
     if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
-      const scheduledDate = DateE.getPreferredDaysNextDeliveryDate(prefDays, this.cartS.deliveryDate);
+      const scheduledDate = DateE.getPreferredDaysNextDeliveryDate(prefDays, this.cartS.deliveryDate, this.cartS.storeSettings?.weekly_off_day);
       this.product.delivery_date = new DateE(scheduledDate);
       this.product.scheduled_delivery_label = DateE.formatPreferredDaysSummary(prefDays);
       this.product.scheduled_delivery_date = `${scheduledDate.getFullYear()}-${String(scheduledDate.getMonth() + 1).padStart(2, '0')}-${String(scheduledDate.getDate()).padStart(2, '0')}`;
@@ -140,14 +146,16 @@ export class ProductComponent implements OnInit, OnChanges {
       this.product.subscribeFlg = isMilk || isTenderCoconut;
     }
 
-    const hasImm30 = Number(this.product.allow_immediate_30) === 1;
-    const hasImm10 = Number(this.product.allow_immediate_10) === 1;
-    const hasImm60 = Number(this.product.allow_immediate_60) === 1;
+    const isImmOperating = this.cartS.isImmediateDeliveryOperatingHour();
+    const hasImm30 = isImmOperating && Number(this.product.allow_immediate_30) === 1;
+    const hasImm10 = isImmOperating && Number(this.product.allow_immediate_10) === 1;
+    const hasImm60 = isImmOperating && Number(this.product.allow_immediate_60) === 1;
+
+    const isActuallyTomorrow = (DateE.dateDiff(this.cartS.todaysDate, this.product.delivery_date) === 1);
 
     if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
       try {
-        const isTmrw = (DateE.dateDiff(this.cartS.deliveryDate, this.product.delivery_date) == 0);
-        this.product.delivery_date_enhanced = isTmrw ? "Tomorrow" : (this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d') || 'Scheduled');
+        this.product.delivery_date_enhanced = isActuallyTomorrow ? "Tomorrow" : (this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d') || 'Scheduled');
       } catch (e) {
         this.product.delivery_date_enhanced = this.product.scheduled_delivery_label || "Scheduled";
       }
@@ -159,9 +167,9 @@ export class ProductComponent implements OnInit, OnChanges {
       this.product.delivery_date_enhanced = "60 mins";
     } else {
       try {
-        this.product.delivery_date_enhanced = (DateE.dateDiff(this.cartS.deliveryDate, this.product.delivery_date) == 0) ? "Tomorrow" : this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d');
+        this.product.delivery_date_enhanced = isActuallyTomorrow ? "Tomorrow" : this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d');
       } catch (e) {
-        this.product.delivery_date_enhanced = "Tomorrow";
+        this.product.delivery_date_enhanced = isActuallyTomorrow ? "Tomorrow" : "Scheduled";
       }
     }
   }
@@ -172,28 +180,12 @@ export class ProductComponent implements OnInit, OnChanges {
   }
 
   detailed_view(evt: MouseEvent) {
-    //to update the loading clicked status to show loading status
-    this.descriptionOptions.productname = this.product.name;
-    this.descriptionOptions.imgurl = this.product.img_url;
-    this.descriptionOptions.loadingstatus = true;
-    this._productService.descUpdateEvent.next(this.descriptionOptions);
-
-    this._api.postApi('products/read_prod_desc.php', { 'p_id': this.product.id }).subscribe((desc: any) => {
-      this.descriptionOptions.loadingstatus = false;
-
-      try {
-        if (desc[0]) {
-          this.descriptionOptions = desc[0];
-
-          this.descriptionOptions.productname = this.product.name;
-          this.descriptionOptions.imgurl = this.product.img_url;
-
-          this._productService.descUpdateEvent.next(this.descriptionOptions);
-        } else this._productService.descUpdateEvent.next(this.descriptionOptions);
-      } catch (e) {
-        this._productService.descUpdateEvent.next(this.descriptionOptions);
-      }
-    });
+    if (evt) {
+      evt.stopPropagation();
+    }
+    if (this.product && this.product.id) {
+      this.cartS.router.navigate(['/products/details/' + this.product.id]);
+    }
   }
 
   onImageLoad(evt) {
@@ -224,5 +216,19 @@ export class ProductComponent implements OnInit, OnChanges {
     } else {
       this.loginS.loginPromptEvent.next(true);
     }
+  }
+
+  get isMultiDayDelivery(): boolean {
+    if (!this.product) return false;
+    const subs = this.product.subs_options;
+    if (subs) {
+      if (subs.multiDaySelected && subs.multiDaySelected.length > 0) return true;
+      if (subs.rangeSelected && subs.rangeSelected.length > 0) return true;
+    }
+    const prefDays = DateE.normalizePreferredDays(this.product.preferred_days);
+    if (prefDays && prefDays.length > 1 && prefDays.length < 7) {
+      return true;
+    }
+    return false;
   }
 }

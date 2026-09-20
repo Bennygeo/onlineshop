@@ -20,14 +20,11 @@ $sub_cat = isset($data['sub_cat']) ? trim($data['sub_cat']) : null;
 $weight = isset($data['weight']) ? intval($data['weight']) : null;
 $unit_name = isset($data['unit_name']) ? trim($data['unit_name']) : null;
 $disabled = isset($data['disabled']) ? intval($data['disabled']) : null;
+$is_unlimited = isset($data['is_unlimited']) ? intval($data['is_unlimited']) : null;
 $stock_qty = isset($data['stock_qty']) && $data['stock_qty'] !== '' ? floatval($data['stock_qty']) : null;
 $in_stock = isset($data['in_stock']) ? intval($data['in_stock']) : null;
-if ($stock_qty !== null) {
-    if ($stock_qty <= 0) {
-        $in_stock = 0;
-    } elseif ($in_stock === null) {
-        $in_stock = 1;
-    }
+if ($is_unlimited !== 1 && $stock_qty !== null && $stock_qty <= 0 && $in_stock === null) {
+    $in_stock = 0;
 }
 $gst_percent = isset($data['gst_percent']) ? floatval($data['gst_percent']) : null;
 $img_url = isset($data['img_url']) ? trim($data['img_url']) : null;
@@ -61,6 +58,7 @@ foreach ($tables as $table) {
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_10 INT DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_30 INT DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0",
+        "ALTER TABLE {$table} ADD COLUMN is_unlimited TINYINT(1) DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN preferred_days VARCHAR(255) DEFAULT '[]'"
     ];
     foreach ($columnDefs as $sqlDef) {
@@ -98,6 +96,7 @@ foreach ($tables as $table) {
         if ($allow_immediate_10 !== null) { $updates[] = "allow_immediate_10 = ?"; $params[] = $allow_immediate_10; }
         if ($allow_immediate_30 !== null) { $updates[] = "allow_immediate_30 = ?"; $params[] = $allow_immediate_30; }
         if ($allow_immediate_60 !== null) { $updates[] = "allow_immediate_60 = ?"; $params[] = $allow_immediate_60; }
+        if ($is_unlimited !== null) { $updates[] = "is_unlimited = ?"; $params[] = $is_unlimited; }
         if ($preferred_days !== null) { $updates[] = "preferred_days = ?"; $params[] = $preferred_days; }
 
         if (!empty($updates)) {

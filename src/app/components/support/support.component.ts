@@ -11,7 +11,7 @@ export class SupportComponent {
   mobile: string = "+917200015551";
   message: string = 'Hi there!';
   whatsappLink: string;
-  mailto: string = "mailto:hey@thinkspot.in";
+  mailto: string = "mailto:hey@tomorrowneeds.in";
 
   constructor(private cartS: CartService) {
     this.cartS.headerChangeEvent.next("type2");

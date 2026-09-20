@@ -4,6 +4,9 @@ import { DescriptionOptions, Product, ProductOptions, menuOptions } from '../uti
 import { CartService } from './cart.service';
 import { Utils } from '../utils/utils';
 
+import { ApiService } from './api.service';
+import { Observable } from 'rxjs';
+
 @Injectable({
   providedIn: "root"
 })
@@ -11,8 +14,19 @@ export class ProductService {
 
   constructor(
     private cartService: CartService,
-    private _utils: Utils
+    private _utils: Utils,
+    private apiService: ApiService
   ) { }
+
+  /**
+   * Fetch full product details with nutritional facts, storage tips, and related items
+   */
+  getProductDetail(id: string, zone?: string): Observable<any> {
+    return this.apiService.postApi('products/get_product_detail.php', {
+      id: id,
+      table_name: zone || 'products'
+    });
+  }
 
   //To update description from product component to product-list component
   descUpdateEvent: Subject<DescriptionOptions> = new Subject<DescriptionOptions>();

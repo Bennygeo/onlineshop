@@ -413,6 +413,12 @@ export class SearchComponent implements OnInit, OnDestroy {
     }
   }
 
+  viewProductDetail(product: Product): void {
+    if (product && product.id) {
+      this.router.navigate(['/products/details/' + product.id]);
+    }
+  }
+
   onProductChanges(product: Product) {
     this.productsOptions.product = product;
     this.subsOptions = {

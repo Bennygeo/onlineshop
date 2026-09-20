@@ -23,8 +23,12 @@ $tamil_name = isset($data['tamil_name']) ? trim($data['tamil_name']) : '';
 $img_url = isset($data['img_url']) ? trim($data['img_url']) : 'assets/categories/Thinkspot_veggiesIcon.png';
 $zone = isset($data['zone']) ? trim($data['zone']) : 'both'; // zone1, zone2, or both
 $gst_percent = isset($data['gst_percent']) ? floatval($data['gst_percent']) : 5.00;
+$is_unlimited = isset($data['is_unlimited']) ? intval($data['is_unlimited']) : 1;
 $in_stock = isset($data['in_stock']) ? intval($data['in_stock']) : 1;
-$stock_qty = isset($data['stock_qty']) ? intval($data['stock_qty']) : 100;
+$stock_qty = isset($data['stock_qty']) ? floatval($data['stock_qty']) : 0;
+if ($is_unlimited == 1) {
+    $in_stock = 1;
+}
 $disabled = isset($data['disabled']) ? intval($data['disabled']) : 0;
 $allow_next_day = isset($data['allow_next_day']) ? intval($data['allow_next_day']) : 1;
 $allow_immediate_10 = isset($data['allow_immediate_10']) ? intval($data['allow_immediate_10']) : 0;
@@ -65,6 +69,7 @@ foreach ($tables as $table) {
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_10 INT DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_30 INT DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0",
+        "ALTER TABLE {$table} ADD COLUMN is_unlimited TINYINT(1) DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN preferred_days VARCHAR(255) DEFAULT '[]'"
     ];
     foreach ($columnDefs as $sqlDef) {
@@ -76,14 +81,14 @@ foreach ($tables as $table) {
     try {
         $stmt = $pdo->prepare("
             INSERT INTO {$table} 
-            (id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, show_off_percent, weight, original_weight, unit_name, original_unit_name, img_url, disabled, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60, preferred_days) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (id, name, tamil_name, cat, sub_cat, price, original_price, stock_price, profit_percent, show_off_percent, weight, original_weight, unit_name, original_unit_name, img_url, disabled, in_stock, stock_qty, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60, is_unlimited, preferred_days) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $id, $name, $tamil_name, $cat, $sub_cat, $price, $original_price,
             $stock_price, $profit_percent, $show_off_percent, $weight, $weight,
             $unit_name, $original_unit_name, $img_url, $disabled, $in_stock, $stock_qty, $gst_percent,
-            $allow_next_day, $allow_immediate_10, $allow_immediate_30, $allow_immediate_60, $preferred_days
+            $allow_next_day, $allow_immediate_10, $allow_immediate_30, $allow_immediate_60, $is_unlimited, $preferred_days
         ]);
         $successCnt++;
     } catch (Exception $e) {

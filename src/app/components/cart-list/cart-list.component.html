@@ -107,7 +107,7 @@
         </div>
 
         <!-- Order Standard Delivery Banner (Auto-computed from highest delivery time item in cart) -->
-        <div class="container delivery-banner-wrap" *ngIf="fetchUserBagFlg" [@fadeInOut]>
+        <div class="container delivery-banner-wrap" *ngIf="fetchUserBagFlg && !hasMultiDayDelivery()" [@fadeInOut]>
             <div class="order-delivery-card" [class.express-mode]="orderDeliverySummary?.isImmediate">
                 <div class="delivery-icon-circle" [class.express-circle]="orderDeliverySummary?.isImmediate">
                     <span class="material-icons">{{ orderDeliverySummary?.icon }}</span>

@@ -189,6 +189,101 @@ export class ViewComponent implements OnInit, OnDestroy {
   activeSlideIndex: number = 0;
   private autoSlideInterval: any;
 
+  get weeklyOffDay(): string {
+    return this.cartS.storeSettings?.weekly_off_day || 'None';
+  }
+
+  get isWeeklyOffActive(): boolean {
+    const off = this.weeklyOffDay;
+    return Boolean(off && off !== 'None' && off.trim() !== '');
+  }
+
+  get previousDayToWeeklyOff(): string {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const off = this.weeklyOffDay;
+    const idx = days.indexOf(off);
+    if (idx === -1) return '';
+    const prevIdx = (idx - 1 + 7) % 7;
+    return days[prevIdx];
+  }
+
+  get nextOperatingDayAfterOff(): string {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const off = this.weeklyOffDay;
+    const idx = days.indexOf(off);
+    if (idx === -1) return '';
+    const nextIdx = (idx + 1) % 7;
+    return days[nextIdx];
+  }
+
+  get isTomorrowWeeklyOff(): boolean {
+    if (!this.isWeeklyOffActive) return false;
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const istTime = new Date(utcTime + (3600000 * 5.5));
+    const tomorrowIndex = (istTime.getDay() + 1) % 7;
+    const tomorrowName = days[tomorrowIndex].toLowerCase();
+    const offName = this.weeklyOffDay.toLowerCase().trim();
+    return (tomorrowName === offName || tomorrowName.startsWith(offName) || offName.startsWith(tomorrowName));
+  }
+
+  get todayDayName(): string {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const istTime = new Date(utcTime + (3600000 * 5.5));
+    return days[istTime.getDay()];
+  }
+
+  // --- Off-Day First Login / Visit Popup ---
+  showOffDayPopup: boolean = false;
+  offDayPopupProgress: number = 100;
+  private popupProgressInterval: any = null;
+
+  checkAndTriggerOffDayPopup() {
+    if (!this.isTomorrowWeeklyOff) {
+      return;
+    }
+
+    if (this.showOffDayPopup) {
+      return;
+    }
+
+    setTimeout(() => {
+      if (this.isTomorrowWeeklyOff) {
+        this.showOffDayPopup = true;
+        this.startPopupAutoDismiss(7000);
+        this.cdr.detectChanges();
+      }
+    }, 400);
+  }
+
+  startPopupAutoDismiss(durationMs: number = 7000) {
+    if (this.popupProgressInterval) {
+      clearInterval(this.popupProgressInterval);
+    }
+    const startTime = Date.now();
+    this.popupProgressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remainingPct = Math.max(0, 100 - (elapsed / durationMs) * 100);
+      this.offDayPopupProgress = remainingPct;
+      this.cdr.detectChanges();
+      if (remainingPct <= 0) {
+        this.closeOffDayPopup();
+      }
+    }, 50);
+  }
+
+  closeOffDayPopup() {
+    this.showOffDayPopup = false;
+    if (this.popupProgressInterval) {
+      clearInterval(this.popupProgressInterval);
+      this.popupProgressInterval = null;
+    }
+    this.cdr.detectChanges();
+  }
+
   constructor(
     public cartS: CartService,
     public loginS: LoginService,
@@ -308,6 +403,12 @@ export class ViewComponent implements OnInit, OnDestroy {
       this.cartS.cartUpdateEvent.subscribe(() => {
         this.cartBarVisibilityFlg = (this.cartS.cartDetails.totalItems > 0);
         this.syncAllProductUnits();
+      })
+    );
+
+    this.subs.add(
+      this.cartS.storeSettingsUpdateEvent.subscribe(() => {
+        this.checkAndTriggerOffDayPopup();
       })
     );
   }
@@ -786,6 +887,12 @@ export class ViewComponent implements OnInit, OnDestroy {
     this.cartS.router.navigate(['/products/category/' + catName]);
   }
 
+  viewProductDetail(product: Product): void {
+    if (product && product.id) {
+      this.cartS.router.navigate(['/products/details/' + product.id]);
+    }
+  }
+
   sellAllAction() {
     this.cartS.router.navigate(['/products/category/Vegetables']);
   }
@@ -796,6 +903,7 @@ export class ViewComponent implements OnInit, OnDestroy {
     this.recommended_products = this.cartS.recommendedProducts || [];
     this.syncAllProductUnits();
     this.startAutoSlide();
+    this.checkAndTriggerOffDayPopup();
 
     if (this.loginS.user?.mobile) {
       this.loadRecentPurchases();
@@ -845,6 +953,7 @@ export class ViewComponent implements OnInit, OnDestroy {
     this.stopAutoSlide();
     this.stopVoiceListening();
     this.stopSpeaking();
+    this.closeOffDayPopup();
     this.subs.unsubscribe();
   }
 }

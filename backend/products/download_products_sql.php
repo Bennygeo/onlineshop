@@ -25,7 +25,8 @@ try {
         "allow_next_day INT DEFAULT 1",
         "allow_immediate_10 INT DEFAULT 0",
         "allow_immediate_30 INT DEFAULT 0",
-        "allow_immediate_60 INT DEFAULT 0"
+        "allow_immediate_60 INT DEFAULT 0",
+        "is_unlimited TINYINT(1) DEFAULT 0"
     ];
 
     $allTables = ['products', 'zone1_products_new_1', 'zone2_products_new_1'];
@@ -39,11 +40,6 @@ try {
             } catch (Exception $colEx) {}
         }
     }
-
-    // Ensure any products with in_stock=1 or NULL have positive stock_qty
-    try {
-        $pdo->exec("UPDATE `products` SET stock_qty = 100.00 WHERE (stock_qty IS NULL OR stock_qty = 0) AND (in_stock = 1 OR in_stock IS NULL)");
-    } catch (Exception $upEx) {}
 
     // Fetch products
     $products = [];
@@ -89,7 +85,7 @@ try {
     $masterStockMap = [];
     if ($targetTable !== 'products') {
         try {
-            $stmtMasterStock = $pdo->query("SELECT id, stock_qty, in_stock, stock_price, profit_percent, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60, preferred_days FROM `products`");
+            $stmtMasterStock = $pdo->query("SELECT id, stock_qty, in_stock, is_unlimited, stock_price, profit_percent, gst_percent, allow_next_day, allow_immediate_10, allow_immediate_30, allow_immediate_60, preferred_days FROM `products`");
             if ($stmtMasterStock) {
                 while ($mRow = $stmtMasterStock->fetch(PDO::FETCH_ASSOC)) {
                     $masterStockMap[$mRow['id']] = $mRow;
@@ -112,25 +108,28 @@ try {
         $p['profit_percent'] = isset($p['profit_percent']) ? floatval($p['profit_percent']) : ($mStock ? floatval($mStock['profit_percent']) : 10.0);
         $p['disabled'] = (isset($p['disabled']) && ((int)$p['disabled'] === 1 || $p['disabled'] === true || $p['disabled'] === '1')) ? true : false;
         
+        $p['is_unlimited'] = (isset($p['is_unlimited']) && ((int)$p['is_unlimited'] === 1 || $p['is_unlimited'] === true || $p['is_unlimited'] === '1')) || ($mStock && isset($mStock['is_unlimited']) && ((int)$mStock['is_unlimited'] === 1 || $mStock['is_unlimited'] === true));
+
         // Exact stock quantity from table or master
         if (isset($p['stock_qty']) && $p['stock_qty'] !== null) {
             $p['stock_qty'] = round(floatval($p['stock_qty']), 2);
         } elseif ($mStock && isset($mStock['stock_qty']) && $mStock['stock_qty'] !== null) {
             $p['stock_qty'] = round(floatval($mStock['stock_qty']), 2);
         } else {
-            $p['stock_qty'] = 100.0;
+            $p['stock_qty'] = 0.0;
         }
 
-        // Out of stock calculation: default in_stock to true unless explicitly disabled/0
         $isStockZero = (isset($p['in_stock']) && ((int)$p['in_stock'] === 0 || $p['in_stock'] === false || $p['in_stock'] === '0')) ||
                        ($mStock && isset($mStock['in_stock']) && ((int)$mStock['in_stock'] === 0 || $mStock['in_stock'] === false || $mStock['in_stock'] === '0'));
-        
-        if ($isStockZero || (isset($p['stock_qty']) && floatval($p['stock_qty']) <= 0 && isset($p['in_stock']) && (int)$p['in_stock'] === 0)) {
-            $p['in_stock'] = false;
-        } else {
+
+        // Out of stock calculation:
+        if ($p['is_unlimited']) {
             $p['in_stock'] = true;
-            if ($p['stock_qty'] <= 0) {
-                $p['stock_qty'] = 100.0;
+        } else {
+            if ($isStockZero || $p['stock_qty'] <= 0) {
+                $p['in_stock'] = false;
+            } else {
+                $p['in_stock'] = true;
             }
         }
 

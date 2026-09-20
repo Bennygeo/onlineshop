@@ -11,6 +11,7 @@ import { LoginService } from 'src/app/services/login.service';
 import { RazorpayService } from 'src/app/services/razorpay.service';
 import { StorageService } from 'src/app/services/storage.service';
 import { AddressAction, CartDateWise, CartType, OrderInfo, Product, Wallet } from 'src/app/utils/types';
+import { DateE } from 'src/app/utils/custom-classes';
 
 @Component({
   selector: 'app-cart-list',
@@ -71,6 +72,26 @@ export class CartListComponent implements OnInit, OnDestroy {
     return this.deliveryGroupCount > 1;
   }
 
+  hasMultiDayDelivery(): boolean {
+    if (this.hasMultipleDeliveries()) return true;
+    if (this.cartProductsDateWise && (this.cartProductsDateWise['Subscriptions'] || Object.keys(this.cartProductsDateWise).some(k => k.startsWith('Scheduled Delivery')))) {
+      return true;
+    }
+    for (let key in this.cartService.cartProducts) {
+      const prod = this.cartService.cartProducts[key];
+      if (!prod) continue;
+      const subs = prod.subs_options;
+      if (subs && ((subs.multiDaySelected && subs.multiDaySelected.length > 0) || (subs.rangeSelected && subs.rangeSelected.length > 0))) {
+        return true;
+      }
+      const prefDays = DateE.normalizePreferredDays(prod.preferred_days);
+      if (prefDays && prefDays.length > 1 && prefDays.length < 7) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   getGroupHeaderInfo(key: string): { title: string; sub: string; icon: string; isScheduled: boolean } {
     if (!key) {
       return { title: 'Standard Delivery', sub: 'Delivery Tomorrow at 7:00 AM IST', icon: 'wb_sunny', isScheduled: false };
@@ -116,11 +137,15 @@ export class CartListComponent implements OnInit, OnDestroy {
         isScheduled: false
       };
     }
+    const ist = this.cartService.getISTDeliveryDetails();
+    const isActuallyTomorrow = DateE.dateDiff(this.cartService.todaysDate, this.cartService.deliveryDate) === 1;
+    const dateFormatted = this.cartService.deliveryDate ? this.cartService.deliveryDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Scheduled';
+
     return {
-      title: 'Tomorrow Morning Delivery',
-      sub: 'Delivery Tomorrow at 7:00 AM IST',
-      icon: 'wb_sunny',
-      isScheduled: false
+      title: isActuallyTomorrow ? 'Tomorrow Morning Delivery' : `Scheduled Morning Delivery (${dateFormatted})`,
+      sub: `Delivery on ${ist.nextDayDeliveryDateStr}`,
+      icon: isActuallyTomorrow ? 'wb_sunny' : 'event_available',
+      isScheduled: !isActuallyTomorrow
     };
   }
 

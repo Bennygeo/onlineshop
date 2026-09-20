@@ -10,7 +10,7 @@ if (!$referralCode) {
 
 $rewardAmount = 100.00;
 $referrer_mobile = null;
-$referrer_name = 'Thinkspot Partner';
+$referrer_name = 'TomorrowNeeds Partner';
 
 if ($pdo) {
     try {

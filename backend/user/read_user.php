@@ -37,12 +37,12 @@ try {
         sendJson([$user]);
     } else {
         $refId = 'THINK' . substr($mobile, -6);
-        $insStmt = $pdo->prepare("INSERT INTO users (mobile, name, email, referral_id) VALUES (?, 'Thinkspot User', '', ?)");
+        $insStmt = $pdo->prepare("INSERT INTO users (mobile, name, email, referral_id) VALUES (?, 'TomorrowNeeds User', '', ?)");
         $insStmt->execute([$mobile, $refId]);
         sendJson([
             [
                 'mobile' => $mobile,
-                'name' => 'Thinkspot User',
+                'name' => 'TomorrowNeeds User',
                 'email' => '',
                 'referral_id' => $refId
             ]

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from '../../services/api.service';
+import { CartService } from '../../services/cart.service';
 
 export interface CategoryOption {
   id?: number;
@@ -59,6 +60,11 @@ export class AdminProductsComponent implements OnInit {
     img_url: 'assets/categories/Thinkspot_veggiesIcon.png'
   };
 
+  // Store Settings (Weekly Leave)
+  weeklyOffDay: string = 'None';
+  storeSettingsSaving: boolean = false;
+  storeSettingsLoaded: boolean = false;
+
   newProduct: any = {
     name: '',
     tamil_name: '',
@@ -75,18 +81,77 @@ export class AdminProductsComponent implements OnInit {
     zone: 'both',
     gst_percent: 5,
     in_stock: 1,
-    stock_qty: 100,
+    stock_qty: 0,
+    is_unlimited: 1,
     disabled: 0
   };
 
   editingProduct: any = null;
   categorySearchQuery: string = '';
 
-  constructor(private apiS: ApiService) {}
+  get totalProductsCount(): number {
+    return this.products?.length || 0;
+  }
+
+  get inStockProductsCount(): number {
+    return this.products?.filter(p => p.in_stock !== false && p.in_stock !== 0 && (p.is_unlimited || (p.stock_qty || 0) > 0)).length || 0;
+  }
+
+  get outOfStockProductsCount(): number {
+    return this.products?.filter(p => !p.is_unlimited && (p.in_stock === false || p.in_stock === 0 || (p.stock_qty !== undefined && p.stock_qty <= 0))).length || 0;
+  }
+
+  get hiddenProductsCount(): number {
+    return this.products?.filter(p => p.disabled).length || 0;
+  }
+
+  constructor(
+    private apiS: ApiService,
+    private cartS: CartService
+  ) {}
 
   ngOnInit(): void {
+    this.loadStoreSettings();
     this.loadCategories();
     this.loadProducts();
+  }
+
+  loadStoreSettings() {
+    this.apiS.getApi('admin/store_settings.php').subscribe({
+      next: (res: any) => {
+        if (res && res.weekly_off_day) {
+          this.weeklyOffDay = res.weekly_off_day;
+        } else {
+          this.weeklyOffDay = 'None';
+        }
+        this.storeSettingsLoaded = true;
+      },
+      error: () => {
+        this.weeklyOffDay = 'None';
+        this.storeSettingsLoaded = true;
+      }
+    });
+  }
+
+  saveWeeklyLeaveSetting() {
+    this.storeSettingsSaving = true;
+    this.apiS.postApi('admin/store_settings.php', {
+      key: 'weekly_off_day',
+      value: this.weeklyOffDay,
+      weekly_off_day: this.weeklyOffDay
+    }).subscribe({
+      next: (res: any) => {
+        this.storeSettingsSaving = false;
+        this.cartS.storeSettings = { weekly_off_day: this.weeklyOffDay };
+        this.cartS.storeSettingsUpdateEvent.next(this.cartS.storeSettings);
+        this.cartS.recalculateDeliveryDate();
+        alert(res?.message || `Weekly leave set to "${this.weeklyOffDay}". Orders placed on the day prior will automatically deliver the next operating morning!`);
+      },
+      error: (err: any) => {
+        this.storeSettingsSaving = false;
+        alert('Failed to save weekly leave setting: ' + (err?.error?.error || err?.message || 'Server error'));
+      }
+    });
   }
 
   loadCategories() {
@@ -236,7 +301,8 @@ export class AdminProductsComponent implements OnInit {
       zone: 'both',
       gst_percent: 5,
       in_stock: 1,
-      stock_qty: 100,
+      stock_qty: 0,
+      is_unlimited: 1,
       disabled: 0,
       allow_next_day: 1,
       allow_immediate_10: 0,
@@ -304,7 +370,17 @@ export class AdminProductsComponent implements OnInit {
       return;
     }
 
-    this.apiS.postApi('admin/add_product.php', { data: JSON.stringify(this.newProduct) }).subscribe({
+    const payload = { ...this.newProduct };
+    const stockQtyNum = (payload.stock_qty !== undefined && payload.stock_qty !== null && payload.stock_qty !== '') ? parseFloat(payload.stock_qty) : 0;
+    payload.stock_qty = stockQtyNum;
+    if (payload.is_unlimited == 1 || payload.is_unlimited === true) {
+      payload.is_unlimited = 1;
+    } else {
+      payload.is_unlimited = 0;
+      payload.in_stock = (stockQtyNum > 0 && payload.in_stock != 0) ? 1 : 0;
+    }
+
+    this.apiS.postApi('admin/add_product.php', { data: JSON.stringify(payload) }).subscribe({
       next: (res: any) => {
         alert("Product added successfully!");
         this.isAddModalOpen = false;
@@ -332,6 +408,8 @@ export class AdminProductsComponent implements OnInit {
       }
     }
 
+    const isUnlim = (product.is_unlimited == 1 || product.is_unlimited === true || String(product.is_unlimited) === '1') ? 1 : 0;
+
     this.editingProduct = { 
       ...product,
       cat: product.cat || product.main_category || fallbackCat,
@@ -339,7 +417,8 @@ export class AdminProductsComponent implements OnInit {
       unit_name: product.unit_name || 'grams',
       gst_percent: product.gst_percent !== undefined ? product.gst_percent : 5,
       in_stock: (product.in_stock !== false && product.in_stock !== 0) ? 1 : 0,
-      stock_qty: product.stock_qty !== undefined ? product.stock_qty : 100,
+      stock_qty: (product.stock_qty !== undefined && product.stock_qty !== null) ? parseFloat(product.stock_qty) : 0,
+      is_unlimited: isUnlim,
       disabled: product.disabled ? 1 : 0,
       allow_next_day: (product.allow_next_day !== 0 && product.allow_next_day !== false) ? 1 : 0,
       allow_immediate_10: (product.allow_immediate_10 == 1) ? 1 : 0,
@@ -368,9 +447,14 @@ export class AdminProductsComponent implements OnInit {
     }
 
     const updated = { ...this.editingProduct };
-    const stockQtyNum = parseFloat(updated.stock_qty) || 0;
+    const stockQtyNum = (updated.stock_qty !== undefined && updated.stock_qty !== null && updated.stock_qty !== '') ? parseFloat(updated.stock_qty) : 0;
     updated.stock_qty = stockQtyNum;
-    updated.in_stock = (stockQtyNum > 0 && updated.in_stock != 0);
+    if (updated.is_unlimited == 1 || updated.is_unlimited === true) {
+      updated.is_unlimited = 1;
+    } else {
+      updated.is_unlimited = 0;
+      updated.in_stock = (stockQtyNum > 0 && updated.in_stock != 0) ? 1 : 0;
+    }
 
     // Optimistically update local array immediately
     const idx = this.products.findIndex(p => p.id === updated.id || (p.name && updated.name && p.name.toLowerCase() === updated.name.toLowerCase()));
@@ -379,7 +463,7 @@ export class AdminProductsComponent implements OnInit {
       this.filterProducts();
     }
 
-    this.apiS.postApi('admin/update_product.php', { data: JSON.stringify(this.editingProduct) }).subscribe({
+    this.apiS.postApi('admin/update_product.php', { data: JSON.stringify(updated) }).subscribe({
       next: (res: any) => {
         alert("Product updated successfully!");
         this.isEditModalOpen = false;

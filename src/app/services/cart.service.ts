@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, fromEvent, map, Observable, Observer, ReplaySubject, Subject, throwError, of } from 'rxjs';
 import { DateE } from '../utils/custom-classes';
-import { AddressAction, CartAndTarget, CartDateWise, CartDetails, CartProductTable, CartType, OrderInfo, OrderMainTable, Product, SubProductType, Wallet, WindowSize } from '../utils/types';
+import { AddressAction, CartAndTarget, CartDateWise, CartDetails, CartProductTable, CartType, OrderInfo, OrderMainTable, Product, StoreSettings, SubProductType, Wallet, WindowSize } from '../utils/types';
 import { ApiService } from './api.service';
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { LoginService } from './login.service';
@@ -96,6 +96,10 @@ export class CartService {
   //to keep the delivery date
   deliveryDate: DateE = new DateE();
 
+  //store operational settings (weekly off day, etc.)
+  storeSettings: StoreSettings = { weekly_off_day: 'None' };
+  storeSettingsUpdateEvent: BehaviorSubject<StoreSettings> = new BehaviorSubject<StoreSettings>({ weekly_off_day: 'None' });
+
   /*
   * order checkout time limits
   */
@@ -131,6 +135,15 @@ export class CartService {
   // Selected delivery option (NEXT_DAY_7AM, IMMEDIATE_10, IMMEDIATE_30, IMMEDIATE_60)
   selectedDeliveryOption: string = 'NEXT_DAY_7AM';
 
+  // Operating hours for 10, 30, and 60 mins instant deliveries: Morning 8:00 AM to Evening 8:00 PM IST (20:00)
+  isImmediateDeliveryOperatingHour(): boolean {
+    const now = new Date();
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const istTime = new Date(utcTime + (3600000 * 5.5));
+    const istHours = istTime.getHours();
+    return (istHours >= 8 && istHours < 20);
+  }
+
   getCartDeliveryEligibility(): {
     canNextDay: boolean;
     canImmediate10: boolean;
@@ -141,15 +154,18 @@ export class CartService {
     ineligibleItems60: string[];
   } {
     const products = Object.values(this.cartProducts || {}) as Product[];
+    const isOperatingHours = this.isImmediateDeliveryOperatingHour();
+    const cutoffMsg = 'Instant delivery operates 8:00 AM to 8:00 PM IST (Placed as regular order outside these hours)';
+
     if (!products || products.length === 0) {
       return {
         canNextDay: true,
-        canImmediate10: true,
-        canImmediate30: true,
-        canImmediate60: true,
-        ineligibleItems10: [],
-        ineligibleItems30: [],
-        ineligibleItems60: []
+        canImmediate10: isOperatingHours,
+        canImmediate30: isOperatingHours,
+        canImmediate60: isOperatingHours,
+        ineligibleItems10: !isOperatingHours ? [cutoffMsg] : [],
+        ineligibleItems30: !isOperatingHours ? [cutoffMsg] : [],
+        ineligibleItems60: !isOperatingHours ? [cutoffMsg] : []
       };
     }
 
@@ -174,12 +190,12 @@ export class CartService {
 
     return {
       canNextDay: canNextDay,
-      canImmediate10: ineligible10.length === 0,
-      canImmediate30: ineligible30.length === 0,
-      canImmediate60: ineligible60.length === 0,
-      ineligibleItems10: ineligible10,
-      ineligibleItems30: ineligible30,
-      ineligibleItems60: ineligible60
+      canImmediate10: isOperatingHours && ineligible10.length === 0,
+      canImmediate30: isOperatingHours && ineligible30.length === 0,
+      canImmediate60: isOperatingHours && ineligible60.length === 0,
+      ineligibleItems10: !isOperatingHours ? [cutoffMsg] : ineligible10,
+      ineligibleItems30: !isOperatingHours ? [cutoffMsg] : ineligible30,
+      ineligibleItems60: !isOperatingHours ? [cutoffMsg] : ineligible60
     };
   }
 
@@ -206,9 +222,10 @@ export class CartService {
     const remainingHrs = Math.floor(totalMinsUntilMidnight / 60);
     const remainingMins = totalMinsUntilMidnight % 60;
 
-    // Delivery date calculation: Next day 7:00 AM IST
-    const scheduledDate = new Date(istTime);
-    scheduledDate.setDate(scheduledDate.getDate() + 1);
+    // Delivery date calculation: Next day 7:00 AM IST (adjusted for store weekly off day)
+    const baseNextDay = new Date(istTime);
+    baseNextDay.setDate(baseNextDay.getDate() + 1);
+    const scheduledDate = DateE.getNextOperatingDeliveryDate(baseNextDay, this.storeSettings?.weekly_off_day);
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -270,6 +287,7 @@ export class CartService {
 
     // Determine delivery type for each product in cart
     // Hierarchy: 10m (0) < 30m (1) < 60m (2) < Tomorrow (3)
+    const isImmediateOperating = this.isImmediateDeliveryOperatingHour();
     let maxLevel = 0;
     let count10 = 0;
     let count30 = 0;
@@ -278,9 +296,9 @@ export class CartService {
 
     products.forEach(p => {
       const isSub = p.subscribe || p.subs_options?.type;
-      const is10 = Number(p.allow_immediate_10) === 1;
-      const is30 = Number(p.allow_immediate_30) === 1;
-      const is60 = Number(p.allow_immediate_60) === 1;
+      const is10 = isImmediateOperating && Number(p.allow_immediate_10) === 1;
+      const is30 = isImmediateOperating && Number(p.allow_immediate_30) === 1;
+      const is60 = isImmediateOperating && Number(p.allow_immediate_60) === 1;
 
       if (isSub) {
         countNextDay++;
@@ -333,17 +351,22 @@ export class CartService {
         }
       }
 
+      const isActuallyTomorrow = DateE.dateDiff(this.todaysDate, this.deliveryDate) === 1;
+      const stdFormattedDate = this.deliveryDate ? this.deliveryDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Scheduled';
+
       this.selectedDeliveryOption = 'NEXT_DAY_7AM';
       return {
         option: 'NEXT_DAY_7AM',
-        label: hasScheduledFutureDate ? `${scheduledFormattedDate} • 7:00 AM Delivery` : 'Tomorrow Delivery (7:00 AM IST)',
+        label: hasScheduledFutureDate
+          ? `${scheduledFormattedDate} • 7:00 AM Delivery`
+          : (isActuallyTomorrow ? 'Tomorrow Delivery (7:00 AM IST)' : `${stdFormattedDate} • 7:00 AM Delivery`),
         subLabel: hasScheduledFutureDate
           ? `Scheduled for ${scheduledFormattedDate} at 7:00 AM IST`
           : (hasMixedDeliveries
-            ? `Contains next-day delivery items. Scheduled for ${istDetails.nextDayDeliveryDateStr}`
+            ? `Contains morning delivery items. Scheduled for ${istDetails.nextDayDeliveryDateStr}`
             : `Scheduled for ${istDetails.nextDayDeliveryDateStr}`),
-        icon: hasScheduledFutureDate ? 'event_available' : 'wb_twilight',
-        badge: hasScheduledFutureDate ? `Scheduled: ${scheduledFormattedDate}` : 'Tomorrow Delivery',
+        icon: (hasScheduledFutureDate || !isActuallyTomorrow) ? 'event_available' : 'wb_twilight',
+        badge: hasScheduledFutureDate ? `Scheduled: ${scheduledFormattedDate}` : (isActuallyTomorrow ? 'Tomorrow Delivery' : `Scheduled: ${stdFormattedDate}`),
         isImmediate: false,
         expectedTimeStr: hasScheduledFutureDate ? scheduledFormattedDate : istDetails.nextDayDeliveryDateStr,
         hasMixedDeliveries
@@ -422,6 +445,15 @@ export class CartService {
       .subscribe(this.windowSizeSubject);
 
     this.deliveryInst = this.storageS.getItem("tnkspt_inst")?.val || "";
+
+    const cachedSettings = this.storageS.getItem("tnkspt_store_settings");
+    if (cachedSettings && cachedSettings.weekly_off_day) {
+      this.storeSettings = cachedSettings;
+    }
+
+    // Initialize store settings, cart, and delivery dates immediately on service creation
+    this.init();
+
     this.loginS.loginChangeEvent.subscribe((result: string) => {
       if (result === Common.loginStatus.LOGIN) {
         this.userID = this.loginS.user.mobile;
@@ -541,7 +573,25 @@ export class CartService {
     });
   }
 
+  recalculateDeliveryDate() {
+    const base = new DateE(this.serverTime || new Date());
+    this.todaysDate = new DateE(base);
+    this.deliveryDate = new DateE(base);
+
+    let _hrs = this.todaysDate.getHours();
+    if (_hrs > this.timeLimit) {
+      this.deliveryDate['addDays'](2);
+    } else {
+      this.deliveryDate['addDays'](1);
+    }
+    const nextOp = DateE.getNextOperatingDeliveryDate(this.deliveryDate, this.storeSettings?.weekly_off_day);
+    this.deliveryDate = new DateE(nextOp);
+    this.notifyCartEvent.next();
+  }
+
   init() {
+    this.recalculateDeliveryDate();
+
     const savedCart = this.storageS.getItem("tnkspt_cart_products");
     if (savedCart && Object.keys(savedCart).length > 0) {
       this.cartProducts = { ...savedCart, ...this.cartProducts };
@@ -549,19 +599,30 @@ export class CartService {
       this.updateCartVisibility();
     }
 
-    //Recieve time from the serve
-    this.apiS.getApi('com/get_time.php').subscribe((time: Date) => {
-      this.serverTime = time;
-
-      this.todaysDate = new DateE(time);
-      this.deliveryDate = new DateE(time);
-
-      let _hrs = this.todaysDate.getHours();
-      if (_hrs > this.timeLimit) {
-        this.deliveryDate['addDays'](2);
-      } else {
-        this.deliveryDate['addDays'](1);
+    const onSettingsLoaded = (res: any) => {
+      const s = res?.settings || res;
+      const offDay = s?.weekly_off_day;
+      if (offDay) {
+        this.storeSettings = { weekly_off_day: offDay };
+        this.storageS.setItem("tnkspt_store_settings", this.storeSettings);
+        this.storeSettingsUpdateEvent.next(this.storeSettings);
+        this.recalculateDeliveryDate();
       }
+    };
+
+    this.apiS.getApi('admin/store_settings.php').subscribe({
+      next: onSettingsLoaded,
+      error: () => {
+        this.apiS.getApi('com/get_store_settings.php').subscribe({
+          next: onSettingsLoaded
+        });
+      }
+    });
+
+    //Recieve time from the server
+    this.apiS.getApi('com/get_time.php').subscribe((time: Date) => {
+      this.serverTime = new DateE(time);
+      this.recalculateDeliveryDate();
 
       /**
        * if customer id exist 
@@ -677,7 +738,8 @@ export class CartService {
   updateProduct(product: Product, val: number): void {
 
     if (val > 0) {
-      const maxStock = (product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 999;
+      const isUnlimited = (product.is_unlimited === 1 || product.is_unlimited === true || String(product.is_unlimited) === '1');
+      const maxStock = (!isUnlimited && product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 999;
       let _quantity = Math.min(val || 1, maxStock);
       if (_quantity <= 0) {
         _quantity = 0;
@@ -965,22 +1027,24 @@ export class CartService {
       const prod = this.cartProducts[id];
       let groupKey: string;
 
+      const isImmediateOperating = this.isImmediateDeliveryOperatingHour();
+
       const prefDays = DateE.normalizePreferredDays(prod.preferred_days);
       if (prod?.subs_options?.type || prod?.subscribe) {
         groupKey = "Subscriptions";
       } else if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
-        const nextDate = DateE.getPreferredDaysNextDeliveryDate(prefDays, this.deliveryDate);
+        const nextDate = DateE.getPreferredDaysNextDeliveryDate(prefDays, this.deliveryDate, this.storeSettings?.weekly_off_day);
         const dayName = DateE.formatPreferredDaysSummary(prefDays);
         const dateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
         prod.scheduled_delivery_date = dateStr;
         prod.scheduled_delivery_label = dayName;
         const formattedDate = nextDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         groupKey = `Scheduled Delivery (${formattedDate})`;
-      } else if (Number(prod.allow_immediate_10) === 1) {
+      } else if (isImmediateOperating && Number(prod.allow_immediate_10) === 1) {
         groupKey = "10_Mins_Delivery";
-      } else if (Number(prod.allow_immediate_30) === 1) {
+      } else if (isImmediateOperating && Number(prod.allow_immediate_30) === 1) {
         groupKey = "30_Mins_Delivery";
-      } else if (Number(prod.allow_immediate_60) === 1) {
+      } else if (isImmediateOperating && Number(prod.allow_immediate_60) === 1) {
         groupKey = "60_Mins_Delivery";
       } else {
         groupKey = "Tomorrow_Delivery";
@@ -1088,10 +1152,14 @@ export class CartService {
       return;
     }
 
-    // Client-side Stock Availability Pre-check (Bypassed for offline admin sales)
+    // Client-side Stock Availability Pre-check (Bypassed for offline admin sales and unlimited items)
     if (!isOffline) {
       const clientStockErrors: string[] = [];
       for (let p of (Object.values(this.cartProducts || {}) as any[])) {
+        const isUnlimited = (p.is_unlimited === 1 || p.is_unlimited === true || String(p.is_unlimited) === '1');
+        if (isUnlimited) {
+          continue;
+        }
         const pName = p.name || 'Product';
         const requestedQty = Number(p.subs_options?.units || p.units || p.quantity || 1);
         const availableStock = (p.stock_qty !== undefined && p.stock_qty !== null) ? Number(p.stock_qty) : null;

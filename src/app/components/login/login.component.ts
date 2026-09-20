@@ -351,7 +351,7 @@ export class LoginComponent implements OnInit {
         this.referralErrorCodeFlg = true;
       } else {
         this.loginS.referrrarinfo = res || {
-          referrer_name: 'Thinkspot Partner',
+          referrer_name: 'TomorrowNeeds Partner',
           coupon_desc: '₹100 Cashback Bonus',
           referrer: code,
           status: 1

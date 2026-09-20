@@ -41,7 +41,7 @@ export class ProfileComponent implements OnInit {
     });
 
     this.profileForm = this.formBuilder.group({
-      name: [this.user.name || "Thinkspot user", [Validators.required, Validators.minLength(3)]],
+      name: [this.user.name || "TomorrowNeeds user", [Validators.required, Validators.minLength(3)]],
       email: [this.user.mail, [Validators.required, Validators.email]],
       mobile: [{
         value: this.user.mobile,

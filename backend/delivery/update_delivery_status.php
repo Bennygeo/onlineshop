@@ -186,7 +186,7 @@ try {
             }
         }
 
-        // Credit Customer's ThinkSpot Wallet
+        // Credit Customer's TomorrowNeeds Wallet
         if ($refundType === 'weight') {
             $refundDesc = "Partial refund: {$missingWeight}{$unitName} deficit on {$productName} (Order #{$orderId} - {$reason})";
         } else {

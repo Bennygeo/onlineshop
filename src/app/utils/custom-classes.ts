@@ -151,9 +151,28 @@ export class DateE extends Date implements IDate {
         return list.filter(s => !!s);
     }
 
-    static getPreferredDaysNextDeliveryDate(prefDays: any, baseDeliveryDate?: Date): Date {
+    static getNextOperatingDeliveryDate(baseDate?: Date, weeklyOffDay?: string): Date {
+        const refDate = baseDate ? new Date(baseDate) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+        if (!weeklyOffDay || weeklyOffDay.toLowerCase() === 'none') {
+            return refDate;
+        }
+        const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const offLower = weeklyOffDay.toLowerCase().trim();
+        for (let i = 0; i < 7; i++) {
+            const dayName = weekdayNames[refDate.getDay()].toLowerCase();
+            if (dayName === offLower || dayName.startsWith(offLower)) {
+                refDate.setDate(refDate.getDate() + 1);
+            } else {
+                break;
+            }
+        }
+        return refDate;
+    }
+
+    static getPreferredDaysNextDeliveryDate(prefDays: any, baseDeliveryDate?: Date, weeklyOffDay?: string): Date {
         const days = DateE.normalizePreferredDays(prefDays);
-        const refDate = baseDeliveryDate ? new Date(baseDeliveryDate) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+        let refDate = baseDeliveryDate ? new Date(baseDeliveryDate) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+        refDate = DateE.getNextOperatingDeliveryDate(refDate, weeklyOffDay);
         
         if (!days || days.length === 0 || days.length >= 7) {
             return refDate;
@@ -162,6 +181,7 @@ export class DateE extends Date implements IDate {
         const weekdayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const normalizedDays = days.map(d => d.toLowerCase().trim());
+        const offLower = weeklyOffDay ? weeklyOffDay.toLowerCase().trim() : 'none';
 
         for (let i = 0; i < 7; i++) {
             const checkDate = new Date(refDate);
@@ -169,6 +189,10 @@ export class DateE extends Date implements IDate {
             const dayIndex = checkDate.getDay();
             const fullDay = weekdayNames[dayIndex].toLowerCase();
             const shortDay = weekdayShort[dayIndex].toLowerCase();
+
+            if (offLower !== 'none' && (fullDay === offLower || shortDay === offLower || fullDay.startsWith(offLower))) {
+                continue;
+            }
 
             const isMatch = normalizedDays.some(d => d === fullDay || d === shortDay || fullDay.startsWith(d));
             if (isMatch) {
