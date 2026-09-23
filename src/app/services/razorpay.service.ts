@@ -38,7 +38,7 @@ export class RazorpayService {
       _amt = (amt).slice(1) * 1;
     }
     amt = _amt;
-    this.currentUserMobile = user.mobile || "7200015551";
+    this.currentUserMobile = user.mobile || "9876543210";
     // this.changeEvent.next("INIT");
     this._api.postApi('wallet/razor_pay.php', { amount: amt * 100, currency: "INR", reciept: receiptNumber, payment_capture: 1, mobile: this.currentUserMobile }).subscribe({
       next: (res: any) => {
@@ -178,7 +178,7 @@ export class RazorpayService {
       },
       "prefill": {
         "name": user.name || "TomorrowNeeds user",
-        "contact": user.mobile || "7200015551",
+        "contact": user.mobile || "9876543210",
         "email": user.mail || "support@tomorrowneeds.in"
       },
 

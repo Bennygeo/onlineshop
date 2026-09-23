@@ -161,30 +161,50 @@ font-size: 20px; font-weight: bolder;">
 
 
 <div id="navbg" (click)="closeNav()"></div>
-<div id="mySidenav" class="sidenav menuSpacing">
-    <!-- <a href="javascript:void(0)" class="closebtn" (click)="closeNav()">&times;</a> -->
-    <div style="padding-top: 36px; padding-bottom: 12px;">
-        <img src="assets/profile/user.png" />
-    </div>
-    <div style="margin-bottom: 43px;">
-        <p class="userNameMenu">{{userName}}</p>
-        <p class="userNumMenu">{{user.mobile}}</p>
+<div id="mySidenav" class="sidenav">
+    <!-- Sidenav Header / User Profile -->
+    <div class="sidenav-header">
+        <button class="sidenav-close-btn" (click)="closeNav()" aria-label="Close navigation">
+            <span class="material-icons">close</span>
+        </button>
+        <div class="user-profile-card" (click)="menuClick()" routerLink="/home/profile">
+            <div class="avatar-container">
+                <img src="assets/profile/user.png" alt="User Profile" class="avatar-img" />
+            </div>
+            <div class="user-meta">
+                <h4 class="userNameMenu">{{userName || 'Welcome!'}}</h4>
+                <p class="userNumMenu">{{user.mobile || 'TomorrowNeeds Member'}}</p>
+                <span class="profile-badge">
+                    <span class="material-icons-round badge-icon">verified_user</span>
+                    My Account
+                </span>
+            </div>
+        </div>
     </div>
 
-    <div *ngFor="let menu of menus" (click)="menuClick()">
-        <a class="userMenuText" [routerLink]=menu.path routerLinkActive="active">
-            <span class="menuIconWidth"> <img [src]="menu.img_url" class="profileImages" /></span>
-            {{menu.name}}
-        </a>
+    <!-- Sidenav Navigation Links -->
+    <div class="sidenav-body">
+        <div class="menu-list">
+            <div *ngFor="let menu of menus" class="menu-item-wrapper" (click)="menuClick()">
+                <a class="userMenuText nav-link" [routerLink]="menu.path" routerLinkActive="active-menu">
+                    <div class="nav-icon-box">
+                        <img [src]="menu.img_url" [alt]="menu.name" class="profileImages" />
+                    </div>
+                    <span class="menu-title">{{menu.name}}</span>
+                    <span class="material-icons menu-chevron">chevron_right</span>
+                </a>
+            </div>
+        </div>
     </div>
 
-    <button class="logoutBtn" (click)="logoutAction()"><img class="logoutIcon" src="assets/icons/logout.png"
-            (click)="menuClick()" /> Log out</button>
-    <!-- <div style="max-width: 280px; margin:20px;" class="desclaimer">Please note that you are accessing the BETA version
-        of
-        www.thinkspot.in.<br /><br />
-
-        Should you encounter any bugs, glitches, lack of functionality, delayed deliveries, billing errors or other
-        problems on the beta website, please email us on <a href="mailto:hey@thinkspot.in">{{support_email}}</a>
-    </div> -->
+    <!-- Sidenav Footer -->
+    <div class="sidenav-footer">
+        <button class="logoutBtn" (click)="logoutAction()">
+            <img class="logoutIcon" src="assets/icons/logout.png" alt="Logout" />
+            <span>Log out</span>
+        </button>
+        <div class="sidenav-brand-info">
+            <span>TomorrowNeeds v1.0 • Organic & Fresh</span>
+        </div>
+    </div>
 </div>

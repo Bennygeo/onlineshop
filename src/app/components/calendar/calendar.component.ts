@@ -14,6 +14,7 @@ import { MatCalendar, MatCalendarCellClassFunction } from '@angular/material/dat
 })
 export class CalendarComponent implements OnChanges, AfterViewChecked {
 
+  @ViewChild('calendar', { static: false }) rangeCalendar: MatCalendar<Date>;
   @ViewChild('calendar1', { static: false }) multiSelectCalendar: MatCalendar<Date>;
 
   @Input() data: any;
@@ -239,6 +240,80 @@ export class CalendarComponent implements OnChanges, AfterViewChecked {
     return null;
   };
 
+
+  selectRangePreset(days: number): void {
+    if (!this.subs_options.minDate) return;
+    const start = new Date(this.subs_options.minDate);
+    const end = new Date(start);
+    end.setDate(end.getDate() + (days - 1));
+
+    this.subs_options.type = "range";
+    this.subs_options.units = this.subs_options.units * 1 || 1;
+    this.subs_options.rangeSelected = DateE.getDaysBetween(start, end, {
+      count: this.subs_options.units,
+      status: DeliveryStatus.SHEDULED,
+      price: Number(this.productsOptions.product.price),
+      totalPrice: Number(this.productsOptions.product.price) * days
+    });
+    this.subs_options.rangeCnt = this.subs_options.rangeSelected.length;
+    const unitPrice = Number(this.productsOptions.product.price || 0);
+    const qty = Number(this.subs_options.units || 1);
+    this.subs_options.price = (unitPrice * qty * this.subs_options.rangeCnt).toString();
+
+    if (this.rangeCalendar) {
+      this.rangeCalendar.updateTodaysDate();
+    }
+    this.productsOptions.product['subs_options'] = this.subs_options;
+    this.updateChildComponent();
+  }
+
+  selectDaily(): void {
+    this.subs_options.multiDaySelected = [];
+    const start = new Date(this.subs_options.minDate);
+    const end = new Date(this.subs_options.maxDate);
+    this.subs_options.multiDaySelected = DateE.getDaysBetween(start, end, {
+      count: this.subs_options.units,
+      status: DeliveryStatus.SHEDULED,
+      price: Number(this.productsOptions.product.price),
+      totalPrice: Number(this.productsOptions.product.price)
+    });
+    this.updateMultiSelectCalendar();
+  }
+
+  getSelectedDaysCount(): number {
+    if (this.subs_options.type === 'range') {
+      return this.subs_options.rangeCnt || this.subs_options.rangeSelected?.length || 0;
+    }
+    return this.subs_options.multiCnt || this.subs_options.multiDaySelected?.length || 0;
+  }
+
+  getTotalPacketsCount(): number {
+    const days = this.getSelectedDaysCount();
+    const qty = this.subs_options.units || 1;
+    return days * qty;
+  }
+
+  getTotalSubscriptionCost(): number {
+    const unitPrice = Number(this.productsOptions?.product?.price || 0);
+    return this.getTotalPacketsCount() * unitPrice;
+  }
+
+  getOriginalTotalPrice(): number {
+    const originalPrice = Number(this.productsOptions?.product?.original_price || this.productsOptions?.product?.price || 0);
+    return this.getTotalPacketsCount() * originalPrice;
+  }
+
+  getTotalSavings(): number {
+    const original = this.getOriginalTotalPrice();
+    const final = this.getTotalSubscriptionCost();
+    return Math.max(0, original - final);
+  }
+
+  getUnitDiscount(): number {
+    const orig = Number(this.productsOptions?.product?.original_price || 0);
+    const curr = Number(this.productsOptions?.product?.price || 0);
+    return orig > curr ? (orig - curr) : 0;
+  }
 
   alternateDays() {
     this.subs_options.multiDaySelected = [];

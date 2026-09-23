@@ -122,7 +122,7 @@ export class SearchComponent implements OnInit, OnDestroy {
           if (trimmed.length >= 2) {
             this.loadingFlg = true;
             this.hasSearched = true;
-            return this.apiService.postApi("/products/search_product.php", { query: trimmed }).pipe(
+            return this.apiService.postApi("/products/search_product.php", { query: trimmed }, true).pipe(
               catchError((err) => {
                 console.error("Search error:", err);
                 return of([]);
@@ -184,11 +184,12 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.cartService.loaderS?.hide?.();
     this.loadTrendingProducts();
   }
 
   loadTrendingProducts() {
-    this.apiService.postApi("/products/search_product.php", { query: '' }).subscribe({
+    this.apiService.postApi("/products/search_product.php", { query: '' }, true).subscribe({
       next: (res: Array<Product>) => {
         if (Array.isArray(res) && res.length > 0) {
           this.trendingProducts = res.slice(0, 10);
@@ -437,6 +438,13 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   goBack() {
     this.router.navigate(['/home/view']);
+  }
+
+  isProductInStock(product: Product): boolean {
+    if (!product || product.disabled) return false;
+    if (product.is_unlimited === true || Number(product.is_unlimited) === 1) return true;
+    if (product.in_stock === false || Number(product.in_stock) === 0) return false;
+    return (product.stock_qty === undefined || product.stock_qty === null || Number(product.stock_qty) > 0);
   }
 
   ngOnDestroy(): void {

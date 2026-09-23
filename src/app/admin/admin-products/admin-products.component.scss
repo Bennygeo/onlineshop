@@ -531,6 +531,20 @@
         }
       }
 
+      &.subscription-toggle {
+        &.sub-active {
+          background: #eff6ff;
+          color: #2563eb;
+          border-color: #bfdbfe;
+        }
+
+        &.sub-disabled {
+          background: #f8fafc;
+          color: #94a3b8;
+          border-color: #e2e8f0;
+        }
+      }
+
       &:active {
         transform: scale(0.97);
       }
@@ -2269,5 +2283,60 @@
     }
   }
 }
+
+.sub-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+
+  &.sub-enabled {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+  }
+
+  &.sub-disabled {
+    background: #f8fafc;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+  }
+
+  &:hover {
+    filter: brightness(0.95);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.subscription-config-section {
+  .single-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  .subscription-toggle-card {
+    border-color: #e2e8f0;
+    transition: all 0.2s ease;
+
+    &.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+
+      .toggle-card-title {
+        color: #1d4ed8;
+      }
+    }
+  }
+}
+
 
 

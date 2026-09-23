@@ -137,7 +137,7 @@
                 </div>
 
                 <!-- Add to Cart / Plus-Minus Action Row -->
-                <div class="action-cta-row" *ngIf="!product.disabled && (product.is_unlimited || (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0))); else outOfStockTemplate">
+                <div class="action-cta-row" *ngIf="isProductInStock; else outOfStockTemplate">
                     
                     <!-- Direct Add to Cart Big Button when quantity is 0 -->
                     <button class="add-to-cart-cta-btn" 
@@ -154,7 +154,7 @@
                                     [inputVal]="product.units" 
                                     [stepVal]="1" 
                                     [minVal]="0" 
-                                    [maxVal]="product.is_unlimited ? 99 : (product.stock_qty || 10)"
+                                    [maxVal]="(product.is_unlimited == 1 || product.is_unlimited === true) ? 99 : (product.stock_qty || 10)"
                                     (onChange)="plusMinusValue($event)">
                         </plus-minus>
                     </div>
@@ -364,7 +364,7 @@
                                     [stepVal]="1" 
                                     [minVal]="0"
                                     (onChange)="plusMinusValue($event, rel)"
-                                    *ngIf="!rel.disabled && (rel.in_stock !== false && rel.in_stock !== 0); else outOfStockRel">
+                                    *ngIf="isItemInStock(rel); else outOfStockRel">
                         </plus-minus>
                         <ng-template #outOfStockRel>
                             <span class="rel-soldout">Sold out</span>

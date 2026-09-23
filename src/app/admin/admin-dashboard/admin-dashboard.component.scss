@@ -128,6 +128,7 @@
 
   &.revenue .kpi-icon { background: #dcfce7; color: #16a34a; }
   &.orders .kpi-icon { background: #e0f2fe; color: #0284c7; }
+  &.refunds .kpi-icon { background: #fee2e2; color: #ef4444; }
   &.pending .kpi-icon { background: #fef3c7; color: #d97706; }
   &.customers .kpi-icon { background: #f3e8ff; color: #9333ea; }
 
@@ -547,4 +548,282 @@
   .kpi-grid, .expense-grid {
     grid-template-columns: 1fr;
   }
+}
+
+// Payment Gateways & Checkout Controls Section
+.payment-gateways-block {
+  .section-subtitle-text {
+    font-size: 13px;
+    color: #64748b;
+    margin: 4px 0 0 0;
+  }
+
+  .status-summary-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #065f46;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    padding: 6px 14px;
+    border-radius: 20px;
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+
+      &.amber {
+        background: #f59e0b;
+      }
+      &.red {
+        background: #ef4444;
+      }
+    }
+
+    &.warning {
+      color: #92400e;
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    &.danger {
+      color: #991b1b;
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+  }
+
+  .payment-toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ecfdf5;
+    border: 1px solid #6ee7b7;
+    color: #065f46;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    animation: fadeIn 0.3s ease;
+
+    .material-icons {
+      font-size: 18px;
+      color: #10b981;
+    }
+  }
+
+  .payment-alert-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #fef2f2;
+    border: 1.5px solid #f87171;
+    color: #991b1b;
+    padding: 14px 18px;
+    border-radius: 14px;
+    margin-bottom: 18px;
+
+    .material-icons {
+      font-size: 24px;
+      color: #dc2626;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      color: #b91c1c;
+    }
+  }
+
+  .payment-toggles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+  }
+
+  .payment-toggle-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 20px;
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 18px;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+
+    &:hover {
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+    }
+
+    &.enabled {
+      border-color: #cbd5e1;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    }
+
+    &.disabled {
+      border-color: #e2e8f0;
+      background: #f8fafc;
+      opacity: 0.85;
+
+      .card-left .payment-brand-badge {
+        filter: grayscale(0.85);
+        opacity: 0.7;
+      }
+    }
+
+    .card-left {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      flex: 1;
+
+      .payment-brand-badge {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+        .material-icons {
+          font-size: 26px;
+          color: #ffffff;
+        }
+
+        &.razorpay-badge {
+          background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        }
+
+        &.cod-badge {
+          background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+      }
+
+      .toggle-meta {
+        flex: 1;
+
+        .toggle-title-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+          margin-bottom: 5px;
+
+          h4 {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 750;
+            color: #0f172a;
+          }
+
+          .badge-status {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            text-transform: uppercase;
+
+            &.active {
+              background: #d1fae5;
+              color: #065f46;
+            }
+
+            &.inactive {
+              background: #fee2e2;
+              color: #991b1b;
+            }
+          }
+        }
+
+        .toggle-desc {
+          margin: 0;
+          font-size: 12.5px;
+          line-height: 1.45;
+          color: #64748b;
+        }
+      }
+    }
+
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+
+      .switch-btn {
+        width: 54px;
+        height: 30px;
+        border-radius: 15px;
+        background: #cbd5e1;
+        border: none;
+        cursor: pointer;
+        position: relative;
+        padding: 3px;
+        transition: background-color 0.25s ease;
+        outline: none;
+
+        &.on {
+          background: #10b981;
+
+          .switch-handle {
+            transform: translateX(24px);
+          }
+        }
+
+        &:disabled {
+          cursor: not-allowed;
+          opacity: 0.7;
+        }
+
+        .switch-handle {
+          display: block;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          background: #ffffff;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+          transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+          &.saving {
+            animation: pulse 0.8s infinite alternate;
+          }
+        }
+      }
+
+      .switch-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #475569;
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); }
+  100% { transform: scale(1.1); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }

@@ -1,129 +1,629 @@
 @import "../../../assets/styles/global-constants.scss";
 
-.alert-cont {
-    top: calc(100% - 43%);
-    max-height: 43%;
-    overflow-y: scroll;
-    width: 100vw;
+.subs-calendar-wrapper {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding: 16px 14px 90px 14px;
+    scrollbar-width: thin;
+    font-family: $inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-    .flex-box {
-        // @include center-row;
-        align-items: flex-end;
-        width: 86vw;
-        gap: 12px;
-        position: absolute;
-        bottom: 24px;
+    &::-webkit-scrollbar {
+        width: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+}
 
-        .cancel-btn {
-            width: 40%;
-            flex: 0 0 0 20%;
+// 1. Product Hero Card
+.subs-product-hero {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.06);
+
+    .hero-image-wrap {
+        width: 68px;
+        height: 68px;
+        border-radius: 12px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+
+        .product-thumb {
+            max-width: 58px;
+            max-height: 58px;
+            object-fit: contain;
+        }
+    }
+
+    .hero-details {
+        flex: 1;
+        min-width: 0;
+
+        .hero-header-line {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+
+            .product-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: #0f172a;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .hero-badge {
+                font-size: 10px;
+                font-weight: 700;
+                background: #fef08a;
+                color: #854d0e;
+                padding: 2px 6px;
+                border-radius: 6px;
+                text-transform: uppercase;
+            }
         }
 
-        .view-btn {
-            width: 60%;
+        .product-weight-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #047857;
+            background: #dcfce7;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+        }
+
+        .hero-price-line {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-top: 6px;
+
+            .current-price {
+                font-size: 16px;
+                font-weight: 800;
+                color: #059669;
+
+                small {
+                    font-size: 11px;
+                    font-weight: 500;
+                    color: #64748b;
+                }
+            }
+
+            .mrp-price {
+                font-size: 12px;
+                color: #94a3b8;
+                text-decoration: line-through;
+            }
+
+            .save-tag {
+                font-size: 11px;
+                font-weight: 700;
+                color: #e11d48;
+                background: #ffe4e6;
+                padding: 1px 6px;
+                border-radius: 6px;
+            }
         }
     }
 }
 
-.subsOptionBtns {
-    background-color: #ccc;
-    display: inline-block;
-    width: 40%;
-    margin: 12px 3px 0px 3px;
-    border-radius: 24px;
-}
+// 2. Daily Quantity Card
+.subs-qty-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-top: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
 
-.remove-subs {
-    @include center;
-    margin-top: 24px;
-}
+    .qty-info {
+        .qty-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e293b;
 
-.days-select-options {
-    @include center;
+            .material-icons {
+                font-size: 17px;
+                color: #0d9488;
+            }
+        }
 
-    .days-select-option {
-        margin-right: 6px;
+        .qty-sub {
+            font-size: 11px;
+            color: #64748b;
+            display: block;
+            margin-top: 2px;
+        }
     }
 
-    .days-select-option:last-child {
-        margin-right: 0px;
+    .qty-stepper-wrap {
+        flex-shrink: 0;
     }
 }
 
-.week-ends {
-    background-color: $grey-96 !important;
-    border-radius: 24px;
-    border: 2px solid $white-clr !important;
+// 3. Frequency & Presets Section
+.subs-frequency-section {
+    margin-top: 14px;
+
+    .section-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 8px;
+
+        .material-icons {
+            font-size: 18px;
+            color: #0d9488;
+        }
+    }
+
+    .frequency-tab-switch {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 14px;
+
+        .freq-tab-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s ease;
+
+            &.active {
+                background: #ffffff;
+                color: #0d9488;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            }
+        }
+    }
+
+    .presets-container {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 10px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+        scrollbar-width: none;
+        &::-webkit-scrollbar { display: none; }
+
+        .presets-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .presets-chips {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+
+            .preset-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 5px 10px;
+                border-radius: 20px;
+                border: 1px solid #cbd5e1;
+                background: #ffffff;
+                color: #334155;
+                font-size: 11px;
+                font-weight: 700;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: all 0.15s ease;
+
+                &:hover {
+                    border-color: #0d9488;
+                    color: #0d9488;
+                    background: #f0fdfa;
+                }
+
+                &:active {
+                    transform: scale(0.96);
+                }
+
+                &.highlight {
+                    background: #f0fdf4;
+                    color: #047857;
+                    border-color: #86efac;
+                }
+            }
+        }
+    }
 }
 
-.alert {
-    font-size: $font-m;
+// 4. Calendar Card Container
+.calendar-card-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 10px;
+    margin-top: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+
+    .cal-view-wrapper {
+        width: 100%;
+    }
+
+    .calendar-legend-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 10px;
+        margin-top: 6px;
+        font-size: 11px;
+        color: #64748b;
+        font-weight: 600;
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+
+            .legend-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 4px;
+
+                &.selected-dot {
+                    background: linear-gradient(135deg, #0d9488, #10b981);
+                }
+
+                &.weekend-dot {
+                    background: #f1f5f9;
+                    border: 1px solid #cbd5e1;
+                }
+            }
+
+            .mini-qty-badge {
+                font-size: 9px;
+                font-weight: 800;
+                background: #e0f2fe;
+                color: #0369a1;
+                padding: 1px 5px;
+                border-radius: 4px;
+            }
+        }
+    }
 }
 
-.selected-days {
-    text-align: center;
-    padding: 12px 12px 24px 12px;
+// 5. Angular Material Calendar Overrides
+.mat-calendar {
+    font-family: inherit !important;
+}
+
+.mat-calendar-header {
+    padding: 4px 8px 8px 8px !important;
+}
+
+.mat-calendar-table-header th {
+    color: #64748b !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
 }
 
 .mat-calendar-body-cell-content {
     border: none !important;
+    font-weight: 600;
+    font-size: 13px;
+    color: #1e293b;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    line-height: 1.1 !important;
+    border-radius: 10px !important;
+}
+
+.cell-qty-badge {
+    font-size: 8px;
+    font-weight: 800;
+    margin-top: 1px;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #0f766e;
+    line-height: 1;
+    display: inline-block;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 .mat-calendar-body-cell.selected {
-    background-color: $teal-100 !important;
-    border-radius: 50%;
-    border: 3px solid $white;
-    color: $white !important;
+    background: linear-gradient(135deg, #0d9488, #10b981) !important;
+    border-radius: 10px !important;
+    border: 2px solid #ffffff;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3);
+
+    .mat-calendar-body-cell-content {
+        color: #ffffff !important;
+    }
 }
 
-@mixin range-common {
-    height: 44px;
-    margin-top: 3px;
+@mixin range-pill-common {
+    height: 42px;
     border: none;
-    color: $white !important;
+    color: #ffffff !important;
+
+    .mat-calendar-body-cell-content {
+        color: #ffffff !important;
+    }
 }
 
 .mat-calendar-body-cell.firstChild {
-    background-color: $teel-90 !important;
-    border-radius: 25px 0 0 25px;
-    width: 60px;
-    @include range-common;
+    background: linear-gradient(135deg, #0f766e, #0d9488) !important;
+    border-radius: 20px 0 0 20px !important;
+    @include range-pill-common;
 }
 
 .mat-calendar-body-cell.lastChild {
-    background-color: $teel-90 !important;
-    border-radius: 0 25px 25px 0;
-    @include range-common;
+    background: linear-gradient(135deg, #0d9488, #10b981) !important;
+    border-radius: 0 20px 20px 0 !important;
+    @include range-pill-common;
 }
 
 .mat-calendar-body-cell.square {
-    background-color: $teal-100 !important;
-    border-radius: 0;
-    @include range-common;
+    background: #14b8a6 !important;
+    border-radius: 0 !important;
+    @include range-pill-common;
+}
+
+.week-ends {
+    background: #f8fafc !important;
+    border-radius: 8px;
 }
 
 .mat-calendar-body-disabled {
-    color: $disabled-style-2;
+    color: #cbd5e1 !important;
 }
 
-.popup_content_subs {
-    max-height: calc(100% - 48px);
-    overflow-x: hidden;
-    overflow-y: scroll;
-    padding: 12px 0 12px 0;
-    margin-top: 48px;
+// 6. Live Selection Summary Card
+.selection-summary-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #f0fdfa 0%, #ecfdf5 100%);
+    border: 1px solid #99f6e4;
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-top: 14px;
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.08);
 
-    .row {
-        .col-8 {
-            .pName {
-                width: 100%;
-                display: inline-block;
-                white-space: nowrap;
-                overflow: hidden !important;
-                text-overflow: ellipsis;
-                font-family: $inter;
-                font-weight: 600;
+    .summary-metric {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .summary-metric-num {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f172a;
+
+            &.text-teal {
+                color: #0d9488;
             }
+        }
+
+        .summary-metric-lbl {
+            font-size: 10px;
+            font-weight: 600;
+            color: #64748b;
+        }
+    }
+
+    .summary-divider {
+        font-size: 14px;
+        font-weight: 700;
+        color: #94a3b8;
+    }
+
+    .summary-total-price {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        padding-left: 10px;
+        border-left: 1px solid #ccfbf1;
+
+        .total-lbl {
+            font-size: 10px;
+            font-weight: 600;
+            color: #047857;
+            text-transform: uppercase;
+        }
+
+        .total-val {
+            font-size: 18px;
+            font-weight: 800;
+            color: #047857;
+        }
+    }
+}
+
+.calendar-empty-guide {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-top: 14px;
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+
+    .material-icons {
+        color: #0d9488;
+        flex-shrink: 0;
+    }
+}
+
+// 7. Sticky Bottom Actions Footer
+.subs-actions-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid #e2e8f0;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 1000;
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+
+    .footer-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 13px 16px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+
+        &.clear-btn {
+            background: #f1f5f9;
+            color: #475569;
+            flex: 0 0 32%;
+
+            &:hover:not(:disabled) {
+                background: #e2e8f0;
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+        }
+
+        &.subscribe-submit-btn {
+            background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+            color: #ffffff;
+            flex: 1;
+            box-shadow: 0 3px 10px rgba(13, 148, 136, 0.3);
+
+            &:hover:not(:disabled) {
+                filter: brightness(1.05);
+                transform: translateY(-1px);
+            }
+
+            &:active:not(:disabled) {
+                transform: translateY(0);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+        }
+    }
+}
+
+// 8. Mode Switch Alert Popup
+.alert-cont {
+    background: #ffffff;
+    border-radius: 20px 20px 0 0;
+    padding: 24px 20px;
+    box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.15);
+
+    .alert-title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .alert-icon {
+            color: #f59e0b;
+            font-size: 24px;
+        }
+
+        .alert-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+    }
+
+    .alert-body-text {
+        font-size: 13px;
+        color: #475569;
+        margin: 14px 0 20px 0;
+        line-height: 1.5;
+    }
+
+    .alert-actions-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-confirm {
+            background: #0d9488;
+            color: #ffffff;
         }
     }
 }

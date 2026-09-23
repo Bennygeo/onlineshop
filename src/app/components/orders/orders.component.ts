@@ -95,7 +95,8 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   shopNow() {
-    this.cartService.router.navigate(['/products/category/Vegetables']);
+    const cat = this.cartService.lastSelectedCategory || 'Vegetables';
+    this.cartService.router.navigate(['/products/category', cat]);
   }
 
   getDeliveryModeText(mode: any): string {

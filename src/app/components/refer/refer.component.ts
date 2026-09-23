@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { CartService } from 'src/app/services/cart.service';
 import { LoginService } from 'src/app/services/login.service';
@@ -8,7 +8,7 @@ import { LoginService } from 'src/app/services/login.service';
   templateUrl: './refer.component.html',
   styleUrls: ['./refer.component.scss']
 })
-export class ReferComponent {
+export class ReferComponent implements OnInit {
 
   urlSafe: SafeResourceUrl;
   url: string = "./assets/iframe/index.html";
@@ -19,7 +19,7 @@ export class ReferComponent {
   copiedCodeToast: boolean = false;
   copiedLinkToast: boolean = false;
 
-  // Referral metrics (can be dynamic or preset defaults)
+  // Referral metrics
   rewardAmount: number = 100;
   discountPct: number = 25;
   friendsJoined: number = 0;
@@ -30,7 +30,7 @@ export class ReferComponent {
     private loginS: LoginService,
     public sanitizer: DomSanitizer,
   ) {
-    this.cartS.headerChangeEvent.next("type4");
+    this.cartS.headerChangeEvent.next("type2");
     this.referralId = this.loginS.user?.referralId || '';
     if (!this.referralId || this.referralId === "XXXXXX") {
       this.loginS.readUser().subscribe((res: any) => {
@@ -43,11 +43,15 @@ export class ReferComponent {
     }
   }
 
+  ngOnInit(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   getShareMessage(): string {
     const mobile = this.loginS.user?.mobile || '';
     const code = this.referralId || '';
     const repoUrl = `http://tomorrowneeds.in/?mobile=${mobile}&id=${code}&type=WELCOME`;
-    return `Hey! Join me on TomorrowNeeds for 100% fresh, natural food & daily essentials delivered right to your doorstep. 🥬🍏\n\n🎁 Get ${this.discountPct}% CASHBACK on your first order when you sign up with my code: *${code}*\n\nDownload now: ${repoUrl}`;
+    return `Hey! Join me on TomorrowNeeds for 100% farm-fresh vegetables, fruits & daily essentials delivered right to your doorstep. 🥬🍏\n\n🎁 Get ${this.discountPct}% CASHBACK on your first order when you sign up with my code: *${code}*\n\nDownload & Order now: ${repoUrl}`;
   }
 
   getReferralLink(): string {
@@ -121,7 +125,7 @@ export class ReferComponent {
     const mobile = this.loginS.user?.mobile || '';
     const referralId = this.referralId;
 
-    const repoUrl = `http://thinkspot.in/?mobile=${mobile}&id=${referralId}&type=WELCOME`;
+    const repoUrl = `http://tomorrowneeds.in/?mobile=${mobile}&id=${referralId}&type=WELCOME`;
     const params = `?id=${referralId}&type=WELCOME`;
     this.url = `./assets/iframe/index.html${params}`;
     this.urlSafe = this.sanitizer.bypassSecurityTrustResourceUrl(this.url);

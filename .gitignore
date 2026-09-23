@@ -39,6 +39,8 @@ chrome-profiler-events*.json
 npm-debug.log
 yarn-error.log
 testem.log
+backend/logs/*.log
+*.log
 /typings
 
 # System Files

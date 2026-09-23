@@ -32,10 +32,10 @@
         </div>
 
         <div
-            *ngIf="!product.disabled && (product.is_unlimited || (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0))); else NotAvailable">
+            *ngIf="isProductInStock; else NotAvailable">
             <plus-minus style="position: relative; float: left;" class="plusMinusComp" [caption]=""
                 [inputVal]="(product['units']||0)" [stepVal]="1" [minVal]="0"
-                [maxVal]="product.is_unlimited ? 99 : ((product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 10)"
+                [maxVal]="(product.is_unlimited == 1 || product.is_unlimited === true) ? 99 : ((product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 10)"
                 (onChange)="plusMinusValue($event)" [disabled]="product['disable']"
                 *ngIf="!(product.subs_options ? ((product.subs_options.rangeSelected.length>0) || (product.subs_options.multiDaySelected.length > 0)) : false)">
             </plus-minus>

@@ -314,16 +314,34 @@ export class LoginComponent implements OnInit {
       defaultAddressID: 0,
       mobile: this.userID,
       referralCode: this.referralFormControl.value || this.loginS.queryParams?.id
-    }).subscribe(res => {
-      this.loginS.user.mobile = this.userID;
-      this.locationPageFlg = false;
-      this.mobilePageFlg = false;
-      this.otpPageFlg = false;
-      this.referralFlg = true;
+    }).subscribe({
+      next: (res: any) => {
+        this.loginS.user.mobile = this.userID;
+        this.locationPageFlg = false;
+        this.mobilePageFlg = false;
+        this.otpPageFlg = false;
 
-      if (res && res.status == "ADDED" && res.referrer != null) {
-        this.loginS.referrrarinfo = res;
-        this.referralSuccessFlg = true;
+        const isNewUser = res && (res.is_new === true || res.status === "ADDED");
+
+        if (isNewUser) {
+          this.referralFlg = true;
+          if (res.referrer != null) {
+            this.loginS.referrrarinfo = res.referrer;
+            this.referralSuccessFlg = true;
+          }
+        } else {
+          // Already registered user: bypass referral dialog completely
+          this.referralFlg = false;
+          this.couponContinue();
+        }
+      },
+      error: () => {
+        this.loginS.user.mobile = this.userID;
+        this.locationPageFlg = false;
+        this.mobilePageFlg = false;
+        this.otpPageFlg = false;
+        this.referralFlg = false;
+        this.couponContinue();
       }
     });
   }

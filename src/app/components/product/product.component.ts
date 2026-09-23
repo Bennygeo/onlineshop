@@ -48,6 +48,13 @@ export class ProductComponent implements OnInit, OnChanges {
   ) {
   }
 
+  get isProductInStock(): boolean {
+    if (!this.product || this.product.disabled) return false;
+    if (this.product.is_unlimited === true || Number(this.product.is_unlimited) === 1) return true;
+    if (this.product.in_stock === false || Number(this.product.in_stock) === 0) return false;
+    return (this.product.stock_qty === undefined || this.product.stock_qty === null || Number(this.product.stock_qty) > 0);
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     this.init();
   }

@@ -427,5 +427,7 @@ export interface UserType {
 
 export interface StoreSettings {
     weekly_off_day?: string;
+    enable_razorpay?: string;
+    enable_cod?: string;
     [key: string]: any;
 }

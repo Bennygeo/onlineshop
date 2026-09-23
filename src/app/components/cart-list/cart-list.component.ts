@@ -41,6 +41,7 @@ export class CartListComponent implements OnInit, OnDestroy {
   cartEventSubscription: Subscription;
   cartupdateEventSubscription: Subscription;
   razorPaySubscription: Subscription;
+  storeSettingsSubscription: Subscription;
   public couponForm: FormGroup;
   payFlg: boolean = false;
   isProcessingPayment: boolean = false;
@@ -178,10 +179,27 @@ export class CartListComponent implements OnInit, OnDestroy {
 
     this.cartService.headerChangeEvent.next("type2");
 
-    const adminMode = this.loginS.getAdminMode();
-    if (adminMode && adminMode.active) {
-      this.selectedPaymentMethod = 'OFFLINE';
-    }
+    const adjustPaymentMethod = () => {
+      const adminMode = this.loginS.getAdminMode();
+      if (adminMode && adminMode.active) {
+        this.selectedPaymentMethod = 'OFFLINE';
+        return;
+      }
+      if (this.selectedPaymentMethod === 'ONLINE' && !this.cartService.enableRazorpay && this.cartService.remainingToPay > 0) {
+        if (this.cartService.enableCod) {
+          this.selectedPaymentMethod = 'COD';
+        }
+      } else if (this.selectedPaymentMethod === 'COD' && !this.cartService.enableCod) {
+        if (this.cartService.enableRazorpay) {
+          this.selectedPaymentMethod = 'ONLINE';
+        }
+      }
+    };
+    adjustPaymentMethod();
+
+    this.storeSettingsSubscription = this.cartService.storeSettingsUpdateEvent.subscribe(() => {
+      adjustPaymentMethod();
+    });
 
     this.orderInformation = this.cartService.orderInformation;
     if (this.orderInformation) {
@@ -195,6 +213,7 @@ export class CartListComponent implements OnInit, OnDestroy {
         this.cartService.remainingToPay = this.orderInformation.remainingToPay;
         this.cartProductsDateWise = this.orderInformation.cartProductDateWise;
       }
+      adjustPaymentMethod();
       this.fetchUserBagFlg = true;
     });
 
@@ -238,6 +257,7 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.cartService.loaderS?.hide?.();
     let loadingEl = document.getElementById("loading");
     if (loadingEl)
       loadingEl.remove();
@@ -430,7 +450,8 @@ export class CartListComponent implements OnInit, OnDestroy {
   //If the cart is empty select the action to do
   shopNowAction(): void {
     this.cartService.orderPlacedFlag = false;
-    this.cartService.router.navigate(["products/category/Vegetables"]);
+    const cat = this.cartService.lastSelectedCategory || 'Vegetables';
+    this.cartService.router.navigate(['products/category', cat]);
   }
 
   deliveryInfoAction(evt: MouseEvent): void {
@@ -455,6 +476,10 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   payOnlineAction() {
+    if (!this.cartService.enableRazorpay) {
+      alert("Online payment (Razorpay) is currently disabled by store admin. Please choose Cash on Delivery.");
+      return;
+    }
     this.payFlg = false;
     this.isProcessingPayment = true;
     const remainingAmt = this.cartService.remainingToPay;
@@ -468,10 +493,22 @@ export class CartListComponent implements OnInit, OnDestroy {
   }
 
   selectPaymentMethod(method: 'ONLINE' | 'COD' | 'OFFLINE') {
+    if (method === 'ONLINE' && !this.cartService.enableRazorpay && this.cartService.remainingToPay > 0) {
+      alert("Online payment (Razorpay) is currently disabled by store admin. Please choose Cash on Delivery.");
+      return;
+    }
+    if (method === 'COD' && !this.cartService.enableCod) {
+      alert("Cash on Delivery (COD) is currently disabled by store admin. Please choose Online Payment.");
+      return;
+    }
     this.selectedPaymentMethod = method;
   }
 
   payWithCODAction() {
+    if (!this.cartService.enableCod) {
+      alert("Cash on Delivery (COD) is currently disabled by store admin.");
+      return;
+    }
     this.payFlg = false;
     this.selectedPaymentMethod = 'COD';
     this.payAction();
@@ -527,6 +564,10 @@ export class CartListComponent implements OnInit, OnDestroy {
     }
 
     if (this.selectedPaymentMethod === 'COD') {
+      if (!this.cartService.enableCod) {
+        alert("Cash on Delivery (COD) is currently disabled by store admin. Please select Online Payment.");
+        return;
+      }
       this.isProcessingPayment = true;
       this.cartService.placeOrder((res: any) => {
         this.isProcessingPayment = false;
@@ -545,6 +586,10 @@ export class CartListComponent implements OnInit, OnDestroy {
     }
 
     if (this.cartService.remainingToPay > 0) {
+      if (!this.cartService.enableRazorpay) {
+        alert("Online payment (Razorpay) is currently disabled by store admin. Please choose Cash on Delivery.");
+        return;
+      }
       this.payFlg = true;
     } else {
       this.isProcessingPayment = true;
@@ -615,6 +660,7 @@ export class CartListComponent implements OnInit, OnDestroy {
     this.cartEventSubscription?.unsubscribe();
     this.cartupdateEventSubscription?.unsubscribe();
     this.razorPaySubscription?.unsubscribe();
+    this.storeSettingsSubscription?.unsubscribe();
     this.cartService.orderPlacedFlag = false;
   }
 }

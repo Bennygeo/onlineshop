@@ -25,7 +25,7 @@ export class ProductService {
     return this.apiService.postApi('products/get_product_detail.php', {
       id: id,
       table_name: zone || 'products'
-    });
+    }, true);
   }
 
   //To update description from product component to product-list component

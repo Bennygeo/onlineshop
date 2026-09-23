@@ -152,7 +152,7 @@ export class LoginService {
     }
 
     readWallet(): void {
-        this.apiService.postApi("wallet/read_wallet.php", { id: this.user.mobile }).subscribe({
+        this.apiService.postApi("wallet/read_wallet.php", { id: this.user.mobile }, true).subscribe({
             next: (res: Array<Wallet>) => {
                 if (res && Array.isArray(res)) {
                     this.user.walletHistory = res.reverse();

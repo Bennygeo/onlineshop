@@ -216,16 +216,21 @@
         </div>
 
         <!-- Safe & Secure Trust Badge -->
-        <div class="trustSecurityBanner">
+        <div class="trustSecurityBanner" *ngIf="cartS.enableRazorpay">
             <span class="material-icons-round lockIcon">lock</span>
             <span>100% Safe & Secure Payments via Razorpay (UPI, Cards, NetBanking)</span>
         </div>
 
+        <div class="trustSecurityBanner" *ngIf="!cartS.enableRazorpay" style="background: #fef2f2; border-color: #fecaca; color: #991b1b;">
+            <span class="material-icons-round lockIcon" style="color: #dc2626;">block</span>
+            <span>Online wallet recharge is temporarily disabled by the store administration.</span>
+        </div>
+
         <!-- Submit Button -->
         <div class="modalActions">
-            <button class="proceedPayBtn" (click)="addMoneyToWallet($event)" [disabled]="parsedRechargeAmt <= 0">
-                <span>Proceed to Pay {{ rechargeAmt }}</span>
-                <span class="material-icons-round">arrow_forward</span>
+            <button class="proceedPayBtn" (click)="addMoneyToWallet($event)" [disabled]="parsedRechargeAmt <= 0 || !cartS.enableRazorpay">
+                <span>{{ cartS.enableRazorpay ? ('Proceed to Pay ' + rechargeAmt) : 'Recharge Temporarily Disabled' }}</span>
+                <span class="material-icons-round" *ngIf="cartS.enableRazorpay">arrow_forward</span>
             </button>
         </div>
     </div>

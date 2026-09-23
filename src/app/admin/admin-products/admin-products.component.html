@@ -97,6 +97,7 @@
           <th>Avg Cost</th>
           <th>Inventory</th>
           <th>Visibility</th>
+          <th>Subscription</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -151,6 +152,12 @@
             <button class="visibility-toggle-btn" [class.visible-active]="!p.disabled" [class.visible-disabled]="p.disabled" (click)="toggleVisibilityStatus(p)" [title]="p.disabled ? 'Currently Hidden from Customers. Click to Enable' : 'Currently Visible to Customers. Click to Disable'">
               <span class="material-icons size-14">{{ p.disabled ? 'visibility_off' : 'visibility' }}</span>
               {{ p.disabled ? 'Hidden (Disabled)' : 'Visible (Active)' }}
+            </button>
+          </td>
+          <td>
+            <button class="sub-toggle-btn" [class.sub-enabled]="p.subscribe_flg == 1 || p.subscribeFlg === true" [class.sub-disabled]="!(p.subscribe_flg == 1 || p.subscribeFlg === true)" (click)="toggleSubscriptionStatus(p)" [title]="(p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'Subscription is Enabled. Click to Disable' : 'Subscription is Disabled. Click to Enable'">
+              <span class="material-icons size-14">{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'event_available' : 'event_busy' }}</span>
+              {{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'Sub Enabled' : 'No Subs' }}
             </button>
           </td>
           <td>
@@ -255,6 +262,14 @@
                 (click)="toggleVisibilityStatus(p)">
           <span class="material-icons size-15">{{ p.disabled ? 'visibility_off' : 'visibility' }}</span>
           <span>{{ p.disabled ? 'Hidden' : 'Live' }}</span>
+        </button>
+
+        <button class="mobile-toggle-btn subscription-toggle" 
+                [class.sub-active]="p.subscribe_flg == 1 || p.subscribeFlg === true" 
+                [class.sub-disabled]="!(p.subscribe_flg == 1 || p.subscribeFlg === true)" 
+                (click)="toggleSubscriptionStatus(p)">
+          <span class="material-icons size-15">{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'event_available' : 'event_busy' }}</span>
+          <span>{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'Subs On' : 'Subs Off' }}</span>
         </button>
       </div>
 
@@ -493,6 +508,25 @@
           <input type="text" [(ngModel)]="newProduct.img_url" placeholder="assets/categories/Thinkspot_veggiesIcon.png" />
         </div>
 
+        <!-- Subscription Options Configuration -->
+        <div class="form-group full-width subscription-config-section">
+          <label class="section-heading">
+            <span class="material-icons">event_repeat</span> Subscription Configuration
+          </label>
+          <p class="section-desc">Enable or disable recurring subscriptions (Daily, Alternate Days, Custom Schedule) for this product on the customer shop.</p>
+          <div class="delivery-options-grid single-col">
+            <label class="delivery-toggle-card subscription-toggle-card" [class.selected]="newProduct.subscribe_flg == 1">
+              <input type="checkbox" [ngModel]="newProduct.subscribe_flg == 1" (ngModelChange)="newProduct.subscribe_flg = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">event_available</span> Enable Subscriptions for this Product
+                </div>
+                <span class="toggle-card-sub">Allows customers to subscribe on a recurring calendar basis in addition to one-time orders</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
         <!-- Delivery Options Configuration -->
         <div class="form-group full-width delivery-config-section">
           <label class="section-heading">
@@ -697,6 +731,25 @@
         <div class="form-group full-width">
           <label>Image URL</label>
           <input type="text" [(ngModel)]="editingProduct.img_url" />
+        </div>
+
+        <!-- Subscription Options Configuration -->
+        <div class="form-group full-width subscription-config-section">
+          <label class="section-heading">
+            <span class="material-icons">event_repeat</span> Subscription Configuration
+          </label>
+          <p class="section-desc">Enable or disable recurring subscriptions (Daily, Alternate Days, Custom Schedule) for this product on the customer shop.</p>
+          <div class="delivery-options-grid single-col">
+            <label class="delivery-toggle-card subscription-toggle-card" [class.selected]="editingProduct.subscribe_flg == 1">
+              <input type="checkbox" [ngModel]="editingProduct.subscribe_flg == 1" (ngModelChange)="editingProduct.subscribe_flg = $event ? 1 : 0" />
+              <div class="toggle-card-body">
+                <div class="toggle-card-title">
+                  <span class="material-icons">event_available</span> Enable Subscriptions for this Product
+                </div>
+                <span class="toggle-card-sub">Allows customers to subscribe on a recurring calendar basis in addition to one-time orders</span>
+              </div>
+            </label>
+          </div>
         </div>
 
         <!-- Delivery Options Configuration -->

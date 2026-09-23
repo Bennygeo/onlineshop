@@ -1,81 +1,222 @@
-<div class="container">
-    <div class="row">
-        <div class="col-12">
-            <h3 style="margin-bottom: 24px; font-weight: 500;">Privacy Policy</h3>
-
-            <p>This Privacy Policy provides briefly the manner your data is collected, used and protected by TomorrowNeeds
-                on
-                the
-                Site.</p>
-            <p>As a visitor to the Site/ Customer you are advised to please read the Privacy Policy carefully. By
-                accessing
-                the
-                services provided by the Site you agree to the collection and use of your data by TomorrowNeeds in the
-                manner
-                provided in this Privacy Policy.</p>
-            <p class="ques">What information is, or may be, collected form you?</p>
-            <p>As part of the registration process on the Site, TomorrowNeeds may collect the following personally
-                identifiable
-                information about you: Name including first and last name, alternate email address, mobile, phone number
-                and
-                contact details, Postal code, Demographic profile (like your age, gender, occupation, education, address
-                etc.)
-                and information about the pages on the site you visit/access, the links you click on the site, the
-                number of
-                times you access the page and any such browsing information.</p>
-            <p class="ques">How do we Collect the Information ?</p>
-            <p>TomorrowNeeds will collect personally identifiable information about you only as part of a voluntary
-                registration
-                process, on-line survey or any combination thereof. The Site may contain links to other Web sites.
-                TomorrowNeeds
-                is
-                not responsible for the privacy practices of such Web sites which it does not own, manage or control.
-                How is information used?</p>
-            <p>TomorrowNeeds will use your personal information to provide personalized features to you on the Site and to
-                provide
-                promotional offers to you through the Site and other channels. TomorrowNeeds will also provide this
-                information
-                to
-                its business associates and partners to get in touch with you when necessary to provide the services
-                requested
-                by you. TomorrowNeeds may also use contact information internally to direct its efforts for product
-                improvement,
-                to
-                contact you as a survey respondent, to notify you if you win any contest; and to send you promotional
-                materials
-                from its contest sponsors or advertisers.</p>
-            <p class="ques">With whom will your information be shared?</p>
-
-            <p>TomorrowNeeds will not use your financial information for any purpose other than to complete a transaction
-                with
-                you.
-                TomorrowNeeds does not rent, sell or share your personal information and will not disclose any of your
-                personally
-                identifiable information to third parties. In cases where it has your permission to provide products or
-                services
-                you've requested and such information is necessary to provide these products or services the information
-                may
-                be
-                shared with TomorrowNeeds’s business associates and partners. TomorrowNeeds may, however, share consumer
-                information
-                on
-                an aggregate with its partners or third parties where it deems necessary. In addition TomorrowNeeds may use
-                this
-                information for promotional offers, to help investigate, prevent or take action regarding unlawful and
-                illegal
-                activities, suspected fraud, potential threat to the safety or security of any person, violations of the
-                Site’s
-                terms of use or to defend against legal claims; special circumstances such as compliance with subpoenas,
-                court
-                orders, requests/order from legal authorities or law enforcement agencies requiring such disclosure. By
-                using
-                this site, you agree that TomorrowNeeds will have no liability for disclosure of your information due to
-                errors
-                in
-                transmission or unauthorized acts of third parties.</p>
-            <p class="ques">Policy updates:</p>
-            <p>TomorrowNeeds reserves the right to change or update this policy at any time. Such changes shall be effective
-                immediately upon posting to the Site.</p>
+<div class="policy-page-wrapper">
+    <!-- Hero Header -->
+    <div class="policy-hero-card">
+        <div class="hero-badge">
+            <span class="material-icons-round">verified</span>
+            <span>TomorrowNeeds Trust & Safety</span>
         </div>
+        <h2 class="hero-title">Help Center & Legal Policies</h2>
+        <p class="hero-subtitle">Clear answers to your questions, transparent terms, and our commitment to protecting your privacy.</p>
+        
+        <div class="meta-row">
+            <span class="meta-item">
+                <span class="material-icons-round">update</span>
+                Last Updated: {{lastUpdatedDate}}
+            </span>
+            <span class="meta-item">
+                <span class="material-icons-round">support_agent</span>
+                Support: {{supportEmail}}
+            </span>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="policy-nav-tabs">
+        <button class="nav-tab-btn" [class.active]="activeTab === 'faq'" (click)="setTab('faq')">
+            <span class="material-icons-round">quiz</span>
+            <span>FAQs</span>
+        </button>
+        <button class="nav-tab-btn" [class.active]="activeTab === 'refund'" (click)="setTab('refund')">
+            <span class="material-icons-round">replay</span>
+            <span>Refunds</span>
+        </button>
+        <button class="nav-tab-btn" [class.active]="activeTab === 'privacy'" (click)="setTab('privacy')">
+            <span class="material-icons-round">shield</span>
+            <span>Privacy</span>
+        </button>
+        <button class="nav-tab-btn" [class.active]="activeTab === 'terms'" (click)="setTab('terms')">
+            <span class="material-icons-round">gavel</span>
+            <span>Terms</span>
+        </button>
+    </div>
+
+    <!-- TAB 1: FAQs -->
+    <div class="tab-content" *ngIf="activeTab === 'faq'">
+        <div class="faq-search-box">
+            <span class="material-icons-round search-icon">search</span>
+            <input type="text" [(ngModel)]="searchQuery" placeholder="Search questions (e.g. delivery, wallet, refund)..." class="faq-search-input" />
+            <button class="clear-search-btn" *ngIf="searchQuery" (click)="searchQuery = ''">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+
+        <div class="faq-list">
+            <div *ngFor="let item of filteredFaqs; let i = index" class="faq-card" [class.expanded]="expandedFaq === i">
+                <div class="faq-question-row" (click)="toggleFaq(i)">
+                    <div class="faq-q-left">
+                        <div class="faq-category-icon">
+                            <span class="material-icons-round">{{item.icon}}</span>
+                        </div>
+                        <div class="faq-q-text-wrap">
+                            <span class="faq-badge">{{item.category}}</span>
+                            <h4 class="faq-question">{{item.question}}</h4>
+                        </div>
+                    </div>
+                    <div class="faq-chevron-wrap">
+                        <span class="material-icons-round chevron-icon">expand_more</span>
+                    </div>
+                </div>
+                <div class="faq-answer-row" *ngIf="expandedFaq === i">
+                    <p class="faq-answer">{{item.answer}}</p>
+                </div>
+            </div>
+
+            <div class="no-faq-found" *ngIf="filteredFaqs.length === 0">
+                <span class="material-icons-round empty-icon">search_off</span>
+                <h4>No matching questions found</h4>
+                <p>Try different keywords or contact our support team directly.</p>
+                <button class="support-btn-inline" routerLink="/home/support">Contact Support</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: REFUND POLICY -->
+    <div class="tab-content" *ngIf="activeTab === 'refund'">
+        <div class="policy-card-block highlight-card">
+            <div class="highlight-icon">
+                <span class="material-icons-round">verified_user</span>
+            </div>
+            <div>
+                <h3>100% Quality & Freshness Guarantee</h3>
+                <p>At TomorrowNeeds, our goal is to deliver produce that meets the highest standards of farm freshness. If any item does not meet your expectations, we resolve it without friction.</p>
+            </div>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="card-step-badge">1</div>
+            <h3>Doorstep Inspection & Instant Rejection</h3>
+            <p>You have full freedom to inspect your delivery in the presence of our delivery partner. If any fruit, vegetable, or grocery item is damaged, overripe, or missing, simply reject that specific item on the spot.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="card-step-badge">2</div>
+            <h3>2-Hour Post Delivery Window</h3>
+            <p>In case you notice any quality discrepancy after delivery, you can report it via the app or WhatsApp support within <b>2 hours</b> of receiving your package. Share a quick photo of the item, and our team will issue an instant refund.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="card-step-badge">3</div>
+            <h3>Instant Wallet Refund</h3>
+            <p>Refunds for accepted claims are credited immediately to your <b>TomorrowNeeds Wallet</b> with zero deduction. Wallet credits can be used on your next purchase or transferred to your bank account on request.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="card-step-badge">4</div>
+            <h3>Order Cancellation</h3>
+            <p>You may cancel an order free of charge at any point before it leaves our packing hub. Once dispatched for transit, cancellation requests are evaluated based on delivery partner transit status.</p>
+        </div>
+    </div>
+
+    <!-- TAB 3: PRIVACY POLICY -->
+    <div class="tab-content" *ngIf="activeTab === 'privacy'">
+        <div class="policy-intro">
+            <p>This Privacy Policy explains how <b>TomorrowNeeds</b> collects, uses, stores, and protects your personal information when you access our mobile and web applications.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="section-icon-header">
+                <span class="material-icons-round section-icon">badge</span>
+                <h3>1. Information We Collect</h3>
+            </div>
+            <p>When you register or place an order on TomorrowNeeds, we collect:</p>
+            <ul class="policy-list">
+                <li><b>Personal Contact Details:</b> Name, mobile number, email address, and delivery coordinates.</li>
+                <li><b>Location & Address Information:</b> Delivery address, postal code, and saved landmark tags for accurate routing.</li>
+                <li><b>Transactional History:</b> Orders placed, payment status, wallet balance, and support communication records.</li>
+                <li><b>Device & Usage Logs:</b> App version, browser type, and navigation flow to optimize app performance.</li>
+            </ul>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="section-icon-header">
+                <span class="material-icons-round section-icon">settings_suggest</span>
+                <h3>2. How We Use Your Information</h3>
+            </div>
+            <p>We use your data solely to fulfill orders and deliver a superior customer experience:</p>
+            <ul class="policy-list">
+                <li>Processing, packing, and doorstep delivery of your orders.</li>
+                <li>Sending real-time order status, delivery notifications, and billing invoices.</li>
+                <li>Managing wallet rewards, cashback bonuses, and referral perks.</li>
+                <li>Providing proactive customer care and resolving queries promptly.</li>
+            </ul>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="section-icon-header">
+                <span class="material-icons-round section-icon">lock</span>
+                <h3>3. Data Protection & Non-Disclosure</h3>
+            </div>
+            <p><b>We do NOT sell, rent, or trade your personal data to third parties.</b></p>
+            <p>Your payment data (cards, UPI) is processed securely via PCI-DSS compliant payment gateways (Razorpay). TomorrowNeeds does not store raw credit card numbers or banking passwords on its servers.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="section-icon-header">
+                <span class="material-icons-round section-icon">rule</span>
+                <h3>4. Policy Updates</h3>
+            </div>
+            <p>TomorrowNeeds reserves the right to update this policy periodically to reflect operational improvements or regulatory compliance. Any revisions become effective immediately upon being published on the platform.</p>
+        </div>
+    </div>
+
+    <!-- TAB 4: TERMS OF SERVICE -->
+    <div class="tab-content" *ngIf="activeTab === 'terms'">
+        <div class="policy-intro">
+            <p>By using the <b>TomorrowNeeds</b> platform, you agree to comply with the following Terms and Conditions governing our online marketplace services.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="section-icon-header">
+                <span class="material-icons-round section-icon">person_outline</span>
+                <h3>1. Account & Eligibility</h3>
+            </div>
+            <p>To place orders on TomorrowNeeds, you must provide valid contact information. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your registered number.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="section-icon-header">
+                <span class="material-icons-round section-icon">payments</span>
+                <h3>2. Pricing & Product Availability</h3>
+            </div>
+            <p>All prices listed on TomorrowNeeds are in Indian Rupees (INR) inclusive of applicable taxes. Fresh produce weights may have nominal agricultural variances (+/- 5%) which are normalized in final billing. We strive to maintain accurate inventory, but in rare cases of stockouts, immediate wallet refunds are issued.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="section-icon-header">
+                <span class="material-icons-round section-icon">delivery_dining</span>
+                <h3>3. Delivery & Fulfillment</h3>
+            </div>
+            <p>Deliveries are executed to the delivery address registered at the time of checkout. While we maintain a 98%+ on-time delivery record, adverse weather or unexpected traffic conditions may occasionally cause minor delays.</p>
+        </div>
+
+        <div class="policy-card-block">
+            <div class="section-icon-header">
+                <span class="material-icons-round section-icon">copyright</span>
+                <h3>4. Intellectual Property</h3>
+            </div>
+            <p>All logos, trademarks, interface graphics, and application source code are the proprietary intellectual property of TomorrowNeeds and may not be copied or reproduced without prior written authorization.</p>
+        </div>
+    </div>
+
+    <!-- Bottom Support Callout -->
+    <div class="support-footer-cta">
+        <div class="cta-left">
+            <h4>Still have questions or need assistance?</h4>
+            <p>Our customer happiness team is online 7 days a week to help you.</p>
+        </div>
+        <button class="cta-btn" routerLink="/home/support">
+            <span class="material-icons-round">chat</span>
+            <span>Get in Touch</span>
+        </button>
     </div>
 </div>

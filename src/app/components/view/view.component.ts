@@ -67,10 +67,10 @@ export class ViewComponent implements OnInit, OnDestroy {
   private recognition: any = null;
 
   sampleVoicePrompts = [
-    { text: '1kg Onion, Tomato & Fresh Milk', lang: 'English' },
-    { text: 'Naalaiku dosai maavu & thakkali venum', lang: 'Tanglish' },
-    { text: 'சாம்பார் வைக்க தேவையான காய்கறிகள்', lang: 'தமிழ்' },
-    { text: 'Diabetic-friendly vegetables pack', lang: 'Diet' }
+    { text: 'Add 2 Apples to cart', lang: 'Voice Add' },
+    { text: 'Add Bitter Gourd (Pavakkai)', lang: 'Voice Add' },
+    { text: 'Sambar recipe essentials', lang: 'Recipe Kit' },
+    { text: 'Diabetic-friendly vegetables', lang: 'Diet' }
   ];
 
   // --- 2. AI HEALTH & DIETARY CURATIONS ---
@@ -594,11 +594,94 @@ export class ViewComponent implements OnInit, OnDestroy {
     this.isListening = false;
   }
 
+  parseVoiceCommand(text: string): { isAddCommand: boolean; isAddAll: boolean; quantity: number; targetItem: string } {
+    const raw = text.toLowerCase().trim();
+
+    // Check for "add all" intent
+    const isAddAll = /\b(add all|add them all|add everything|put all|all to cart|ellathaiyum|all add)\b/i.test(raw);
+    if (isAddAll) {
+      return { isAddCommand: true, isAddAll: true, quantity: 1, targetItem: '' };
+    }
+
+    // Check for "add" / cart addition keyword intent
+    const hasAddKeyword = /\b(add|buy|put|podu|serka|cart|order|venum|thevai)\b/i.test(raw);
+    if (!hasAddKeyword) {
+      return { isAddCommand: false, isAddAll: false, quantity: 1, targetItem: '' };
+    }
+
+    // Extract quantity (e.g. "add 2 apples" -> 2, "add 1kg" -> 1)
+    let quantity = 1;
+    const numMatch = raw.match(/\b(\d+)\s*(kg|kilo|packet|pack|litre|litres|grams|gram|units|unit|nos)?\b/);
+    if (numMatch && numMatch[1]) {
+      const parsedNum = parseInt(numMatch[1], 10);
+      if (parsedNum > 0 && parsedNum <= 20) {
+        quantity = parsedNum;
+      }
+    }
+
+    // Extract clean target item name
+    const target = raw
+      .replace(/\b(please|kindly|can you|could you|i want to|i need to|i want|i need)\b/gi, '')
+      .replace(/\b(add|buy|put|podu|serka|cart|order|into cart|in cart|to cart|to my cart|in my cart|pannu|venum|thevai|kudu)\b/gi, '')
+      .replace(/\b(\d+)\s*(kg|kilo|packet|pack|litre|litres|grams|gram|units|unit|nos)?\b/gi, '')
+      .trim();
+
+    return {
+      isAddCommand: true,
+      isAddAll: false,
+      quantity,
+      targetItem: target
+    };
+  }
+
+  findMatchingProduct(target: string, products: Product[]): Product | null {
+    if (!target || !products || products.length === 0) return null;
+    const cleanTarget = target.toLowerCase().trim();
+    // 1. Exact or partial substring match
+    const exact = products.find(p => p.name.toLowerCase().includes(cleanTarget) || (p['tamil_name'] && p['tamil_name'].toLowerCase().includes(cleanTarget)));
+    if (exact) return exact;
+
+    // 2. Token match
+    const words = cleanTarget.split(/\s+/).filter(w => w.length > 2);
+    for (let word of words) {
+      const match = products.find(p => p.name.toLowerCase().includes(word) || (p['tamil_name'] && p['tamil_name'].toLowerCase().includes(word)));
+      if (match) return match;
+    }
+    return null;
+  }
+
   sendVoiceQuery(queryText?: string) {
     const text = (queryText || this.voiceTranscript || '').trim();
     if (!text) return;
     this.stopVoiceListening();
+    this.stopSpeaking(); // Audio playing disabled as requested
     this.voiceTranscript = text;
+
+    const cmd = this.parseVoiceCommand(text);
+
+    // 1. If user says "Add all" and products are already displayed in modal
+    if (cmd.isAddAll && this.aiVoiceProducts && this.aiVoiceProducts.length > 0) {
+      this.addAllVoiceProductsToCart();
+      this.aiVoiceReply = `🛒 Added all ${this.aiVoiceProducts.length} matched farm essentials to your cart!`;
+      this.showToast(`Added all ${this.aiVoiceProducts.length} items to cart!`);
+      this.cdr.detectChanges();
+      return;
+    }
+
+    // 2. If user commanded to add an item that is already listed
+    if (cmd.isAddCommand && cmd.targetItem && this.aiVoiceProducts && this.aiVoiceProducts.length > 0) {
+      const existingMatch = this.findMatchingProduct(cmd.targetItem, this.aiVoiceProducts);
+      if (existingMatch) {
+        const targetUnits = (existingMatch.units || 0) + cmd.quantity;
+        this.plusMinusValue(targetUnits, existingMatch);
+        this.aiVoiceReply = `🛒 Added ${cmd.quantity}x **${existingMatch.name}** to your cart!`;
+        this.showToast(`🛒 Added ${cmd.quantity}x ${existingMatch.name} to Cart!`);
+        this.cdr.detectChanges();
+        return;
+      }
+    }
+
+    // 3. Query AI Chef & product matcher
     this.isAiVoiceProcessing = true;
     this.aiVoiceReply = '';
     this.aiVoiceProducts = [];
@@ -615,8 +698,24 @@ export class ViewComponent implements OnInit, OnDestroy {
             units: this.cartS.cartProducts[p.id]?.units || 0
           }));
           this.syncProductUnits(this.aiVoiceProducts);
+
+          // Direct Voice Command: Auto-add to cart on "Add" intent!
+          if (cmd.isAddCommand) {
+            if (cmd.isAddAll) {
+              this.addAllVoiceProductsToCart();
+              this.aiVoiceReply = `🛒 **Added all ${this.aiVoiceProducts.length} items to your cart!**\n\n` + this.aiVoiceReply;
+            } else {
+              const matchedProd = this.findMatchingProduct(cmd.targetItem, this.aiVoiceProducts) || this.aiVoiceProducts[0];
+              if (matchedProd && !matchedProd.disabled) {
+                const targetUnits = (matchedProd.units || 0) + cmd.quantity;
+                this.plusMinusValue(targetUnits, matchedProd);
+                this.showToast(`🛒 Added ${cmd.quantity}x ${matchedProd.name} to Cart!`);
+                this.aiVoiceReply = `🛒 **Added ${cmd.quantity}x ${matchedProd.name} to your cart!**\n\n` + this.aiVoiceReply;
+              }
+            }
+          }
         }
-        this.speakReply(this.aiVoiceReply);
+        // Audio playback option removed per user request
         this.cdr.detectChanges();
       },
       error: () => {
@@ -625,22 +724,6 @@ export class ViewComponent implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
-  }
-
-  speakReply(text: string) {
-    if (!('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      // Clean markdown tags for natural speech
-      const cleanText = text.replace(/[*_#`•👉🥘🥗🥞🍵☕🩺🏋️🌿👶💳🚚👋]/g, '').replace(/https?:\/\/\S+/g, '');
-      const utterance = new SpeechSynthesisUtterance(cleanText.slice(0, 220));
-      utterance.lang = this.voiceLang === 'ta-IN' ? 'ta-IN' : 'en-IN';
-      utterance.rate = 1.0;
-      utterance.onstart = () => { this.isSpeaking = true; this.cdr.detectChanges(); };
-      utterance.onend = () => { this.isSpeaking = false; this.cdr.detectChanges(); };
-      utterance.onerror = () => { this.isSpeaking = false; this.cdr.detectChanges(); };
-      window.speechSynthesis.speak(utterance);
-    } catch (e) { }
   }
 
   stopSpeaking() {
@@ -857,6 +940,22 @@ export class ViewComponent implements OnInit, OnDestroy {
     const checkDate = (d instanceof Date) ? d : new Date(d);
     if (isNaN(checkDate.getTime())) return false;
     return checkDate.getDate() === tomorrow.getDate() && checkDate.getMonth() === tomorrow.getMonth() && checkDate.getFullYear() === tomorrow.getFullYear();
+  }
+
+  isProductInStock(product: Product): boolean {
+    if (!product || product.disabled) return false;
+    if (product.is_unlimited === true || Number(product.is_unlimited) === 1 || String(product.is_unlimited) === '1') return true;
+    if (product.in_stock === false || Number(product.in_stock) === 0 || String(product.in_stock) === '0') return false;
+    return (product.stock_qty === undefined || product.stock_qty === null || Number(product.stock_qty) > 0);
+  }
+
+  getMaxStock(product: Product): number {
+    if (!product) return 99;
+    if (product.is_unlimited === true || Number(product.is_unlimited) === 1 || String(product.is_unlimited) === '1') return 99;
+    if (product.stock_qty !== undefined && product.stock_qty !== null && Number(product.stock_qty) > 0) {
+      return Number(product.stock_qty);
+    }
+    return 99;
   }
 
   getAddressShortText(): string {

@@ -83,7 +83,8 @@ export class AdminProductsComponent implements OnInit {
     in_stock: 1,
     stock_qty: 0,
     is_unlimited: 1,
-    disabled: 0
+    disabled: 0,
+    subscribe_flg: 0
   };
 
   editingProduct: any = null;
@@ -308,6 +309,7 @@ export class AdminProductsComponent implements OnInit {
       allow_immediate_10: 0,
       allow_immediate_30: 0,
       allow_immediate_60: 0,
+      subscribe_flg: 0,
       preferred_days: []
     };
     this.isAddModalOpen = true;
@@ -409,6 +411,7 @@ export class AdminProductsComponent implements OnInit {
     }
 
     const isUnlim = (product.is_unlimited == 1 || product.is_unlimited === true || String(product.is_unlimited) === '1') ? 1 : 0;
+    const isSub = (product.subscribe_flg == 1 || product.subscribeFlg === true || String(product.subscribe_flg) === '1') ? 1 : 0;
 
     this.editingProduct = { 
       ...product,
@@ -420,6 +423,7 @@ export class AdminProductsComponent implements OnInit {
       stock_qty: (product.stock_qty !== undefined && product.stock_qty !== null) ? parseFloat(product.stock_qty) : 0,
       is_unlimited: isUnlim,
       disabled: product.disabled ? 1 : 0,
+      subscribe_flg: isSub,
       allow_next_day: (product.allow_next_day !== 0 && product.allow_next_day !== false) ? 1 : 0,
       allow_immediate_10: (product.allow_immediate_10 == 1) ? 1 : 0,
       allow_immediate_30: (product.allow_immediate_30 == 1) ? 1 : 0,
@@ -459,7 +463,7 @@ export class AdminProductsComponent implements OnInit {
     // Optimistically update local array immediately
     const idx = this.products.findIndex(p => p.id === updated.id || (p.name && updated.name && p.name.toLowerCase() === updated.name.toLowerCase()));
     if (idx !== -1) {
-      this.products[idx] = { ...this.products[idx], ...updated };
+      this.products[idx] = { ...this.products[idx], ...updated, subscribeFlg: (updated.subscribe_flg == 1) };
       this.filterProducts();
     }
 
@@ -506,6 +510,22 @@ export class AdminProductsComponent implements OnInit {
     this.filterProducts();
     this.apiS.postApi('admin/update_product.php', {
       data: JSON.stringify({ id: product.id, disabled: newDisabledVal })
+    }).subscribe({
+      next: () => {
+        this.filterProducts();
+      }
+    });
+  }
+
+  // Toggle Subscription Status (Enabled / Disabled)
+  toggleSubscriptionStatus(product: any) {
+    const isCurrentlySub = (product.subscribe_flg == 1 || product.subscribeFlg === true || String(product.subscribe_flg) === '1');
+    const newSubVal = isCurrentlySub ? 0 : 1;
+    product.subscribe_flg = newSubVal;
+    product.subscribeFlg = (newSubVal === 1);
+    this.filterProducts();
+    this.apiS.postApi('admin/update_product.php', {
+      data: JSON.stringify({ id: product.id, subscribe_flg: newSubVal })
     }).subscribe({
       next: () => {
         this.filterProducts();

@@ -41,7 +41,7 @@ export class AiService {
       mobile: mobile || ''
     };
 
-    return this.api.postApi('ai/chat.php', payload).pipe(
+    return this.api.postApi('ai/chat.php', payload, true).pipe(
       catchError((err) => {
         return of({
           status: 'fallback',

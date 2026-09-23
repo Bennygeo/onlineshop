@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CartService } from 'src/app/services/cart.service';
 
 @Component({
@@ -6,19 +6,27 @@ import { CartService } from 'src/app/services/cart.service';
   templateUrl: './support.component.html',
   styleUrls: ['./support.component.scss']
 })
-export class SupportComponent {
+export class SupportComponent implements OnInit {
 
-  mobile: string = "+917200015551";
-  message: string = 'Hi there!';
+  mobile: string = "+919876543210";
+  displayMobile: string = "+91 98765 43210";
+  message: string = 'Hi TomorrowNeeds Team! I need some assistance regarding my order / account.';
   whatsappLink: string;
-  mailto: string = "mailto:hey@tomorrowneeds.in";
+  email: string = "hey@tomorrowneeds.in";
+  mailto: string;
+  callLink: string;
 
   constructor(private cartS: CartService) {
     this.cartS.headerChangeEvent.next("type2");
 
-    this.whatsappLink = `whatsapp://send?phone=${this.mobile}&text=${this.message}`;
+    const cleanPhone = this.mobile.replace('+', '');
+    this.whatsappLink = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(this.message)}`;
+    this.mailto = `mailto:${this.email}?subject=${encodeURIComponent('Support Request - TomorrowNeeds')}`;
+    this.callLink = `tel:${this.mobile}`;
   }
 
-
+  ngOnInit(): void {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
 }

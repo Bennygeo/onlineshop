@@ -1,39 +1,93 @@
-<div class="clearfix"></div>
-<div class="supportContainer">
-    <div class="imgCont">
-        <img src="assets/support/support.png" alt="Support Image">
-    </div>
-    <div class="label">
-        Hello, how can we help you?
+<div class="support-page-wrapper">
+    <!-- Hero Banner -->
+    <div class="support-hero">
+        <div class="hero-illustration-box">
+            <img src="assets/support/support.png" alt="Customer Support" class="support-hero-img" />
+            <span class="online-indicator-pill">
+                <span class="pulse-dot"></span>
+                <span>Online Support</span>
+            </span>
+        </div>
+        <h2 class="support-heading">How can we help you today?</h2>
+        <p class="support-subtext">Have a question regarding your orders, delivery, or subscriptions? Get in touch with our team.</p>
     </div>
 
-    <div class="supportOptions">
-        <div>
-            <span style="position: relative; left:0"><img src="assets/support/whatsapp.png" /></span>
-            <span style="margin-left: 18px;" class="font-14">
-                <a [href]="whatsappLink">Whatsapp Us</a>
-            </span>
-            <span style="min-width:36px; text-align: right; text-align: center; top:0">
-                <span class="material-icons" style="position: relative;
-    top: 6px;
-    left: 0px;
-    font-size: 20px; font-weight: bolder; float: right;">
-                    keyboard_arrow_right
-                </span>
-            </span>
+    <!-- Contact Channels -->
+    <div class="support-cards-container">
+        <!-- WhatsApp Card -->
+        <a [href]="whatsappLink" target="_blank" rel="noopener noreferrer" class="contact-card whatsapp-card">
+            <div class="card-icon-box whatsapp-icon-box">
+                <img src="assets/support/whatsapp.png" alt="WhatsApp" class="channel-icon" />
+            </div>
+            <div class="card-details">
+                <div class="card-title-row">
+                    <span class="card-title">Chat on WhatsApp</span>
+                    <span class="tag-badge fast-tag">Fastest</span>
+                </div>
+                <span class="card-subtitle">Instant chat assistance & order updates</span>
+                <span class="card-contact-val">{{displayMobile}}</span>
+            </div>
+            <div class="card-arrow-box">
+                <span class="material-icons-round action-arrow">chevron_right</span>
+            </div>
+        </a>
+
+        <!-- Call Card -->
+        <a [href]="callLink" class="contact-card call-card">
+            <div class="card-icon-box call-icon-box">
+                <span class="material-icons-round call-icon">call</span>
+            </div>
+            <div class="card-details">
+                <div class="card-title-row">
+                    <span class="card-title">Call Customer Care</span>
+                </div>
+                <span class="card-subtitle">Direct line with our support representative</span>
+                <span class="card-contact-val">{{displayMobile}}</span>
+            </div>
+            <div class="card-arrow-box">
+                <span class="material-icons-round action-arrow">chevron_right</span>
+            </div>
+        </a>
+
+        <!-- Email Card -->
+        <a [href]="mailto" class="contact-card email-card">
+            <div class="card-icon-box email-icon-box">
+                <img src="assets/support/mail.png" alt="Email" class="channel-icon" />
+            </div>
+            <div class="card-details">
+                <div class="card-title-row">
+                    <span class="card-title">Send us an Email</span>
+                </div>
+                <span class="card-subtitle">Detailed queries & feedback</span>
+                <span class="card-contact-val">{{email}}</span>
+            </div>
+            <div class="card-arrow-box">
+                <span class="material-icons-round action-arrow">chevron_right</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- Quick Help & FAQs Strip -->
+    <div class="quick-help-section">
+        <a routerLink="/home/policy" class="quick-faq-card">
+            <div class="faq-icon-wrapper">
+                <span class="material-icons-round">help_outline</span>
+            </div>
+            <div class="faq-text-wrapper">
+                <span class="faq-title">Frequently Asked Questions</span>
+                <span class="faq-desc">Find quick answers on delivery, refunds & orders</span>
+            </div>
+            <span class="material-icons-round faq-arrow">arrow_forward</span>
+        </a>
+    </div>
+
+    <!-- Support Timings Note -->
+    <div class="support-timing-card">
+        <div class="timing-header">
+            <span class="material-icons-round clock-icon">schedule</span>
+            <span class="timing-title">Support Timings</span>
         </div>
-        <div>
-            <span style="position: relative; left:0"><img src="assets/support/mail.png" /></span>
-            <span style="margin-left: 18px;" class="font-14">
-                <a [href]="mailto">Send us an Email</a></span>
-            <span style="min-width:36px; text-align: right; text-align: center; top:0">
-                <span class="material-icons" style="position: relative;
-    top: 6px;
-    left: 0px;
-    font-size: 20px; font-weight: bolder; float: right;">
-                    keyboard_arrow_right
-                </span>
-            </span>
-        </div>
+        <p class="timing-detail">Monday – Sunday: <b>6:00 AM – 9:00 PM</b></p>
+        <p class="timing-note">Messages received outside working hours will be answered first thing in the morning.</p>
     </div>
 </div>

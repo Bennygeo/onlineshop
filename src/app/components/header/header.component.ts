@@ -46,7 +46,7 @@ export class HeaderComponent implements OnInit {
 
   is_notifications_exist: boolean = false;
 
-  support_email: string = "hey@thinkspot.in";
+  support_email: string = "hey@tomorrowneeds.in";
 
   //default pincode
   addressName: string = "600095";
@@ -233,36 +233,58 @@ export class HeaderComponent implements OnInit {
 
   }
 
-  /* Set the width of the side navigation to 250px */
+  /* Set the width/position of the side navigation */
   openNav() {
     let nodeList = document.querySelectorAll("meta");
     nodeList.forEach(node => {
       if (node.name == 'theme-color') node.setAttribute("content", "#ffffff");
     });
 
-    // document.getElementById("mySidenav").style.width = "320px";
-    document.getElementById("mySidenav").style.left = "0px";
-    document.getElementById("navbg").style.opacity = "0.4";
-    document.getElementById("navbg").style.pointerEvents = "auto";
-    document.getElementById("navbg").style.display = "block";
-    // document.getElementById("viewCont").style.marginLeft = "220px";
-    // document.getElementById("viewCont").style.borderRadius = "36px";
+    const sidenav = document.getElementById("mySidenav");
+    const navbg = document.getElementById("navbg");
+    const bottomCart = document.getElementById("bottom_cart_view");
+
+    if (sidenav) sidenav.style.left = "0px";
+    if (bottomCart) {
+      bottomCart.style.opacity = "0";
+      bottomCart.style.pointerEvents = "none";
+      bottomCart.style.transform = "translateY(24px)";
+    }
+    if (navbg) {
+      navbg.style.display = "block";
+      setTimeout(() => {
+        navbg.style.opacity = "1";
+        navbg.style.pointerEvents = "auto";
+      }, 10);
+    }
   }
 
-  /* Set the width of the side navigation to 0 */
+  /* Close the side navigation */
   closeNav() {
     let nodeList = document.querySelectorAll("meta");
     nodeList.forEach(node => {
       if (node.name == 'theme-color') node.setAttribute("content", "#097e63");
     });
 
-    // document.getElementById("mySidenav").style.width = "0";
-    document.getElementById("mySidenav").style.left = "-240px";
-    document.getElementById("navbg").style.opacity = "0";
-    document.getElementById("navbg").style.pointerEvents = "none";
+    const sidenav = document.getElementById("mySidenav");
+    const navbg = document.getElementById("navbg");
+    const bottomCart = document.getElementById("bottom_cart_view");
 
-    // document.getElementById("viewCont").style.marginLeft = "0px";
-    // document.getElementById("viewCont").style.borderRadius = "0";
+    if (sidenav) sidenav.style.left = "-340px";
+    if (bottomCart) {
+      bottomCart.style.opacity = "1";
+      bottomCart.style.pointerEvents = "auto";
+      bottomCart.style.transform = "translateY(0)";
+    }
+    if (navbg) {
+      navbg.style.opacity = "0";
+      navbg.style.pointerEvents = "none";
+      setTimeout(() => {
+        if (navbg.style.opacity === "0") {
+          navbg.style.display = "none";
+        }
+      }, 250);
+    }
   }
 
   addressOutsideClickAction(evt: any) {

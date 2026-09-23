@@ -40,6 +40,17 @@
         </div>
       </div>
 
+      <div class="kpi-card refunds">
+        <div class="kpi-icon">
+          <span class="material-icons">replay</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Refunds Processed</span>
+          <h3 class="kpi-val">₹ {{ dashboardData.today?.refunds | number:'1.2-2' }}</h3>
+          <span class="kpi-sub">{{ dashboardData.today?.refundCount || 0 }} refund(s) today</span>
+        </div>
+      </div>
+
       <div class="kpi-card pending">
         <div class="kpi-icon">
           <span class="material-icons">local_shipping</span>
@@ -59,6 +70,108 @@
           <span class="kpi-label">Active Customers</span>
           <h3 class="kpi-val">{{ dashboardData.today?.customers }}</h3>
           <span class="kpi-sub">Unique buyers today</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT GATEWAYS & CHECKOUT CONTROLS -->
+  <div class="section-block payment-gateways-block">
+    <div class="section-header">
+      <div>
+        <h3><span class="material-icons">tune</span> Payment Gateways & Checkout Controls</h3>
+        <p class="section-subtitle-text">Instantly enable or disable payment methods available to customers at checkout.</p>
+      </div>
+      <div class="header-actions">
+        <span class="status-summary-pill" *ngIf="enableRazorpay && enableCod">
+          <span class="dot green"></span> All Payment Options Active
+        </span>
+        <span class="status-summary-pill warning" *ngIf="(!enableRazorpay || !enableCod) && (enableRazorpay || enableCod)">
+          <span class="dot amber"></span> Partial Checkout Active
+        </span>
+        <span class="status-summary-pill danger" *ngIf="!enableRazorpay && !enableCod">
+          <span class="dot red"></span> Both Methods Disabled
+        </span>
+      </div>
+    </div>
+
+    <!-- Success Toast Notification -->
+    <div class="payment-toast" *ngIf="paymentSuccessToast">
+      <span class="material-icons">check_circle</span>
+      <span>{{ paymentSuccessToast }}</span>
+    </div>
+
+    <!-- Alert Banner when both disabled -->
+    <div class="payment-alert-warning" *ngIf="!enableRazorpay && !enableCod">
+      <span class="material-icons">warning</span>
+      <div>
+        <strong>Warning: Both Razorpay and COD are disabled!</strong>
+        <p>Customers will be unable to complete checkout on the storefront until at least one payment method is enabled.</p>
+      </div>
+    </div>
+
+    <div class="payment-toggles-grid">
+      <!-- Razorpay Card -->
+      <div class="payment-toggle-card" [class.enabled]="enableRazorpay" [class.disabled]="!enableRazorpay">
+        <div class="card-left">
+          <div class="payment-brand-badge razorpay-badge">
+            <span class="material-icons">credit_card</span>
+          </div>
+          <div class="toggle-meta">
+            <div class="toggle-title-row">
+              <h4>Razorpay (Online & Wallet Recharge)</h4>
+              <span class="badge-status" [class.active]="enableRazorpay" [class.inactive]="!enableRazorpay">
+                {{ enableRazorpay ? 'ENABLED' : 'DISABLED' }}
+              </span>
+            </div>
+            <p class="toggle-desc">
+              Accept UPI (GPay, PhonePe, Paytm), Debit/Credit Cards, NetBanking, and online wallet top-ups via Razorpay gateway.
+            </p>
+          </div>
+        </div>
+
+        <div class="card-right">
+          <button type="button" 
+                  class="switch-btn" 
+                  [class.on]="enableRazorpay" 
+                  (click)="togglePaymentSetting('razorpay')" 
+                  [disabled]="paymentSettingsSaving === 'razorpay'"
+                  [title]="enableRazorpay ? 'Click to Disable Razorpay' : 'Click to Enable Razorpay'">
+            <span class="switch-handle" [class.saving]="paymentSettingsSaving === 'razorpay'"></span>
+          </button>
+          <span class="switch-label">{{ enableRazorpay ? 'Active' : 'Disabled' }}</span>
+        </div>
+      </div>
+
+      <!-- Cash on Delivery (COD) Card -->
+      <div class="payment-toggle-card" [class.enabled]="enableCod" [class.disabled]="!enableCod">
+        <div class="card-left">
+          <div class="payment-brand-badge cod-badge">
+            <span class="material-icons">local_atm</span>
+          </div>
+          <div class="toggle-meta">
+            <div class="toggle-title-row">
+              <h4>Cash on Delivery (COD)</h4>
+              <span class="badge-status" [class.active]="enableCod" [class.inactive]="!enableCod">
+                {{ enableCod ? 'ENABLED' : 'DISABLED' }}
+              </span>
+            </div>
+            <p class="toggle-desc">
+              Allow customers to place orders without paying upfront and pay in cash or UPI at their doorstep upon arrival.
+            </p>
+          </div>
+        </div>
+
+        <div class="card-right">
+          <button type="button" 
+                  class="switch-btn" 
+                  [class.on]="enableCod" 
+                  (click)="togglePaymentSetting('cod')" 
+                  [disabled]="paymentSettingsSaving === 'cod'"
+                  [title]="enableCod ? 'Click to Disable COD' : 'Click to Enable COD'">
+            <span class="switch-handle" [class.saving]="paymentSettingsSaving === 'cod'"></span>
+          </button>
+          <span class="switch-label">{{ enableCod ? 'Active' : 'Disabled' }}</span>
         </div>
       </div>
     </div>
@@ -189,6 +302,17 @@
           <span class="kpi-label">Total Orders</span>
           <h3 class="kpi-val">{{ dashboardData.totalOrders }}</h3>
           <span class="kpi-sub">Orders recorded</span>
+        </div>
+      </div>
+
+      <div class="kpi-card refunds">
+        <div class="kpi-icon">
+          <span class="material-icons">replay</span>
+        </div>
+        <div class="kpi-info">
+          <span class="kpi-label">Total Refunds</span>
+          <h3 class="kpi-val">₹ {{ dashboardData.totalRefunds | number:'1.2-2' }}</h3>
+          <span class="kpi-sub">{{ dashboardData.totalRefundCount || 0 }} lifetime refund(s)</span>
         </div>
       </div>
 

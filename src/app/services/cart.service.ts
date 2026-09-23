@@ -36,7 +36,7 @@ export class CartService {
   categoryPriorityIndex: Array<string> = ["Vegetables", "Naturalhydrants", "Fruits", "Greenssprouts", "Flowers", "Honeyspices", "Woodpressed", "Dairyeggs", "Naturalsugars", "Lentilspulses", "Breakfast", "Quickmeals", "Traditionalsnacks", "Skinhair"];
 
   loadCategories(): Observable<any[]> {
-    return this.apiS.getApi('products/get_categories.php');
+    return this.apiS.getApi('products/get_categories.php', undefined, true);
   }
 
   //Header might be differs when page changes
@@ -89,6 +89,24 @@ export class CartService {
     totalItems: 0
   };
 
+  // Keep track of last visited products category so navigation back preserves context
+  lastSelectedCategory: string = (() => {
+    try {
+      return localStorage.getItem('tnkspt_last_category') || 'Vegetables';
+    } catch {
+      return 'Vegetables';
+    }
+  })();
+
+  setLastCategory(category: string): void {
+    if (category && typeof category === 'string' && category.trim()) {
+      this.lastSelectedCategory = category.trim();
+      try {
+        localStorage.setItem('tnkspt_last_category', this.lastSelectedCategory);
+      } catch (e) {}
+    }
+  }
+
   //to keep server time
   serverTime: Date = new DateE();
   //to keep the todays date
@@ -97,8 +115,10 @@ export class CartService {
   deliveryDate: DateE = new DateE();
 
   //store operational settings (weekly off day, etc.)
-  storeSettings: StoreSettings = { weekly_off_day: 'None' };
-  storeSettingsUpdateEvent: BehaviorSubject<StoreSettings> = new BehaviorSubject<StoreSettings>({ weekly_off_day: 'None' });
+  enableRazorpay: boolean = true;
+  enableCod: boolean = true;
+  storeSettings: StoreSettings = { weekly_off_day: 'None', enable_razorpay: '1', enable_cod: '1' };
+  storeSettingsUpdateEvent: BehaviorSubject<StoreSettings> = new BehaviorSubject<StoreSettings>({ weekly_off_day: 'None', enable_razorpay: '1', enable_cod: '1' });
 
   /*
   * order checkout time limits
@@ -426,7 +446,7 @@ export class CartService {
     public router: Router,
     public loginS: LoginService,
     private storageS: StorageService,
-    private loaderS: LoaderService,
+    public loaderS: LoaderService,
     private couponS: CouponService
   ) {
 
@@ -447,8 +467,14 @@ export class CartService {
     this.deliveryInst = this.storageS.getItem("tnkspt_inst")?.val || "";
 
     const cachedSettings = this.storageS.getItem("tnkspt_store_settings");
-    if (cachedSettings && cachedSettings.weekly_off_day) {
-      this.storeSettings = cachedSettings;
+    if (cachedSettings) {
+      this.storeSettings = { ...this.storeSettings, ...cachedSettings };
+      if (cachedSettings.enable_razorpay !== undefined) {
+        this.enableRazorpay = cachedSettings.enable_razorpay !== '0' && cachedSettings.enable_razorpay !== false;
+      }
+      if (cachedSettings.enable_cod !== undefined) {
+        this.enableCod = cachedSettings.enable_cod !== '0' && cachedSettings.enable_cod !== false;
+      }
     }
 
     // Initialize store settings, cart, and delivery dates immediately on service creation
@@ -475,9 +501,18 @@ export class CartService {
 
     this.router.events.forEach((event) => {
       if (event instanceof NavigationStart) {
-
         this.pageRouterEvents.next("START");
-        this.loaderS.show();
+        // Do NOT show full-screen loader when navigating to cart page or products pages (products pages have shimmer effect)
+        const targetUrl = (event.url || '').toLowerCase();
+        const skipLoaderPages = targetUrl.includes('cart') ||
+                                targetUrl.includes('products') ||
+                                targetUrl.includes('/product') ||
+                                targetUrl.includes('/p/');
+        if (!skipLoaderPages) {
+          this.loaderS.show();
+        } else {
+          this.loaderS.hide();
+        }
       }
 
       if (event instanceof NavigationEnd) {
@@ -601,13 +636,20 @@ export class CartService {
 
     const onSettingsLoaded = (res: any) => {
       const s = res?.settings || res;
-      const offDay = s?.weekly_off_day;
-      if (offDay) {
-        this.storeSettings = { weekly_off_day: offDay };
-        this.storageS.setItem("tnkspt_store_settings", this.storeSettings);
-        this.storeSettingsUpdateEvent.next(this.storeSettings);
-        this.recalculateDeliveryDate();
-      }
+      const offDay = s?.weekly_off_day || this.storeSettings?.weekly_off_day || 'None';
+      const rzp = s?.enable_razorpay !== undefined ? (s.enable_razorpay !== '0' && s.enable_razorpay !== false) : true;
+      const cod = s?.enable_cod !== undefined ? (s.enable_cod !== '0' && s.enable_cod !== false) : true;
+
+      this.enableRazorpay = rzp;
+      this.enableCod = cod;
+      this.storeSettings = {
+        weekly_off_day: offDay,
+        enable_razorpay: rzp ? '1' : '0',
+        enable_cod: cod ? '1' : '0'
+      };
+      this.storageS.setItem("tnkspt_store_settings", this.storeSettings);
+      this.storeSettingsUpdateEvent.next(this.storeSettings);
+      this.recalculateDeliveryDate();
     };
 
     this.apiS.getApi('admin/store_settings.php').subscribe({
@@ -687,7 +729,7 @@ export class CartService {
     // let isLogged:boolean =false;
     if (!this.orderID) {
       //if user exist and orderID not created then it will create a one and return it
-      this.apiS.postApi('orders/orders_status.php', { userID: this.currentUserID }).subscribe(res => {
+      this.apiS.postApi('orders/orders_status.php', { userID: this.currentUserID }, true).subscribe(res => {
         if (typeof res == "string") {
           this.orderID = res;
         } else if (res && res.length > 0 && res[0]?.order_id) {
@@ -720,15 +762,15 @@ export class CartService {
   }
 
   readRecommendedProducts(tableName): Observable<any> {
-    return this.apiS.postApi('home/recommended_products.php', { table_name: tableName });
+    return this.apiS.postApi('home/recommended_products.php', { table_name: tableName }, true);
   }
 
   readRecentPurchases(mobile: string): Observable<any> {
-    return this.apiS.postApi('home/recent_purchases.php', { mobile: mobile });
+    return this.apiS.postApi('home/recent_purchases.php', { mobile: mobile }, true);
   }
 
   readBatterProducts(tableName?: string): Observable<any> {
-    return this.apiS.postApi('products/download_products_sql.php', { table_name: tableName || 'products', cat: 'Batter' });
+    return this.apiS.postApi('products/download_products_sql.php', { table_name: tableName || 'products', cat: 'Batter' }, true);
   }
 
 
@@ -739,7 +781,10 @@ export class CartService {
 
     if (val > 0) {
       const isUnlimited = (product.is_unlimited === 1 || product.is_unlimited === true || String(product.is_unlimited) === '1');
-      const maxStock = (!isUnlimited && product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 999;
+      // Treat stock_qty of 0 as unlimited — a zero stock_qty likely means the field isn't set,
+      // not that the product is out of stock (out-of-stock is tracked via in_stock flag).
+      const rawStock = (!isUnlimited && product.stock_qty !== undefined && product.stock_qty !== null) ? Number(product.stock_qty) : 999;
+      const maxStock = (rawStock > 0) ? rawStock : 999;
       let _quantity = Math.min(val || 1, maxStock);
       if (_quantity <= 0) {
         _quantity = 0;
@@ -868,9 +913,9 @@ export class CartService {
   read_products(zone: string, cat: string) {
     zone = this.zoneTablePicker(zone);
 
-    // Fetch freshest products data from backend
+    // Fetch freshest products data from backend (skipLoader = true so inline shimmer effect displays)
     this.productsLoadingFlg = true;
-    this.apiS.postApi('products/download_products_sql.php', { table_name: zone, cat: cat }).subscribe({
+    this.apiS.postApi('products/download_products_sql.php', { table_name: zone, cat: cat }, true).subscribe({
       next: (data: any) => {
         this.productsLoadingFlg = false;
         if (Array.isArray(data)) {
@@ -904,7 +949,7 @@ export class CartService {
 
   read_cart_products(observer?: Observer<string>) {
     //get the items in the cart based on customer_id
-    this.apiS.postApi('products/get_cart.php', { customerID: this.userID, status: "CART" }).subscribe({
+    this.apiS.postApi('products/get_cart.php', { customerID: this.userID, status: "CART" }, true).subscribe({
       next: (products: Array<CartProductTable>) => {
         const sqlProductIds = (typeof products != "string" && products && products.length > 0)
           ? products.map((item: any) => item.productID || item.product_id || item.id)
@@ -918,7 +963,7 @@ export class CartService {
             "data": JSON.stringify(allProductIds),
             "orderId": this.orderID,
             "table_name": tableName
-          }).subscribe({
+          }, true).subscribe({
             next: (cartProducts: any) => {
               if (cartProducts?.live && cartProducts.live.length > 0) {
                 let result: Array<string> = this.cartBarRestrictedPages.filter((val) => val == this.currentPage);
@@ -1561,9 +1606,10 @@ export class CartService {
 
   navigateBack(): void {
     const currentUrl = (this.router.url || '').split('?')[0];
+    const targetCategory = this.lastSelectedCategory || 'Vegetables';
 
     if (currentUrl.includes('/products/cart') || currentUrl.includes('/products/search')) {
-      this.router.navigate(['/products/category/Vegetables']);
+      this.router.navigate(['/products/category', targetCategory]);
     } else if (currentUrl.includes('/products/category/')) {
       this.router.navigate(['/home/view']);
     } else if (
@@ -1577,7 +1623,7 @@ export class CartService {
     ) {
       this.router.navigate(['/home/view']);
     } else if (currentUrl.includes('/home/view')) {
-      this.router.navigate(['/products/category/Vegetables']);
+      this.router.navigate(['/products/category', targetCategory]);
     } else {
       this.router.navigate(['/home/view']);
     }

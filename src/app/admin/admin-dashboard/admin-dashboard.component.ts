@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ApiService } from '../../services/api.service';
+import { CartService } from '../../services/cart.service';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -7,9 +8,18 @@ import { ApiService } from '../../services/api.service';
   styleUrls: ['./admin-dashboard.component.scss']
 })
 export class AdminDashboardComponent implements OnInit {
+  // Payment methods control
+  enableRazorpay: boolean = true;
+  enableCod: boolean = true;
+  paymentSettingsLoading: boolean = false;
+  paymentSettingsSaving: string = '';
+  paymentSuccessToast: string = '';
+
   dashboardData: any = {
     totalRevenue: 0,
     totalOrders: 0,
+    totalRefunds: 0,
+    totalRefundCount: 0,
     pendingDeliveries: 0,
     activeCustomers: 0,
     statusBreakdown: {
@@ -22,6 +32,8 @@ export class AdminDashboardComponent implements OnInit {
     today: {
       revenue: 0,
       orders: 0,
+      refunds: 0,
+      refundCount: 0,
       pending: 0,
       customers: 0
     },
@@ -44,10 +56,77 @@ export class AdminDashboardComponent implements OnInit {
   editingExpense: string = '';
   loading: boolean = true;
 
-  constructor(private apiS: ApiService) {}
+  constructor(
+    private apiS: ApiService,
+    public cartS: CartService
+  ) {}
 
   ngOnInit(): void {
     this.loadDashboardData();
+    this.loadPaymentSettings();
+  }
+
+  loadPaymentSettings() {
+    this.paymentSettingsLoading = true;
+    this.apiS.getApi('admin/store_settings.php').subscribe({
+      next: (res: any) => {
+        this.paymentSettingsLoading = false;
+        const s = res?.settings || res;
+        if (s) {
+          this.enableRazorpay = (s.enable_razorpay !== '0' && s.enable_razorpay !== false);
+          this.enableCod = (s.enable_cod !== '0' && s.enable_cod !== false);
+        }
+      },
+      error: () => {
+        this.paymentSettingsLoading = false;
+      }
+    });
+  }
+
+  togglePaymentSetting(method: 'razorpay' | 'cod') {
+    if (this.paymentSettingsSaving) return;
+
+    const targetState = method === 'razorpay' ? !this.enableRazorpay : !this.enableCod;
+    this.paymentSettingsSaving = method;
+
+    const key = method === 'razorpay' ? 'enable_razorpay' : 'enable_cod';
+    const val = targetState ? '1' : '0';
+
+    const payload: any = {
+      key: key,
+      value: val
+    };
+    payload[key] = val;
+
+    this.apiS.postApi('admin/store_settings.php', payload).subscribe({
+      next: () => {
+        this.paymentSettingsSaving = '';
+        if (method === 'razorpay') {
+          this.enableRazorpay = targetState;
+          this.cartS.enableRazorpay = targetState;
+          if (this.cartS.storeSettings) {
+            this.cartS.storeSettings['enable_razorpay'] = val;
+          }
+        } else {
+          this.enableCod = targetState;
+          this.cartS.enableCod = targetState;
+          if (this.cartS.storeSettings) {
+            this.cartS.storeSettings['enable_cod'] = val;
+          }
+        }
+        this.cartS.storeSettingsUpdateEvent.next(this.cartS.storeSettings);
+
+        const methodLabel = method === 'razorpay' ? 'Razorpay (Online & Wallet)' : 'Cash on Delivery (COD)';
+        this.paymentSuccessToast = `${methodLabel} is now ${targetState ? 'ENABLED' : 'DISABLED'} for storefront customers.`;
+        setTimeout(() => {
+          this.paymentSuccessToast = '';
+        }, 4000);
+      },
+      error: () => {
+        this.paymentSettingsSaving = '';
+        alert('Failed to save payment setting. Please try again.');
+      }
+    });
   }
 
   loadDashboardData() {

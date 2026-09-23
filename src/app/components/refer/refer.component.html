@@ -1,102 +1,141 @@
-<div class="referral-page">
+<div class="referral-page-wrapper">
 
   <!-- Floating Toast Notifications -->
   <div class="toast-badge" *ngIf="copiedCodeToast">
-    <span class="icon">✓</span> Referral Code Copied!
+    <span class="material-icons-round toast-icon">check_circle</span>
+    <span>Referral Code Copied!</span>
   </div>
   <div class="toast-badge" *ngIf="copiedLinkToast">
-    <span class="icon">✓</span> Referral Link Copied!
+    <span class="material-icons-round toast-icon">check_circle</span>
+    <span>Referral Link Copied!</span>
   </div>
 
-  <!-- Hero Banner Header -->
-  <div class="hero-section">
-    <div class="hero-badge">🎁 TomorrowNeeds Growth & Rewards</div>
-    <h1 class="hero-title">Refer Friends & Earn Cash</h1>
-    <p class="hero-subtitle">Share the goodness of 100% natural, farm-fresh foods with your friends and family!</p>
+  <!-- Hero Digital Card (matches TomorrowNeeds card language) -->
+  <div class="referral-hero-card">
+    <div class="hero-ambient-glow"></div>
+    <div class="hero-pattern-overlay"></div>
 
-    <div class="reward-pill-container">
+    <div class="hero-header-row">
+      <div class="hero-brand-badge">
+        <span class="brand-dot"></span>
+        <span class="brand-title">TomorrowNeeds Rewards</span>
+      </div>
+      <div class="hero-gift-icon">
+        <span class="material-icons-round">card_giftcard</span>
+      </div>
+    </div>
+
+    <div class="hero-text-block">
+      <h2 class="hero-title">Refer Friends & Earn Cash</h2>
+      <p class="hero-subtitle">Give your friends 25% cashback on farm-fresh produce and receive ₹100 wallet cash when they order!</p>
+    </div>
+
+    <div class="reward-pills-row">
       <div class="reward-pill">
         <span class="pill-label">YOUR FRIEND GETS</span>
         <span class="pill-value">25% Cashback</span>
       </div>
-      <div class="reward-divider">+</div>
+      <div class="reward-plus">+</div>
       <div class="reward-pill highlight">
-        <span class="pill-label">YOU GET</span>
+        <span class="pill-label">YOU EARN</span>
         <span class="pill-value">₹100 Wallet Cash</span>
       </div>
     </div>
   </div>
 
-  <!-- Main Referral Card -->
-  <div class="referral-card-container">
-    <div class="referral-card">
-      
-      <!-- Referral Code Showcase -->
-      <div class="code-box-wrapper">
-        <span class="code-label">YOUR UNIQUE REFERRAL CODE</span>
-        <div class="code-display-row">
-          <div class="code-value">{{ referralId || 'LOADING...' }}</div>
-          <button class="btn-copy" (click)="copyCode()" title="Copy Code">
-            <span class="copy-icon">📋</span> Copy Code
-          </button>
+  <!-- Main Referral Action Card -->
+  <div class="referral-main-card">
+    <div class="code-section-header">
+      <span class="material-icons-round code-icon">qr_code_2</span>
+      <span class="code-section-label">Your Unique Referral Code</span>
+    </div>
+
+    <div class="code-box-row">
+      <div class="code-value-display">
+        {{ referralId || 'LOADING...' }}
+      </div>
+      <button class="btn-copy-code" (click)="copyCode()" title="Copy Code">
+        <span class="material-icons-round">content_copy</span>
+        <span>Copy</span>
+      </button>
+    </div>
+
+    <!-- Quick Action Share Buttons -->
+    <div class="share-actions-grid">
+      <button class="btn-share-whatsapp" (click)="shareWhatsApp()">
+        <img src="assets/support/whatsapp.png" alt="WhatsApp" class="wa-icon" />
+        <span>Share on WhatsApp</span>
+      </button>
+
+      <button class="btn-share-native" (click)="shareNative()">
+        <span class="material-icons-round share-icon">share</span>
+        <span>More Options</span>
+      </button>
+    </div>
+
+    <button class="btn-copy-link-text" (click)="copyLink()">
+      <span class="material-icons-round link-icon">link</span>
+      <span>Click here to copy direct invitation link</span>
+    </button>
+  </div>
+
+  <!-- How It Works Step Cards -->
+  <div class="how-it-works-container">
+    <div class="section-heading-wrap">
+      <span class="subheading-tag">3 Simple Steps</span>
+      <h3 class="section-heading">How Refer & Earn Works</h3>
+    </div>
+
+    <div class="steps-list">
+      <div class="step-card">
+        <div class="step-number-badge">1</div>
+        <div class="step-icon-box">
+          <span class="material-icons-round">share</span>
+        </div>
+        <div class="step-content">
+          <h4 class="step-title">Share Your Code</h4>
+          <p class="step-desc">Send your referral link or code to friends, family, and neighbors.</p>
         </div>
       </div>
 
-      <!-- Quick Action Buttons -->
-      <div class="actions-grid">
-        <button class="btn-action btn-whatsapp" (click)="shareWhatsApp()">
-          <span class="btn-icon">💬</span> Share on WhatsApp
-        </button>
-        <button class="btn-action btn-share" (click)="shareNative()">
-          <span class="btn-icon">🔗</span> Share Link
-        </button>
-      </div>
-
-      <div class="copy-link-text" (click)="copyLink()">
-        <span>Or click here to copy full invitation link</span>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- How It Works Section -->
-  <div class="how-it-works-section">
-    <h2 class="section-title">How It Works</h2>
-    
-    <div class="steps-grid">
       <div class="step-card">
-        <div class="step-badge">1</div>
-        <div class="step-icon">📲</div>
-        <h3 class="step-heading">Invite Friends</h3>
-        <p class="step-desc">Share your referral code or direct link via WhatsApp, SMS, or social media.</p>
+        <div class="step-number-badge">2</div>
+        <div class="step-icon-box">
+          <span class="material-icons-round">shopping_bag</span>
+        </div>
+        <div class="step-content">
+          <h4 class="step-title">Friend Places 1st Order</h4>
+          <p class="step-desc">They get <b>25% instant cashback</b> on their first fresh grocery basket.</p>
+        </div>
       </div>
 
       <div class="step-card">
-        <div class="step-badge">2</div>
-        <div class="step-icon">🛒</div>
-        <h3 class="step-heading">Friend Places Order</h3>
-        <p class="step-desc">Your friend gets <strong>25% Cashback</strong> on their first fresh food purchase.</p>
-      </div>
-
-      <div class="step-card">
-        <div class="step-badge">3</div>
-        <div class="step-icon">🎉</div>
-        <h3 class="step-heading">You Get Rewarded</h3>
-        <p class="step-desc">Receive <strong>₹100 Cash</strong> straight into your TomorrowNeeds Wallet instantly!</p>
+        <div class="step-number-badge">3</div>
+        <div class="step-icon-box">
+          <span class="material-icons-round">account_balance_wallet</span>
+        </div>
+        <div class="step-content">
+          <h4 class="step-title">Get ₹100 Wallet Cash</h4>
+          <p class="step-desc"><b>₹100</b> is credited directly into your TomorrowNeeds Wallet for instant use.</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Milestone & Promo Banner -->
-  <div class="promo-banner">
-    <div class="promo-content">
-      <div class="promo-badge">🔥 MONTHLY REFERRAL CHALLENGE</div>
-      <h3 class="promo-title">Refer 5 Friends this Month!</h3>
-      <p class="promo-text">Unlock <strong>₹500 Extra Wallet Bonus</strong> + <strong>30 Days FREE Delivery</strong> on all farm-fresh orders!</p>
+  <!-- Monthly Challenge Promo Card -->
+  <div class="monthly-promo-card">
+    <div class="promo-header-row">
+      <span class="promo-badge">
+        <span class="material-icons-round flame-icon">local_fire_department</span>
+        Monthly Milestone
+      </span>
+      <span class="promo-tag">Bonus Offer</span>
     </div>
+    <h4 class="promo-title">Refer 5 Friends This Month!</h4>
+    <p class="promo-desc">Unlock an extra <b>₹500 Wallet Bonus</b> plus <b>30 Days of Free Delivery</b> on all your daily grocery orders.</p>
   </div>
 
-  <!-- Dynamic Iframe integration if shareFlg is active -->
+  <!-- Dynamic Iframe if shareFlg is active -->
   <div class="iframe-container" *ngIf="shareFlg">
     <iframe [src]="urlSafe"></iframe>
   </div>

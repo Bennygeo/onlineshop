@@ -1,5 +1,5 @@
 <!-- Regular Product Card -->
-<div *ngIf="!product.subscribe" class="modernCartItemCard" id="cart_{{index}}">
+<div *ngIf="!product.subscribe" class="modernCartItemCard" [class.item-removing]="isDeleting" id="cart_{{index}}">
     <div class="cartItemGrid">
         <!-- Thumbnail -->
         <div class="productThumbCol">
@@ -27,10 +27,10 @@
             </div>
 
             <div class="priceRow">
-                <div class="unitPrice" *ngIf="!product.zoneAvailability && product.in_stock !== false && product.in_stock !== 0">
+                <div class="unitPrice" *ngIf="!isOutOfStock">
                     <span class="currency">₹</span>{{product.price | number}}
                 </div>
-                <div *ngIf="product.zoneAvailability || product.in_stock === false || product.in_stock === 0" class="unavailableBadge">
+                <div *ngIf="isOutOfStock" class="unavailableBadge">
                     <span class="material-icons-round unavailIcon">error_outline</span>
                     <span>Currently out of stock</span>
                 </div>
@@ -54,7 +54,7 @@
                     [inputVal]="(product.units || 0)" 
                     [stepVal]="1" 
                     [minVal]="1" 
-                    [maxVal]="(product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 10"
+                    [maxVal]="maxStock"
                     [caption]="''"
                     class="customPlusMinus" 
                     (onChange)="plusMinusAction($event)">
@@ -69,7 +69,7 @@
 </div>
 
 <!-- Subscribed Product Card -->
-<div *ngIf="product.subscribe" class="modernCartItemCard subscriptionItemCard" id="cart_{{index}}">
+<div *ngIf="product.subscribe" class="modernCartItemCard subscriptionItemCard" [class.item-removing]="isDeleting" id="cart_{{index}}">
     <div class="cartItemGrid">
         <!-- Thumbnail -->
         <div class="productThumbCol">

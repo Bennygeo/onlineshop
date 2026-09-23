@@ -1489,6 +1489,9 @@
     left: 0;
     right: 0;
     bottom: 0;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100vh;
     background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(6px);
     z-index: 9999;
@@ -1496,19 +1499,23 @@
     justify-content: center;
     align-items: flex-end;
     animation: fadeIn 0.25s ease;
+    overflow-x: hidden !important;
+    box-sizing: border-box;
 
     .voice-modal-sheet {
         background: #ffffff;
         width: 100%;
-        max-width: 650px;
+        max-width: 600px;
         max-height: 90vh;
         border-radius: 24px 24px 0 0;
         box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
-        padding: 20px 18px 28px 18px;
+        padding: 20px 16px 28px 16px;
         overflow-y: auto;
+        overflow-x: hidden !important;
         display: flex;
         flex-direction: column;
         animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        box-sizing: border-box;
 
         .voice-sheet-header {
             display: flex;
@@ -1808,62 +1815,48 @@
                 border: 1px solid #e2e8f0;
                 border-radius: 14px;
                 padding: 12px 14px;
+                box-sizing: border-box;
+                width: 100%;
+                word-break: break-word;
+                overflow-wrap: break-word;
 
                 .ai-reply-header {
                     display: flex;
                     align-items: center;
-                    justify-content: space-between;
                     margin-bottom: 6px;
 
                     .ai-sparkle-icon {
                         font-size: 16px;
                         color: #059669;
-                        margin-right: 4px;
+                        margin-right: 6px;
                     }
 
                     .ai-header-title {
-                        font-size: 12px;
+                        font-size: 12.5px;
                         font-weight: 800;
                         color: #0f172a;
                         flex: 1;
                     }
-
-                    .tts-toggle-btn {
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 4px;
-                        background: #ffffff;
-                        border: 1px solid #cbd5e1;
-                        padding: 3px 8px;
-                        border-radius: 8px;
-                        font-size: 10px;
-                        font-weight: 700;
-                        color: #475569;
-                        cursor: pointer;
-
-                        .material-icons {
-                            font-size: 14px;
-                        }
-
-                        &:hover {
-                            background: #e2e8f0;
-                        }
-                    }
                 }
 
                 .ai-reply-body {
-                    font-size: 12px;
+                    font-size: 12.5px;
                     color: #334155;
                     line-height: 1.5;
                 }
             }
 
             .ai-products-section {
+                width: 100%;
+                box-sizing: border-box;
+
                 .results-header-row {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
-                    margin-bottom: 10px;
+                    margin-bottom: 8px;
+                    flex-wrap: wrap;
+                    gap: 8px;
 
                     .results-title {
                         font-size: 12px;
@@ -1891,13 +1884,34 @@
                     }
                 }
 
+                .voice-tip-line {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    background: #f0fdfa;
+                    border: 1px dashed #99f6e4;
+                    border-radius: 8px;
+                    padding: 6px 10px;
+                    font-size: 11px;
+                    color: #0f766e;
+                    margin-bottom: 10px;
+
+                    .size-14 {
+                        font-size: 14px;
+                        color: #0d9488;
+                        flex-shrink: 0;
+                    }
+                }
+
                 .voice-products-grid {
                     display: grid;
-                    grid-template-columns: repeat(2, 1fr);
+                    grid-template-columns: 1fr; /* Single column on mobile prevents any horizontal scroll */
                     gap: 10px;
+                    width: 100%;
+                    box-sizing: border-box;
 
-                    @media (max-width: 480px) {
-                        grid-template-columns: 1fr;
+                    @media (min-width: 600px) {
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
                     }
 
                     .voice-product-card {
@@ -1905,36 +1919,42 @@
                         align-items: center;
                         gap: 10px;
                         background: #ffffff;
-                        border: 1px solid #e2e8f0;
+                        border: 1.5px solid #e2e8f0;
                         border-radius: 12px;
-                        padding: 8px 10px;
-                        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+                        padding: 10px 12px;
+                        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+                        box-sizing: border-box;
+                        width: 100%;
+                        min-width: 0; /* Prevents child expansion beyond parent */
 
                         .vp-img {
-                            width: 44px;
-                            height: 44px;
+                            width: 46px;
+                            height: 46px;
                             object-fit: contain;
                             border-radius: 8px;
                             background: #f8fafc;
+                            flex-shrink: 0;
                         }
 
                         .vp-info {
                             flex: 1;
+                            min-width: 0; /* Critical: allows flex item to shrink and truncate text */
                             display: flex;
                             flex-direction: column;
+                            overflow: hidden;
 
                             .vp-name {
-                                font-size: 12px;
+                                font-size: 12.5px;
                                 font-weight: 700;
                                 color: #0f172a;
                                 white-space: nowrap;
                                 overflow: hidden;
                                 text-overflow: ellipsis;
-                                max-width: 140px;
+                                max-width: 100%;
                             }
 
                             .vp-weight {
-                                font-size: 10px;
+                                font-size: 11px;
                                 color: #64748b;
                             }
 
@@ -1942,15 +1962,16 @@
                                 display: flex;
                                 align-items: baseline;
                                 gap: 5px;
+                                margin-top: 2px;
 
                                 .vp-price {
-                                    font-size: 12.5px;
+                                    font-size: 13px;
                                     font-weight: 800;
                                     color: #059669;
                                 }
 
                                 .vp-orig-price {
-                                    font-size: 10px;
+                                    font-size: 10.5px;
                                     text-decoration: line-through;
                                     color: #aaa;
                                     font-weight: 500;
@@ -1963,26 +1984,7 @@
                             align-items: center;
                             justify-content: flex-end;
                             flex-shrink: 0;
-                        }
-
-                        .vp-add-btn {
-                            display: inline-flex;
-                            align-items: center;
-                            gap: 3px;
-                            background: #ecfdf5;
-                            color: #059669;
-                            border: 1px solid #a7f3d0;
-                            padding: 6px 10px;
-                            border-radius: 8px;
-                            font-size: 11px;
-                            font-weight: 700;
-                            cursor: pointer;
-                            transition: all 0.2s ease;
-
-                            &:hover {
-                                background: #059669;
-                                color: #ffffff;
-                            }
+                            margin-left: auto;
                         }
                     }
                 }

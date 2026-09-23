@@ -50,7 +50,7 @@ export class WalletComponent implements OnInit, OnDestroy {
         private fb: FormBuilder,
         public user: User,
         private loginS: LoginService,
-        private cartS: CartService,
+        public cartS: CartService,
         private razorPay: RazorpayService,
         private apiService: ApiService,
         private payment: Payment,
@@ -201,6 +201,10 @@ export class WalletComponent implements OnInit, OnDestroy {
     }
 
     addMoneyToWallet(evt: MouseEvent) {
+        if (!this.cartS.enableRazorpay) {
+            alert("Online wallet recharge via Razorpay is temporarily disabled by the store administration.");
+            return;
+        }
         this.razorPay.initiatePaymentModal(this.user, this.rechargeAmt);
     }
 

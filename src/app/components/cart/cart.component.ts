@@ -16,35 +16,67 @@ export class CartComponent {
 
   viewDatesFlg: boolean = false;
 
+  get isOutOfStock(): boolean {
+    if (!this.product) return false;
+    if (this.product.zoneAvailability) return true;
+    if (this.product.is_unlimited === true || Number(this.product.is_unlimited) === 1) return false;
+    return this.product.in_stock === false || Number(this.product.in_stock) === 0;
+  }
+
+  get maxStock(): number {
+    if (!this.product) return 999;
+    if (this.product.is_unlimited === true || Number(this.product.is_unlimited) === 1) return 999;
+    if (this.product.stock_qty && this.product.stock_qty > 0) {
+      return this.product.stock_qty;
+    }
+    return 999;
+  }
+
+  isDeleting: boolean = false;
+
   constructor(
     private cartS: CartService,
   ) { }
 
-  deleteItem(evt: MouseEvent) {
+  deleteItem(evt?: MouseEvent) {
+    if (evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
+    }
+    if (this.isDeleting) return;
 
-    let el = document.getElementById(`cart_${this.index}`);
-    let interval, el_height = Number(el.offsetHeight), int_cnt = el_height;
+    const el = document.getElementById(`cart_${this.index}`);
+    if (el) {
+      // Pin to actual current height first so transition starts collapsing instantly
+      const elHeight = el.offsetHeight;
+      el.style.maxHeight = `${elHeight}px`;
+      el.style.overflow = 'hidden';
 
-    interval = window.setInterval(() => {
-      el.style.opacity = String(int_cnt / 100);
+      // Force layout repaint to register maxHeight
+      void el.offsetHeight;
 
-      int_cnt -= 2;
-      if (int_cnt < 0) {
-        el.style.padding = "0px";
-        el.style.height = (((int_cnt + 100) / el_height) * el_height) + "px";
-        el.style.marginBottom = String((((int_cnt + 100) / el_height) * 6)) + "px";
+      this.isDeleting = true;
 
-        if (int_cnt < -100) {
-          el.style.height = "0px";
-          el.style.marginTop = "0px";
-          el.style.marginBottom = "0px";
-          el.style.display = "none";
+      // Animate collapse seamlessly via CSS transition
+      requestAnimationFrame(() => {
+        el.classList.add('item-removing');
+        el.style.maxHeight = '0px';
+        el.style.opacity = '0';
+        el.style.transform = 'scale(0.92) translateX(28px)';
+        el.style.paddingTop = '0px';
+        el.style.paddingBottom = '0px';
+        el.style.marginTop = '0px';
+        el.style.marginBottom = '0px';
+        el.style.borderWidth = '0px';
+      });
 
-          window.clearInterval(interval);
-          this.plusMinusAction(0);
-        }
-      }
-    }, 2);
+      window.setTimeout(() => {
+        this.plusMinusAction(0);
+      }, 340);
+    } else {
+      this.isDeleting = true;
+      this.plusMinusAction(0);
+    }
   }
 
   plusMinusAction(val) {

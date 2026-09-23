@@ -1,45 +1,340 @@
 @import "../../../assets/styles/global-constants.scss";
 
-.supportContainer {
+.support-page-wrapper {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px 80px 16px;
+    font-family: $inter;
+    box-sizing: border-box;
+}
+
+.support-hero {
     display: flex;
     flex-direction: column;
     align-items: center;
+    text-align: center;
+    padding: 10px 12px 24px 12px;
 
-    .imgCont {
-        display: flex;
-        flex-direction: column;
-        margin-top: 63px;
-    }
-
-    .label {
-        display: flex;
-        flex-direction: column;
-        color: $teal-100;
-        text-align: center;
-        font-family: Inter;
-        font-size: 18px;
-        font-style: normal;
-        font-weight: 700;
-        line-height: normal;
-        margin-top: 36px;
-    }
-
-    .supportOptions {
-        width: 100%;
-        padding: 91px 16px 13px 16px;
-        margin-bottom: 13px;
-    }
-
-    .supportOptions>div {
+    .hero-illustration-box {
         position: relative;
-        border: 1px solid #eee;
-        border-radius: 12px;
-        margin-bottom: 13px;
-        padding: 16px 12px 16px 12px;
+        width: 140px;
+        height: 140px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle, rgba(9, 126, 99, 0.12) 0%, rgba(255, 197, 41, 0.08) 70%, transparent 100%);
+        border-radius: 50%;
+
+        .support-hero-img {
+            max-width: 100px;
+            max-height: 100px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.08));
+        }
+
+        .online-indicator-pill {
+            position: absolute;
+            bottom: 0px;
+            background: #ffffff;
+            border: 1px solid #d1fae5;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.18);
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #065f46;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+
+            .pulse-dot {
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background-color: #10b981;
+                box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+                animation: pulseAnimation 1.6s infinite ease-in-out;
+            }
+        }
+    }
+
+    .support-heading {
+        font-size: 20px;
+        font-weight: 800;
+        color: #111827;
+        margin: 8px 0 6px 0;
+        letter-spacing: -0.3px;
+    }
+
+    .support-subtext {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+        line-height: 1.5;
+        max-width: 320px;
     }
 }
 
-a {
+.support-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.contact-card {
+    display: flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #edf0f3;
+    border-radius: 16px;
+    padding: 14px 16px;
     text-decoration: none;
-    color: $grey-10;
+    color: inherit;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+        border-color: #d1d5db;
+
+        .card-arrow-box .action-arrow {
+            transform: translateX(3px);
+            color: $teal-100;
+        }
+    }
+
+    &:active {
+        transform: scale(0.99);
+    }
+
+    &.whatsapp-card:hover {
+        border-color: rgba(37, 211, 102, 0.5);
+    }
+
+    &.call-card:hover {
+        border-color: rgba(9, 126, 99, 0.5);
+    }
+
+    &.email-card:hover {
+        border-color: rgba(59, 130, 246, 0.5);
+    }
+
+    .card-icon-box {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 14px;
+
+        .channel-icon {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+        }
+
+        &.whatsapp-icon-box {
+            background: rgba(37, 211, 102, 0.12);
+        }
+
+        &.call-icon-box {
+            background: rgba(9, 126, 99, 0.12);
+
+            .call-icon {
+                font-size: 22px;
+                color: $teal-100;
+            }
+        }
+
+        &.email-icon-box {
+            background: rgba(59, 130, 246, 0.12);
+        }
+    }
+
+    .card-details {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+
+        .card-title-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+
+            .card-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: #111827;
+            }
+
+            .tag-badge {
+                font-size: 10px;
+                font-weight: 700;
+                padding: 1px 7px;
+                border-radius: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+
+                &.fast-tag {
+                    background: #dcfce7;
+                    color: #15803d;
+                }
+            }
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 3px;
+        }
+
+        .card-contact-val {
+            font-size: 12px;
+            font-weight: 600;
+            color: $teal-100;
+        }
+    }
+
+    .card-arrow-box {
+        margin-left: 8px;
+
+        .action-arrow {
+            font-size: 20px;
+            color: #9ca3af;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+    }
+}
+
+.quick-help-section {
+    margin-bottom: 18px;
+
+    .quick-faq-card {
+        display: flex;
+        align-items: center;
+        background: linear-gradient(135deg, #f0fdf4 0%, #fdf2f8 100%);
+        border: 1px solid #dcfce7;
+        border-radius: 14px;
+        padding: 12px 14px;
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.2s ease;
+
+        &:hover {
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+            transform: translateY(-1px);
+
+            .faq-arrow {
+                transform: translateX(3px);
+                color: $teal-100;
+            }
+        }
+
+        .faq-icon-wrapper {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: $teal-100;
+
+            .material-icons-round {
+                font-size: 20px;
+            }
+        }
+
+        .faq-text-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+
+            .faq-title {
+                font-size: 13px;
+                font-weight: 700;
+                color: #111827;
+            }
+
+            .faq-desc {
+                font-size: 11px;
+                color: #6b7280;
+            }
+        }
+
+        .faq-arrow {
+            font-size: 18px;
+            color: #9ca3af;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+    }
+}
+
+.support-timing-card {
+    background: #f9fafb;
+    border: 1px dashed #e5e7eb;
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 12px;
+    color: #4b5563;
+
+    .timing-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+        color: #111827;
+
+        .clock-icon {
+            font-size: 16px;
+            color: $teal-100;
+        }
+
+        .timing-title {
+            font-weight: 700;
+            font-size: 13px;
+        }
+    }
+
+    .timing-detail {
+        margin: 0 0 4px 0;
+        color: #374151;
+
+        b {
+            color: #111827;
+        }
+    }
+
+    .timing-note {
+        margin: 0;
+        font-size: 11px;
+        color: #9ca3af;
+        line-height: 1.4;
+    }
+}
+
+@keyframes pulseAnimation {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
 }

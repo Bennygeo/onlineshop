@@ -1,110 +1,203 @@
-<div class="popup_content_subs">
-    <div class="clearfix"></div>
-    <div class="row">
-        <div class="col-4">
-            <div style="text-align: center;">
-                <img [src]="productsOptions.product['img_url']" class="product_thumb"
-                    [alt]="productsOptions.product['name']" [style]="{'width':'100px'}">
-            </div>
+<div class="subs-calendar-wrapper">
+    <!-- Top Product Summary Card -->
+    <div class="subs-product-hero">
+        <div class="hero-image-wrap">
+            <img [src]="productsOptions.product['img_url'] || 'assets/categories/Thinkspot_veggiesIcon.png'" 
+                 class="product-thumb" 
+                 [alt]="productsOptions.product['name']"
+                 onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'">
         </div>
-        <div class="col-8">
-            <div class="pName">
-                <span>{{productsOptions.product['name']}}</span>
+        <div class="hero-details">
+            <div class="hero-header-line">
+                <span class="product-title">{{ productsOptions.product['name'] }}</span>
+                <span *ngIf="productsOptions.product['badge']=='yes'" class="hero-badge">{{ productsOptions.product['badge_txt'] }}</span>
             </div>
-
-            <div *ngIf="productsOptions.product['badge']=='yes'" class="badge_txt">
-                {{productsOptions.product['badge_txt']}}</div>
-            <div>
-                <div class="product_weight">{{productsOptions.product["updated_weight"]}}
-                    {{productsOptions.product["unit_name"]}}</div>
+            <div class="product-weight-tag">
+                <span class="material-icons size-13">scale</span>
+                <span>{{ productsOptions.product["updated_weight"] }} {{ productsOptions.product["unit_name"] }}</span>
             </div>
-            <div style="font-weight: 800;" *ngIf="!productsOptions.product['disable']">₹ {{
-                productsOptions.product['price']}}
-                <span style="text-decoration: line-through; color:#aaa; font-size: 11px; font-weight: 500;">
-                    ₹ {{productsOptions.product['original_price']}} </span>
-            </div>
-            <span *ngIf="subs_options['type'] !=undefined && subs_options.price">
-                {{productsOptions.product["updated_weight"]}} {{productsOptions.product["unit_name"]}} x
-
-                <span *ngIf="subs_options['type'] == 'range'">{{subs_options.rangeCnt||0}} days =
-                    {{subs_options.price||0}}</span>
-                <span *ngIf="subs_options['type'] == 'multi_day'">{{subs_options.multiCnt||0}} days =
-                    {{subs_options.price||0}}</span>
-            </span>
-        </div>
-
-        <div class="col-12 centerItems" [style]="{'height':'50px'}">
-            <div [class.disabled]="subs_options.rangeCnt>0 || subs_options.multiCnt>0">
-                <div>Quantity per day</div>
-                <plus-minus style="position: relative; float: left;" class="plusMinusComp" [caption]=""
-                    [inputVal]="subs_options.units" [stepVal]="1" [minVal]="1" (onChange)="plusMinusSubsValue($event)">
-                </plus-minus>
-            </div>
-        </div>
-
-        <div class="col-12" style="margin-top: 24px;">
-            <div style="text-align:center;">
-                <div>Select delivery frequency</div>
-                <div class="flex-box" style="top:0">
-                    <div class="tnkspt_primary_btn subsOptionBtns" id="range"
-                        (click)="subscribeCalendarSelection('range')">
-                        Date Range</div>
-                    <div class="tnkspt_primary_btn subsOptionBtns" id="custom"
-                        (click)="subscribeCalendarSelection('multi_day')">
-                        Custom Dates</div>
-                </div>
-            </div>
-
-            <div>
-                <div *ngIf="subs_options['type'] == 'range'">
-                    <mat-calendar #calendar [minDate]="subs_options.minDate" [maxDate]="subs_options.maxDate"
-                        [selected]="subs_options.rangeSelected" (selectedChange)="rangeChange($event, calendar)"
-                        [dateClass]="isSelected"></mat-calendar>
-
-                    <div class="selected-days">Selected {{subs_options.rangeCnt ||0}} days.</div>
-                </div>
-
-                <div class="clearfix"></div>
-
-                <!-- Multi day selection calendar -->
-                <div *ngIf="subs_options['type'] == 'multi_day'">
-                    <mat-calendar #calendar1 (selectedChange)="select($event,calendar1)"
-                        [selected]="subs_options.multiDaySelected" [dateClass]="isSelected"
-                        [minDate]="subs_options.minDate" [maxDate]="subs_options.maxDate">
-                    </mat-calendar>
-
-                    <div class="selected-days">Selected {{subs_options.multiCnt||0}} days.</div>
-
-                    <div class="days-select-options">
-                        <button class="tnkspt_secondary_btn days-select-option" (click)="weekDays()">Week
-                            days</button>
-                        <button class="tnkspt_secondary_btn days-select-option" (click)="weekEnds()">Week
-                            ends</button>
-                        <button class="tnkspt_secondary_btn days-select-option"
-                            (click)="alternateDays()">Alternate</button>
-                    </div>
-
-                </div>
+            <div class="hero-price-line">
+                <span class="current-price">₹ {{ productsOptions.product['price'] }} <small>/ packet</small></span>
+                <span class="mrp-price" *ngIf="getUnitDiscount() > 0">
+                    ₹ {{ productsOptions.product['original_price'] }}
+                </span>
+                <span class="save-tag" *ngIf="getUnitDiscount() > 0">
+                    Save ₹{{ getUnitDiscount() }}
+                </span>
             </div>
         </div>
     </div>
-    <div class="clearfix"></div>
+
+    <!-- Daily Quantity Selection Card -->
+    <div class="subs-qty-card">
+        <div class="qty-info">
+            <div class="qty-title">
+                <span class="material-icons">inventory_2</span>
+                <span>Daily Delivery Quantity</span>
+            </div>
+            <span class="qty-sub">Number of packets to deliver each morning</span>
+        </div>
+        <div class="qty-stepper-wrap">
+            <plus-minus class="plusMinusComp" [caption]="''"
+                [inputVal]="subs_options.units" [stepVal]="1" [minVal]="1" [maxVal]="20"
+                (onChange)="plusMinusSubsValue($event)">
+            </plus-minus>
+        </div>
+    </div>
+
+    <!-- Delivery Frequency Selection Tabs -->
+    <div class="subs-frequency-section">
+        <div class="section-title-wrap">
+            <span class="material-icons">event_repeat</span>
+            <span>Delivery Schedule Mode</span>
+        </div>
+
+        <div class="frequency-tab-switch">
+            <button class="freq-tab-btn" id="range"
+                    [class.active]="subs_options['type'] === 'range'"
+                    (click)="subscribeCalendarSelection('range')">
+                <span class="material-icons size-16">date_range</span>
+                <span>Date Range (Continuous)</span>
+            </button>
+            <button class="freq-tab-btn" id="custom"
+                    [class.active]="subs_options['type'] === 'multi_day'"
+                    (click)="subscribeCalendarSelection('multi_day')">
+                <span class="material-icons size-16">event_available</span>
+                <span>Custom Dates</span>
+            </button>
+        </div>
+
+        <!-- Quick 1-Tap Presets Bar -->
+        <div class="presets-container" *ngIf="subs_options['type'] === 'range'">
+            <span class="presets-label">Quick Range:</span>
+            <div class="presets-chips">
+                <button type="button" class="preset-chip" (click)="selectRangePreset(7)">
+                    <span class="material-icons size-13">bolt</span> 7 Days (1 Wk)
+                </button>
+                <button type="button" class="preset-chip" (click)="selectRangePreset(15)">
+                    <span class="material-icons size-13">calendar_view_week</span> 15 Days
+                </button>
+                <button type="button" class="preset-chip highlight" (click)="selectRangePreset(30)">
+                    <span class="material-icons size-13">star</span> 30 Days (1 Mo)
+                </button>
+            </div>
+        </div>
+
+        <div class="presets-container" *ngIf="subs_options['type'] === 'multi_day'">
+            <span class="presets-label">Quick Patterns:</span>
+            <div class="presets-chips">
+                <button type="button" class="preset-chip" (click)="selectDaily()">
+                    <span class="material-icons size-13">all_inclusive</span> All 30 Days
+                </button>
+                <button type="button" class="preset-chip" (click)="weekDays()">
+                    <span class="material-icons size-13">work</span> Weekdays (M–F)
+                </button>
+                <button type="button" class="preset-chip" (click)="weekEnds()">
+                    <span class="material-icons size-13">weekend</span> Weekends
+                </button>
+                <button type="button" class="preset-chip" (click)="alternateDays()">
+                    <span class="material-icons size-13">sync_alt</span> Alternate
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Visual Picker Section -->
+    <div class="calendar-card-container">
+        <!-- Date Range Calendar -->
+        <div *ngIf="subs_options['type'] === 'range'" class="cal-view-wrapper">
+            <mat-calendar #calendar 
+                [minDate]="subs_options.minDate" 
+                [maxDate]="subs_options.maxDate"
+                [selected]="subs_options.rangeSelected" 
+                (selectedChange)="rangeChange($event, calendar)"
+                [dateClass]="isSelected">
+            </mat-calendar>
+        </div>
+
+        <!-- Multi-Day / Custom Calendar -->
+        <div *ngIf="subs_options['type'] === 'multi_day'" class="cal-view-wrapper">
+            <mat-calendar #calendar1 
+                (selectedChange)="select($event, calendar1)"
+                [selected]="subs_options.multiDaySelected" 
+                [dateClass]="isSelected"
+                [minDate]="subs_options.minDate" 
+                [maxDate]="subs_options.maxDate">
+            </mat-calendar>
+        </div>
+
+        <!-- Legend / Indicators Bar -->
+        <div class="calendar-legend-bar">
+            <div class="legend-item">
+                <span class="legend-dot selected-dot"></span>
+                <span>Selected Deliveries</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot weekend-dot"></span>
+                <span>Weekend</span>
+            </div>
+            <div class="legend-item qty-tag-legend">
+                <span class="mini-qty-badge">{{ subs_options.units || 1 }} qty</span>
+                <span>Per Day</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Selection Summary Banner -->
+    <div class="selection-summary-card" *ngIf="getSelectedDaysCount() > 0">
+        <div class="summary-metric">
+            <span class="summary-metric-num">{{ getSelectedDaysCount() }}</span>
+            <span class="summary-metric-lbl">Delivery Days</span>
+        </div>
+        <div class="summary-divider">×</div>
+        <div class="summary-metric">
+            <span class="summary-metric-num">{{ subs_options.units || 1 }}</span>
+            <span class="summary-metric-lbl">Pkt / Day</span>
+        </div>
+        <div class="summary-divider">=</div>
+        <div class="summary-metric">
+            <span class="summary-metric-num text-teal">{{ getTotalPacketsCount() }}</span>
+            <span class="summary-metric-lbl">Total Deliveries</span>
+        </div>
+        <div class="summary-total-price">
+            <span class="total-lbl">Total Cost</span>
+            <span class="total-val">₹ {{ getTotalSubscriptionCost() | number:'1.0-0' }}</span>
+        </div>
+    </div>
+
+    <!-- Empty State Guide if 0 dates selected -->
+    <div class="calendar-empty-guide" *ngIf="getSelectedDaysCount() === 0">
+        <span class="material-icons size-18">touch_app</span>
+        <span>Tap on dates or choose a quick preset above to schedule your deliveries</span>
+    </div>
 </div>
 
-<div class="flex-box" style="position: absolute; bottom:12px; top:auto; width:94%;">
-    <button class="tnkspt_secondary_btn" style="width: 40%;" (click)="clearSubscription()">Clear</button>
-    <button class="tnkspt_primary_btn" style="width: 60%;" (click)="subscribeAction()">Subscribe</button>
+<!-- Sticky Bottom Action Footer -->
+<div class="subs-actions-footer">
+    <button class="footer-btn clear-btn" (click)="clearSubscription()" [disabled]="getSelectedDaysCount() === 0">
+        <span class="material-icons size-16">restart_alt</span>
+        <span>Clear</span>
+    </button>
+    <button class="footer-btn subscribe-submit-btn" (click)="subscribeAction()" [disabled]="getSelectedDaysCount() === 0">
+        <span class="material-icons size-18">check_circle</span>
+        <span>
+            Confirm Subscription
+            <strong *ngIf="getSelectedDaysCount() > 0">· ₹{{ getTotalSubscriptionCost() | number:'1.0-0' }}</strong>
+        </span>
+    </button>
 </div>
 
-
+<!-- Mode Switch Alert Dialog -->
 <div class="popup_parent" *ngIf="calendarSwitchFlg">
     <div class="popup_cont alert-cont">
-        <div><span><img src="assets/general/alert.png" /></span><b class="alert">Alert!</b></div>
-        <p [innerHTML]="calendarSwitchMsg"></p>
-        <div class="flex-box">
-            <div class="tnkspt_secondary_btn cancel-btn" (click)="alertCancelAction()">Cancel</div>
-            <div class="tnkspt_primary_btn view-btn" (click)="alertGotoAction()" [innerHTML]="calenderSwitchBtnName">
-            </div>
+        <div class="alert-title-row">
+            <span class="material-icons alert-icon">warning</span>
+            <b class="alert-title">Switch Mode?</b>
+        </div>
+        <p [innerHTML]="calendarSwitchMsg" class="alert-body-text"></p>
+        <div class="alert-actions-row">
+            <button class="btn-cancel" (click)="alertCancelAction()">Cancel</button>
+            <button class="btn-confirm" (click)="alertGotoAction()" [innerHTML]="calenderSwitchBtnName"></button>
         </div>
     </div>
 </div>

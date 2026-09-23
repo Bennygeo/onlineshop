@@ -54,6 +54,20 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
 
   private subs: Subscription = new Subscription();
 
+  get isProductInStock(): boolean {
+    if (!this.product || this.product.disabled) return false;
+    if (this.product.is_unlimited === true || Number(this.product.is_unlimited) === 1) return true;
+    if (this.product.in_stock === false || Number(this.product.in_stock) === 0) return false;
+    return (this.product.stock_qty === undefined || this.product.stock_qty === null || Number(this.product.stock_qty) > 0);
+  }
+
+  isItemInStock(item: Product): boolean {
+    if (!item || item.disabled) return false;
+    if (item.is_unlimited === true || Number(item.is_unlimited) === 1) return true;
+    if (item.in_stock === false || Number(item.in_stock) === 0) return false;
+    return (item.stock_qty === undefined || item.stock_qty === null || Number(item.stock_qty) > 0);
+  }
+
   constructor(
     private route: ActivatedRoute,
     public router: Router,
@@ -68,6 +82,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.cartS.loaderS?.hide?.();
     // Hide global header so ProductDetailComponent uses its dedicated sleek navigation bar
     this.cartS.headerChangeEvent.next('none');
 

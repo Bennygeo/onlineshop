@@ -10,6 +10,8 @@ import { DateAdapter } from '@angular/material/core';
 import { Location } from '@angular/common';
 import { DateE } from 'src/app/utils/custom-classes';
 import { LoginService } from 'src/app/services/login.service';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-product-list',
@@ -78,13 +80,15 @@ export class ProductListComponent implements OnInit, OnDestroy {
   // selectedCalendarType: "undefined" | "range" | "multi_day";
   cartSubscriber: any;
   isCart: boolean = false;
+  private routeSub: Subscription;
 
   constructor(
     public cartS: CartService,
     private _utils: Utils,
     public productService: ProductService,
     private location: Location,
-    private loginS: LoginService
+    private loginS: LoginService,
+    private route: ActivatedRoute
   ) {
 
     this.menus = this.productService.menus;
@@ -97,6 +101,9 @@ export class ProductListComponent implements OnInit, OnDestroy {
     this.menus.menuClickHandler = (menu: string): void => {
       this.productsOptions.loadingFlg = true;
       this.menus.activeMenu = menu;
+      this.cartS.setLastCategory(menu);
+      this.productService.menus.activeMenu = menu;
+      this.location.replaceState(`/products/category/${encodeURIComponent(menu)}`);
 
       //re-position the menu
       this.productService.menu_position();
@@ -170,14 +177,35 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
 
   ngOnInit(): void {
+    this.cartS.loaderS?.hide?.();
     this.afterViewInitFlg = true;
     let loadingEl = document.getElementById("loading");
     if (loadingEl)
       loadingEl.remove();
 
-    let targetCat = this.cartS.router.url.split("?")[0].split("/")[3];
-    if (targetCat) {
-      targetCat = decodeURIComponent(targetCat);
+    // 1. Determine targetCat from Router URL
+    let targetCat = '';
+    const routerParts = (this.cartS.router.url || '').split('?')[0].split('/').filter(s => !!s);
+    const catIdx = routerParts.indexOf('category');
+    if (catIdx !== -1 && routerParts[catIdx + 1]) {
+      targetCat = decodeURIComponent(routerParts[catIdx + 1]);
+    }
+
+    // 2. Fallback to window.location.pathname
+    if (!targetCat && typeof window !== 'undefined' && window.location) {
+      const winParts = (window.location.pathname || '').split('/').filter(s => !!s);
+      const wCatIdx = winParts.indexOf('category');
+      if (wCatIdx !== -1 && winParts[wCatIdx + 1]) {
+        targetCat = decodeURIComponent(winParts[wCatIdx + 1].split('?')[0]);
+      }
+    }
+
+    // 3. Fallback to remembered category
+    if (!targetCat || targetCat === 'category') {
+      targetCat = this.cartS.lastSelectedCategory ||
+                  this.productService.menus.activeMenu ||
+                  localStorage.getItem('tnkspt_last_category') ||
+                  '';
     }
 
     this.cartS.loadCategories().subscribe({
@@ -187,19 +215,44 @@ export class ProductListComponent implements OnInit, OnDestroy {
           this.productService.updateCategories(catList);
           this.menus.list = catList;
 
+          const remembered = this.cartS.lastSelectedCategory ||
+                             this.productService.menus.activeMenu ||
+                             localStorage.getItem('tnkspt_last_category');
+
           if (!targetCat || !catList.includes(targetCat)) {
-            targetCat = catList[0];
+            if (remembered && catList.includes(remembered)) {
+              targetCat = remembered;
+            } else {
+              targetCat = catList[0];
+            }
           }
           this.menus.activeMenu = targetCat;
+          this.cartS.setLastCategory(targetCat);
           this.menus.menuClickHandler(this.menus.activeMenu);
         } else {
-          this.menus.activeMenu = targetCat || this.menus.defaultMenu || "Vegetables";
+          this.menus.activeMenu = targetCat || this.cartS.lastSelectedCategory || this.menus.defaultMenu || "Vegetables";
+          this.cartS.setLastCategory(this.menus.activeMenu);
           this.menus.menuClickHandler(this.menus.activeMenu);
         }
       },
       error: () => {
-        this.menus.activeMenu = targetCat || this.menus.defaultMenu || "Vegetables";
+        this.menus.activeMenu = targetCat || this.cartS.lastSelectedCategory || this.menus.defaultMenu || "Vegetables";
+        this.cartS.setLastCategory(this.menus.activeMenu);
         this.menus.menuClickHandler(this.menus.activeMenu);
+      }
+    });
+
+    // Listen to route params in case the component is reused on route change
+    this.routeSub = this.route.params.subscribe(params => {
+      if (params && params['id']) {
+        const routeCat = decodeURIComponent(params['id']);
+        if (routeCat && this.menus.activeMenu !== routeCat) {
+          this.menus.activeMenu = routeCat;
+          this.cartS.setLastCategory(routeCat);
+          if (this.menus.menuClickHandler) {
+            this.menus.menuClickHandler(routeCat);
+          }
+        }
       }
     });
 
@@ -314,7 +367,11 @@ export class ProductListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.cartSubscriber.unsubscribe();
-    // this.cartS.products_downloaded_event.unsubscribe();
+    if (this.cartSubscriber) {
+      this.cartSubscriber.unsubscribe();
+    }
+    if (this.routeSub) {
+      this.routeSub.unsubscribe();
+    }
   }
 }

@@ -1,44 +1,165 @@
-<div class="profileCont">
-    <div class="profileHeader">
-        <div style="padding-top: 36px; padding-bottom: 12px;">
-            <img src="assets/profile/user.png" />
+<div class="profile-page-wrapper">
+
+    <!-- Floating Success Toast -->
+    <div class="toast-badge" *ngIf="savedSuccessToast">
+        <span class="material-icons-round toast-icon">check_circle</span>
+        <span>Profile updated successfully!</span>
+    </div>
+
+    <!-- Profile Header / User Identity Card -->
+    <div class="profile-hero-card">
+        <div class="hero-ambient-glow"></div>
+        <div class="hero-pattern-overlay"></div>
+
+        <div class="avatar-wrapper">
+            <div class="avatar-ring">
+                <img src="assets/profile/user.png" alt="Profile Picture" class="avatar-img" />
+            </div>
+            <span class="avatar-badge" title="Verified TomorrowNeeds Member">
+                <span class="material-icons-round">verified</span>
+            </span>
         </div>
-        <div style="margin-bottom: 43px; margin-top: 22px;">
-            <p class="userNameMenu">{{user.name}}</p>
-            <p class="userNumMenu">Edit Profile</p>
+
+        <div class="user-info-block">
+            <h2 class="user-display-name">{{ user.name || 'TomorrowNeeds Member' }}</h2>
+            <p class="user-display-phone">{{ user.mobile || '+91 -' }}</p>
+            <div class="user-meta-chip">
+                <span class="pulse-dot"></span>
+                <span>Verified Customer</span>
+            </div>
         </div>
     </div>
 
-    <div>
-        <form [formGroup]="profileForm">
-            <div class="fieldCont">
-                <label for="name">
-                    Full name
+    <!-- Quick Shortcuts Navigation Strip -->
+    <div class="shortcuts-grid">
+        <a routerLink="/home/orders" class="shortcut-card">
+            <div class="shortcut-icon-box orders-icon">
+                <span class="material-icons-round">receipt_long</span>
+            </div>
+            <span class="shortcut-title">My Orders</span>
+        </a>
+
+        <a routerLink="/home/address" class="shortcut-card">
+            <div class="shortcut-icon-box address-icon">
+                <span class="material-icons-round">location_on</span>
+            </div>
+            <span class="shortcut-title">Addresses</span>
+        </a>
+
+        <a routerLink="/home/wallet" class="shortcut-card">
+            <div class="shortcut-icon-box wallet-icon">
+                <span class="material-icons-round">account_balance_wallet</span>
+            </div>
+            <span class="shortcut-title">Wallet</span>
+        </a>
+
+        <a routerLink="/home/support" class="shortcut-card">
+            <div class="shortcut-icon-box support-icon">
+                <span class="material-icons-round">headset_mic</span>
+            </div>
+            <span class="shortcut-title">Support</span>
+        </a>
+    </div>
+
+    <!-- Personal Information Card -->
+    <div class="profile-form-card">
+        <div class="card-section-header">
+            <span class="material-icons-round section-icon">manage_accounts</span>
+            <div class="section-text">
+                <h3 class="section-title">Personal Details</h3>
+                <p class="section-subtitle">Update your personal account information</p>
+            </div>
+        </div>
+
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()">
+            <!-- Name Field -->
+            <div class="field-group">
+                <label for="name" class="field-label">
+                    <span>Full Name</span>
                 </label>
-                <input id="name" type="text" formControlName="name" class="primaryField"
-                    [ngClass]="{'error': !profileForm.get('name').valid}" (focusout)="focusOut($event)">
+                <div class="input-wrapper" [class.field-error]="profileForm.get('name').touched && !profileForm.get('name').valid">
+                    <span class="material-icons-round input-icon">person</span>
+                    <input 
+                        id="name" 
+                        type="text" 
+                        formControlName="name" 
+                        placeholder="Enter your full name"
+                        class="form-input" 
+                        (focusout)="focusOut($event)" 
+                    />
+                </div>
+                <span class="error-text" *ngIf="profileForm.get('name').touched && !profileForm.get('name').valid">
+                    Please enter a valid full name (at least 3 characters).
+                </span>
             </div>
 
-            <div class="fieldCont">
-                <label for="email">
-                    E-mail
+            <!-- Email Field -->
+            <div class="field-group">
+                <label for="email" class="field-label">
+                    <span>Email Address</span>
                 </label>
-                <input id="email" type="text" formControlName="email"
-                    [ngClass]="{'error': !profileForm.get('email').valid}" class="secField"
-                    (focusout)="focusOut($event)">
+                <div class="input-wrapper" [class.field-error]="profileForm.get('email').touched && !profileForm.get('email').valid">
+                    <span class="material-icons-round input-icon">email</span>
+                    <input 
+                        id="email" 
+                        type="email" 
+                        formControlName="email" 
+                        placeholder="yourname@example.com"
+                        class="form-input" 
+                        (focusout)="focusOut($event)" 
+                    />
+                </div>
+                <span class="error-text" *ngIf="profileForm.get('email').touched && !profileForm.get('email').valid">
+                    Please enter a valid email address.
+                </span>
             </div>
 
-            <div class="fieldCont">
-                <label for="mobile">
-                    Phone Number
+            <!-- Phone Number Field (Verified & Disabled) -->
+            <div class="field-group">
+                <label for="mobile" class="field-label">
+                    <span>Registered Mobile Number</span>
+                    <span class="verified-tag">
+                        <span class="material-icons-round">lock</span>
+                        Verified
+                    </span>
                 </label>
-                <input id="mobile" type="text" formControlName="mobile" class="secField">
+                <div class="input-wrapper disabled-wrapper">
+                    <span class="material-icons-round input-icon">phone</span>
+                    <input 
+                        id="mobile" 
+                        type="text" 
+                        formControlName="mobile" 
+                        class="form-input disabled-input" 
+                    />
+                </div>
+                <span class="field-hint">Mobile number is linked to your account security and OTP logins.</span>
             </div>
 
-            <!-- <button class="button" type="submit">Update</button> -->
+            <!-- Save Action Button -->
+            <div class="form-actions">
+                <button type="submit" class="btn-save-profile" [disabled]="isSaving || !profileForm.valid">
+                    <span class="material-icons-round" *ngIf="!isSaving">check</span>
+                    <span>{{ isSaving ? 'Saving Changes...' : 'Save Profile Details' }}</span>
+                </button>
+            </div>
         </form>
+    </div>
 
+    <!-- Security & Trust Info -->
+    <div class="security-info-box">
+        <span class="material-icons-round shield-icon">security</span>
+        <div class="security-text">
+            <strong>Data Privacy & Security</strong>
+            <p>Your details are safely encrypted and strictly used for order processing and delivery coordination.</p>
+        </div>
+    </div>
 
+    <!-- Logout Action -->
+    <div class="logout-section">
+        <button class="btn-logout" (click)="logoutAction()">
+            <span class="material-icons-round">logout</span>
+            <span>Sign Out from Account</span>
+        </button>
     </div>
 
 </div>

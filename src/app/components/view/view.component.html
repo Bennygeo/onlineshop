@@ -172,7 +172,7 @@
                         <div class="prod-action-wrap">
                             <plus-minus [caption]="" [inputVal]="(item.product['units'] || 0)" [stepVal]="1"
                                 [minVal]="0" (onChange)="plusMinusValue($event, item.product)"
-                                *ngIf="!item.product.disabled && (item.product.in_stock !== false && item.product.in_stock !== 0 && (item.product.stock_qty === undefined || item.product.stock_qty > 0)); else NotAvailableRestock">
+                                *ngIf="isProductInStock(item.product); else NotAvailableRestock">
                             </plus-minus>
                             <ng-template #NotAvailableRestock>
                                 <span class="not-avail-tag">Out of stock</span>
@@ -221,7 +221,7 @@
                         <div class="prod-action-wrap">
                             <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
                                 (onChange)="plusMinusValue($event, product)"
-                                *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailableRecent">
+                                *ngIf="isProductInStock(product); else NotAvailableRecent">
                             </plus-minus>
                             <ng-template #NotAvailableRecent>
                                 <span class="not-avail-tag">Out of stock</span>
@@ -364,7 +364,7 @@
                                 [maxVal]="(product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 10"
                                 [disabled]="product['disabled'] || product['disable']"
                                 (onChange)="plusMinusValue($event, product)"
-                                *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailableDiet">
+                                *ngIf="isProductInStock(product); else NotAvailableDiet">
                             </plus-minus>
                             <ng-template #NotAvailableDiet>
                                 <span class="not-avail-tag">Out of stock</span>
@@ -412,7 +412,7 @@
                         <div class="prod-action-wrap">
                             <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
                                 (onChange)="plusMinusValue($event, product)"
-                                *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailableBatter">
+                                *ngIf="isProductInStock(product); else NotAvailableBatter">
                             </plus-minus>
                             <ng-template #NotAvailableBatter>
                                 <span class="not-avail-tag">Out of stock</span>
@@ -423,7 +423,7 @@
             </div>
 
             <!-- 9. FARM-FRESH RECOMMENDED PICKS -->
-            <div class="section-block recommended-section">
+            <div class="section-block recommended-section" *ngIf="recommended_products && recommended_products.length > 0">
                 <div class="section-header-row">
                     <div class="section-title-wrap">
                         <span class="material-icons section-title-icon fresh-icon">eco</span>
@@ -434,7 +434,7 @@
                     </div>
                 </div>
 
-                <div class="products-grid-scroll" *ngIf="recommended_products && recommended_products.length > 0">
+                <div class="products-grid-scroll">
                     <div class="product-item-card" *ngFor="let product of recommended_products">
                         <div class="prod-badge">Farm Direct</div>
                         <div class="prod-img-box" (click)="viewProductDetail(product)" style="cursor: pointer;">
@@ -456,7 +456,7 @@
                         <div class="prod-action-wrap">
                             <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
                                 (onChange)="plusMinusValue($event, product)"
-                                *ngIf="!product.disabled && (product.in_stock !== false && product.in_stock !== 0 && (product.stock_qty === undefined || product.stock_qty > 0)); else NotAvailable">
+                                *ngIf="isProductInStock(product); else NotAvailable">
                             </plus-minus>
                             <ng-template #NotAvailable>
                                 <span class="not-avail-tag">Out of stock</span>
@@ -518,7 +518,7 @@
                 </div>
                 <div>
                     <h3 class="sheet-title">TomorrowNeeds AI Voice Shopping</h3>
-                    <p class="sheet-subtitle">Speak freely in English, தமிழ் (Tamil) or Tanglish</p>
+                    <p class="sheet-subtitle">Speak to search or say "Add 2 Apples" to order by voice</p>
                 </div>
             </div>
             <button class="sheet-close-btn" (click)="closeVoiceModal()" aria-label="Close voice shopping">
@@ -552,10 +552,8 @@
 
             <div class="mic-status-text">
                 <span *ngIf="isListening" class="status-listening">🎙️ Listening... Speak now</span>
-                <span *ngIf="isAiVoiceProcessing" class="status-processing">✨ AI Chef analyzing recipe & grocery
-                    items...</span>
-                <span *ngIf="!isListening && !isAiVoiceProcessing && !voiceTranscript" class="status-idle">Tap
-                    microphone to speak</span>
+                <span *ngIf="isAiVoiceProcessing" class="status-processing">✨ Processing voice command...</span>
+                <span *ngIf="!isListening && !isAiVoiceProcessing && !voiceTranscript" class="status-idle">Tap mic & say e.g. "Add 2 Apples" or "Sambar items"</span>
             </div>
 
             <!-- Live Transcript Bubble -->
@@ -585,16 +583,11 @@
         <!-- AI Reply & Product Results Tray -->
         <div class="ai-results-tray" *ngIf="aiVoiceReply || (aiVoiceProducts && aiVoiceProducts.length > 0)">
 
-            <!-- AI Assistant Response Box -->
+            <!-- AI Assistant Response Box (Audio playback removed as requested) -->
             <div class="ai-reply-card" *ngIf="aiVoiceReply">
                 <div class="ai-reply-header">
                     <span class="material-icons ai-sparkle-icon">auto_awesome</span>
-                    <span class="ai-header-title">TomorrowNeeds AI Chef</span>
-                    <button class="tts-toggle-btn" (click)="isSpeaking ? stopSpeaking() : speakReply(aiVoiceReply)"
-                        [title]="isSpeaking ? 'Stop speaking' : 'Read aloud'">
-                        <span class="material-icons">{{ isSpeaking ? 'volume_up' : 'volume_mute' }}</span>
-                        <span>{{ isSpeaking ? 'Playing...' : 'Listen' }}</span>
-                    </button>
+                    <span class="ai-header-title">TomorrowNeeds AI Assistant</span>
                 </div>
                 <div class="ai-reply-body" [innerHTML]="aiVoiceReply.replace('\n', '<br>')"></div>
             </div>
@@ -607,6 +600,11 @@
                         <span class="material-icons size-16">add_shopping_cart</span>
                         <span>Add All ({{ aiVoiceProducts.length }}) to Cart</span>
                     </button>
+                </div>
+
+                <div class="voice-tip-line">
+                    <span class="material-icons size-14">tips_and_updates</span>
+                    <span>Say <strong>"Add all to cart"</strong> or <strong>"Add [item name]"</strong> to add via voice!</span>
                 </div>
 
                 <div class="voice-products-grid">

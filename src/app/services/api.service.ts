@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, shareReplay, throwError, of } from 'rxjs';
+import { catchError, shareReplay, throwError, of, Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 
 @Injectable({
@@ -13,30 +13,31 @@ export class ApiService {
   ) {
   }
 
-  getApi(url: string, params?: object) {
+  getApi(url: string, params?: object, skipLoader: boolean = false): Observable<any> {
     url = `${environment.url}${url}`;
 
-    const httpOptions = {
-      headers: new HttpHeaders()
-    };
-    httpOptions.headers.set('Content-Type', 'application/json');
-    return this.http.get<any>(url, httpOptions);
+    let headers = new HttpHeaders();
+    if (skipLoader) {
+      headers = headers.set('X-Skip-Loader', 'true');
+    }
+
+    return this.http.get<any>(url, { headers, params: params as any });
   }
 
 
-  postApi(url: string, params?: any) {
+  postApi(url: string, params?: any, skipLoader: boolean = false): Observable<any> {
     url = `${environment.url}${url}`;
 
-    const httpOptions = {
-      headers: new HttpHeaders()
-    };
-    httpOptions.headers.set('Content-Type', 'application/json');
+    let headers = new HttpHeaders();
+    if (skipLoader) {
+      headers = headers.set('X-Skip-Loader', 'true');
+    }
 
     let body = new FormData();
     for (let key in params) {
       body.append(key, params[key]);
     }
-    return this.http.post<any>(url, body, httpOptions).pipe(shareReplay(), catchError(this.handleError));
+    return this.http.post<any>(url, body, { headers }).pipe(shareReplay(), catchError(this.handleError));
   }
 
   private handleError(error: HttpErrorResponse) {

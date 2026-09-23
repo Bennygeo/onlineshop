@@ -32,19 +32,19 @@ export class CouponService {
   }
 
   getCoupons(): Observable<any> {
-    return this.api.postApi('coupon/master_coupons.php');
+    return this.api.postApi('coupon/master_coupons.php', {}, true);
   }
 
   getUserCoupons(data): Observable<any> {
-    return this.api.postApi('coupon/user_coupons.php', { data: JSON.stringify(data) });
+    return this.api.postApi('coupon/user_coupons.php', { data: JSON.stringify(data) }, true);
   }
 
   writeUserCoupon(data): Observable<any> {
-    return this.api.postApi('coupon/write_user_coupon.php', { data: JSON.stringify(data) });
+    return this.api.postApi('coupon/write_user_coupon.php', { data: JSON.stringify(data) }, true);
   }
 
   updateUserCoupon(data): Observable<any> {
-    return this.api.postApi('coupon/update_user_coupon.php', { data: JSON.stringify(data) });
+    return this.api.postApi('coupon/update_user_coupon.php', { data: JSON.stringify(data) }, true);
   }
 
 }
