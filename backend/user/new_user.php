@@ -69,24 +69,51 @@ try {
         ]);
     } else {
         // First-time brand new user
-        $refId = 'THINK' . substr($mobile, -6);
+        $refId = 'THINK' . substr($mobile, -4);
         $insStmt = $pdo->prepare("INSERT INTO users (mobile, name, email, referral_id) VALUES (?, ?, ?, ?)");
         $insStmt->execute([$mobile, $name ?: 'TomorrowNeeds User', $email ?: '', $refId]);
 
         $referrerInfo = null;
         if (!empty($referralCode)) {
             // Check and apply referral code if provided
-            $refStmt = $pdo->prepare("SELECT mobile, name FROM users WHERE referral_id = ? OR mobile = ? LIMIT 1");
-            $refStmt->execute([$referralCode, $referralCode]);
+            $cleanCode = strtoupper(trim($referralCode));
+            $digits = preg_replace('/[^0-9]/', '', $cleanCode);
+            $last4 = strlen($digits) >= 4 ? substr($digits, -4) : $digits;
+            $last6 = strlen($digits) >= 6 ? substr($digits, -6) : $digits;
+
+            $refStmt = $pdo->prepare("
+                SELECT mobile, name, referral_id FROM users 
+                WHERE referral_id = :code 
+                   OR UPPER(referral_id) = :code 
+                   OR mobile = :raw_code 
+                   OR (:last4 != '' AND RIGHT(mobile, 4) = :last4)
+                   OR (:last6 != '' AND RIGHT(mobile, 6) = :last6)
+                   OR (:last4 != '' AND mobile LIKE CONCAT('%', :last4))
+                LIMIT 1
+            ");
+            $refStmt->execute([
+                ':code' => $cleanCode,
+                ':raw_code' => $referralCode,
+                ':last4' => $last4,
+                ':last6' => $last6
+            ]);
             $referrer = $refStmt->fetch();
             if ($referrer && $referrer['mobile'] !== $mobile) {
-                $rewardAmount = 100.00;
-                $refCreditStmt = $pdo->prepare("INSERT INTO wallets (mobile, amount, type, description, status) VALUES (?, ?, 'CREDIT', ?, 'authorized')");
-                $refCreditStmt->execute([$referrer['mobile'], $rewardAmount, "Referral Bonus from $mobile"]);
-                
+                // Referrer User 1 will receive ₹100 credit on their wallet AFTER User 2's order is DELIVERED.
+                // Seed WELCOME25 (25% off) for referee User 2 (1-time use on first order)
+                try {
+                    $pdo->prepare("
+                        INSERT INTO coupons (code, discount_percent, max_discount, min_order_amount, count, categories, description, offer, offer_desc, disabled) 
+                        VALUES ('WELCOME25', 25.00, 500.00, 0.00, 1, 'all', '25% OFF on first order (One-time use)', '25% OFF', '25% discount on order', 0)
+                        ON DUPLICATE KEY UPDATE discount_percent = 25.00, count = 1, min_order_amount = 0.00
+                    ")->execute();
+                    $pdo->prepare("INSERT INTO user_coupons (mobile, coupon_code, used) VALUES (?, 'WELCOME25', 0)")->execute([$mobile]);
+                    $pdo->prepare("UPDATE users SET referred_by = ? WHERE mobile = ?")->execute([$cleanCode, $mobile]);
+                } catch (Exception $cex) {}
+
                 $referrerInfo = [
                     'referrer_name' => $referrer['name'] ?: ('User ' . substr($referrer['mobile'], -4)),
-                    'coupon_desc' => '25% CASHBACK Coupon Unlocked!',
+                    'coupon_desc' => '25% OFF Coupon Unlocked! (Valid on your first order)',
                     'referrer' => $referralCode,
                     'status' => 1
                 ];

@@ -9,6 +9,7 @@ import { AdminAuthService, AdminUser } from './services/admin-auth.service';
 })
 export class AdminComponent implements OnInit {
   mobileMenuOpen: boolean = false;
+  isProductsNavOpen: boolean = true;
   currentUser: AdminUser | null = null;
 
   constructor(
@@ -17,6 +18,10 @@ export class AdminComponent implements OnInit {
   ) {
     let loadingEl = document.getElementById("loading");
     if (loadingEl) loadingEl.remove();
+  }
+
+  toggleProductsNav(): void {
+    this.isProductsNavOpen = !this.isProductsNavOpen;
   }
 
   ngOnInit(): void {

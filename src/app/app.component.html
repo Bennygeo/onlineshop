@@ -1,4 +1,11 @@
-<div *ngIf="isMobile && !isAdminPage; else mobileContent">
+<!-- Admin Dashboard View (Full width, no 1200px restriction) -->
+<ng-container *ngIf="isAdminPage">
+    <loader></loader>
+    <router-outlet></router-outlet>
+</ng-container>
+
+<!-- Customer Storefront View -->
+<div class="customer-app-root" [class.desktop-customer-mode]="!isMobile" *ngIf="!isAdminPage">
     <!-- Admin Impersonation Top Mode Banner -->
     <div class="admin-impersonation-bar" *ngIf="loginS.getAdminMode()?.active">
         <div class="admin-bar-content">
@@ -16,26 +23,57 @@
     </div>
 
     <loader></loader>
-    <app-header></app-header>
-    <router-outlet></router-outlet>
 
-    <div id="bottom_cart_view" [class]="bottombarClass" *ngIf="cartS.isCart$ | async" [routerLink]="'products/cart'">
-        <div class="cart-left-info">
-            <div class="cart-icon-pill">
-                <span class="material-icons-round">shopping_bag</span>
-            </div>
-            <div class="cart-meta-wrap">
-                <span class="cart-items-count">{{cart_details['totalItems']}} {{cart_details['totalItems'] === 1 ? 'item' : 'items'}}</span>
-                <span class="cart-total-amount">₹{{cart_details['total'] | number:'1.0-0'}}</span>
-            </div>
+    <!-- SEPARATE DESKTOP VIEW FOR CUSTOMER (maxWidth: 1200px) -->
+    <div class="customer-desktop-frame" *ngIf="!isMobile">
+        <app-header></app-header>
+        <div class="customer-desktop-content-area">
+            <router-outlet></router-outlet>
         </div>
 
-        <div class="cart-right-action">
-            <span class="view-cart-text">View Cart</span>
-            <span class="material-icons-round arrow-icon">arrow_forward</span>
+        <!-- Desktop Centered Floating Cart Bar -->
+        <div id="bottom_cart_view" class="customer-desktop-cart-bar" *ngIf="cartS.isCart$ | async" [routerLink]="'products/cart'">
+            <div class="cart-left-info">
+                <div class="cart-icon-pill">
+                    <span class="material-icons-round">shopping_bag</span>
+                </div>
+                <div class="cart-meta-wrap">
+                    <span class="cart-items-count">{{cart_details['totalItems']}} {{cart_details['totalItems'] === 1 ? 'item' : 'items'}} in bag</span>
+                    <span class="cart-total-amount">₹{{cart_details['total'] | number:'1.0-0'}}</span>
+                </div>
+            </div>
+
+            <div class="cart-right-action">
+                <span class="view-cart-text">View Cart &amp; Checkout</span>
+                <span class="material-icons-round arrow-icon">arrow_forward</span>
+            </div>
         </div>
     </div>
 
+    <!-- MOBILE VIEW FOR CUSTOMER -->
+    <div class="customer-mobile-frame" *ngIf="isMobile">
+        <app-header></app-header>
+        <router-outlet></router-outlet>
+
+        <div id="bottom_cart_view" [class]="bottombarClass" *ngIf="cartS.isCart$ | async" [routerLink]="'products/cart'">
+            <div class="cart-left-info">
+                <div class="cart-icon-pill">
+                    <span class="material-icons-round">shopping_bag</span>
+                </div>
+                <div class="cart-meta-wrap">
+                    <span class="cart-items-count">{{cart_details['totalItems']}} {{cart_details['totalItems'] === 1 ? 'item' : 'items'}}</span>
+                    <span class="cart-total-amount">₹{{cart_details['total'] | number:'1.0-0'}}</span>
+                </div>
+            </div>
+
+            <div class="cart-right-action">
+                <span class="view-cart-text">View Cart</span>
+                <span class="material-icons-round arrow-icon">arrow_forward</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Customer Popup Modal -->
     <div class="popup_parent" *ngIf="popupItem.flag">
         <div class="popup_cont">
             <p [innerHTML]="popupItem.msg"></p>
@@ -43,9 +81,3 @@
         </div>
     </div>
 </div>
-
-
-<ng-template #mobileContent>
-    <loader></loader>
-    <router-outlet></router-outlet>
-</ng-template>

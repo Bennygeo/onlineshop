@@ -36,7 +36,7 @@
     </div>
 
     <!-- TAB 1: DAILY ORDERS -->
-    <div id="Daily" class="tabcontent">
+    <div id="Daily" class="tabcontent" [style.display]="activeTab === 'Daily' ? 'block' : 'none'">
         <!-- 1. ACTIVE / UPCOMING DELIVERIES -->
         <div class="orders-section" *ngIf="upcomingOrders && upcomingOrders.length > 0">
             <div class="section-title-row">
@@ -51,7 +51,7 @@
                 <div class="modern-order-card active-card" *ngFor="let item of upcomingOrders" [class.card-open]="item.expanded">
                     <!-- Card Top Row: Order ID, Timestamp, Payment Pill, Status Badge -->
                     <div class="card-header-bar">
-                        <div class="header-left-meta">
+                        <div class="card-header-top-row">
                             <span class="order-tag-btn" (click)="copyOrderId(item.order_id, $event)" [title]="'Click to copy: ' + item.order_id">
                                 <span class="material-icons size-13 tag-icon">tag</span>
                                 <span class="order-id-txt">{{ formatShortId(item.order_id) }}</span>
@@ -59,7 +59,16 @@
                                 <span class="copied-tooltip" *ngIf="copiedOrderId === item.order_id">Copied!</span>
                             </span>
 
-                            <span class="meta-dot">&bull;</span>
+                            <div class="header-right-status">
+                                <span class="status-pill" [ngClass]="getStatusBadge(item.status).class">
+                                    <span class="status-dot"></span>
+                                    <span class="material-icons size-14">{{ getStatusBadge(item.status).icon }}</span>
+                                    <span>{{ getStatusBadge(item.status).label }}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-header-meta-row">
                             <span class="order-time-txt">{{ safeDate(item.created_at) | date:'MMM d, h:mm a' }}</span>
                             <span class="meta-dot">&bull;</span>
 
@@ -67,13 +76,10 @@
                                 <span class="material-icons size-12">{{ (item.order_source === 'ADMIN_OFFLINE' || item.payment_type === 'OFFLINE') ? 'point_of_sale' : (item.payment_type === 'COD' ? 'payments' : 'account_balance_wallet') }}</span>
                                 <span>{{ (item.order_source === 'ADMIN_OFFLINE' || item.payment_type === 'OFFLINE') ? '⚡ Offline Order' : (item.payment_type === 'COD' ? 'COD' : 'Wallet / Prepaid') }}</span>
                             </span>
-                        </div>
 
-                        <div class="header-right-status">
-                            <span class="status-pill" [ngClass]="getStatusBadge(item.status).class">
-                                <span class="status-dot"></span>
-                                <span class="material-icons size-14">{{ getStatusBadge(item.status).icon }}</span>
-                                <span>{{ getStatusBadge(item.status).label }}</span>
+                            <span class="referral-chip" *ngIf="isReferralOrder(item)" [title]="'Referral Code: ' + getReferralCode(item)">
+                                <span class="material-icons size-12">redeem</span>
+                                <span>🎁 Referral: {{ getReferralCode(item) }}</span>
                             </span>
                         </div>
                     </div>
@@ -99,8 +105,8 @@
                     <!-- Quick Thumbnails Strip (Shown when collapsed) -->
                     <div class="preview-thumbnails-strip" *ngIf="!item.expanded" (click)="orderViewAction(item)">
                         <div class="thumbs-container">
-                            <div class="thumb-avatar" *ngFor="let th of getOrderThumbnails(item)" [title]="th.name">
-                                <img [src]="th.img" (error)="onImgError($event)" [alt]="th.name" loading="lazy" />
+                            <div class="thumb-avatar" *ngFor="let th of getOrderThumbnails(item); trackBy: trackByThumbName" [title]="th.name">
+                                <img [src]="th.img" (error)="onThumbnailError(th, $event)" [alt]="th.name" loading="lazy" />
                             </div>
                             <div class="more-items-pill" *ngIf="getOrderItemsCount(item) > 4">
                                 +{{ getOrderItemsCount(item) - 4 }} more
@@ -138,7 +144,7 @@
                             <div *ngIf="item.products && item.products.length > 0; else loadingOrRawItems">
                                 <div class="item-card-row" *ngFor="let pro of item.products" [class.item-is-cancelled]="pro.item_status === 'cancelled' || pro.subsStatus === 'cancelled'">
                                     <div class="item-img-box">
-                                        <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)" [alt]="pro.name || 'Product'" />
+                                        <img [src]="pro.img_url || 'assets/general/product_placeholder.svg'" (error)="onProImgError(pro, $event)" [alt]="pro.name || 'Product'" />
                                     </div>
 
                                     <div class="item-meta-col">
@@ -175,7 +181,7 @@
                                 <div *ngIf="item.itemsList && item.itemsList.length > 0; else loadingPlaceholder">
                                     <div class="item-card-row" *ngFor="let pro of item.itemsList" [class.item-is-cancelled]="pro.item_status === 'cancelled' || pro.subsStatus === 'cancelled'">
                                         <div class="item-img-box">
-                                            <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)" [alt]="pro.product_name || 'Product'" />
+                                            <img [src]="pro.img_url || 'assets/general/product_placeholder.svg'" (error)="onProImgError(pro, $event)" [alt]="pro.product_name || 'Product'" />
                                         </div>
                                         <div class="item-meta-col">
                                             <div class="item-title-row">
@@ -236,8 +242,40 @@
                             </div>
                         </div>
 
+                        <!-- Referral & Discount Details -->
+                        <div class="referral-order-card" *ngIf="isReferralOrder(item) || item.coupon_discount > 0">
+                            <div class="ref-badge-header">
+                                <div class="ref-badge-icon">
+                                    <span class="material-icons size-18">redeem</span>
+                                </div>
+                                <div class="ref-badge-info">
+                                    <div class="ref-badge-title">
+                                        <span>Referral Reward Applied</span>
+                                        <span class="ref-code-tag">{{ getReferralCode(item) }}</span>
+                                    </div>
+                                    <div class="ref-badge-sub" *ngIf="item.referred_by">
+                                        Referred by partner: <strong>{{ item.referred_by }}</strong>
+                                    </div>
+                                    <div class="ref-badge-sub" *ngIf="!item.referred_by">
+                                        25% First-Order Cashback Benefit Applied (One-time Offer)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ref-badge-saved" *ngIf="item.coupon_discount > 0">
+                                <span class="saved-lbl">Discount:</span>
+                                <span class="saved-val">- ₹{{ item.coupon_discount | number }}</span>
+                            </div>
+                        </div>
+
                         <!-- 3. Receipt Payment Summary -->
                         <div class="receipt-summary-card">
+                            <div class="receipt-row discount-row" *ngIf="item.coupon_discount > 0">
+                                <span class="receipt-lbl discount-lbl">
+                                    <span class="material-icons size-14">local_offer</span>
+                                    <span>Discount ({{ item.coupon || getReferralCode(item) }}):</span>
+                                </span>
+                                <span class="receipt-val discount-val">- ₹{{ item.coupon_discount | number }}</span>
+                            </div>
                             <div class="receipt-row" *ngIf="item.refund_amount > 0">
                                 <span class="receipt-lbl refund-lbl">Wallet Refund:</span>
                                 <span class="receipt-val refund-val">- ₹{{ item.refund_amount | number }}</span>
@@ -266,7 +304,7 @@
                 <div class="modern-order-card past-card" *ngFor="let item of pastOrders" [class.card-open]="item.expanded">
                     <!-- Card Top Row -->
                     <div class="card-header-bar">
-                        <div class="header-left-meta">
+                        <div class="card-header-top-row">
                             <span class="order-tag-btn" (click)="copyOrderId(item.order_id, $event)" [title]="'Click to copy: ' + item.order_id">
                                 <span class="material-icons size-13 tag-icon">tag</span>
                                 <span class="order-id-txt">{{ formatShortId(item.order_id) }}</span>
@@ -274,7 +312,16 @@
                                 <span class="copied-tooltip" *ngIf="copiedOrderId === item.order_id">Copied!</span>
                             </span>
 
-                            <span class="meta-dot">&bull;</span>
+                            <div class="header-right-status">
+                                <span class="status-pill" [ngClass]="getStatusBadge(item.status).class">
+                                    <span class="status-dot"></span>
+                                    <span class="material-icons size-14">{{ getStatusBadge(item.status).icon }}</span>
+                                    <span>{{ getStatusBadge(item.status).label }}</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="card-header-meta-row">
                             <span class="order-time-txt">
                                 {{ (item.status === 'DELIVERED' ? safeDate(item.delivered_at) : safeDate(item.created_at)) | date:'MMM d, y' }}
                             </span>
@@ -284,13 +331,10 @@
                                 <span class="material-icons size-12">{{ (item.order_source === 'ADMIN_OFFLINE' || item.payment_type === 'OFFLINE') ? 'point_of_sale' : (item.payment_type === 'COD' ? 'payments' : 'account_balance_wallet') }}</span>
                                 <span>{{ (item.order_source === 'ADMIN_OFFLINE' || item.payment_type === 'OFFLINE') ? '⚡ Offline Order' : (item.payment_type === 'COD' ? 'COD' : 'Prepaid') }}</span>
                             </span>
-                        </div>
 
-                        <div class="header-right-status">
-                            <span class="status-pill" [ngClass]="getStatusBadge(item.status).class">
-                                <span class="status-dot"></span>
-                                <span class="material-icons size-14">{{ getStatusBadge(item.status).icon }}</span>
-                                <span>{{ getStatusBadge(item.status).label }}</span>
+                            <span class="referral-chip" *ngIf="isReferralOrder(item)" [title]="'Referral Code: ' + getReferralCode(item)">
+                                <span class="material-icons size-12">redeem</span>
+                                <span>🎁 Referral: {{ getReferralCode(item) }}</span>
                             </span>
                         </div>
                     </div>
@@ -329,8 +373,8 @@
                     <!-- Quick Thumbnails Strip (Collapsed) -->
                     <div class="preview-thumbnails-strip" *ngIf="!item.expanded" (click)="pastOrderViewAction(item)">
                         <div class="thumbs-container">
-                            <div class="thumb-avatar" *ngFor="let th of getOrderThumbnails(item)" [title]="th.name">
-                                <img [src]="th.img" (error)="onImgError($event)" [alt]="th.name" loading="lazy" />
+                            <div class="thumb-avatar" *ngFor="let th of getOrderThumbnails(item); trackBy: trackByThumbName" [title]="th.name">
+                                <img [src]="th.img" (error)="onThumbnailError(th, $event)" [alt]="th.name" loading="lazy" />
                             </div>
                             <div class="more-items-pill" *ngIf="getOrderItemsCount(item) > 4">
                                 +{{ getOrderItemsCount(item) - 4 }} more
@@ -368,7 +412,7 @@
                             <div *ngIf="item.products && item.products.length > 0; else loadingDeliveredItems">
                                 <div class="item-card-row" *ngFor="let pro of item.products">
                                     <div class="item-img-box">
-                                        <img [src]="pro.img_url || 'assets/general/no_image.png'" (error)="onImgError($event)" [alt]="pro.name || 'Product'" />
+                                        <img [src]="pro.img_url || 'assets/general/product_placeholder.svg'" (error)="onProImgError(pro, $event)" [alt]="pro.name || 'Product'" />
                                     </div>
                                     <div class="item-meta-col">
                                         <div class="item-title-row">
@@ -398,6 +442,31 @@
                             </ng-template>
                         </div>
 
+                        <!-- Referral & Discount Details -->
+                        <div class="referral-order-card" *ngIf="isReferralOrder(item) || item.coupon_discount > 0">
+                            <div class="ref-badge-header">
+                                <div class="ref-badge-icon">
+                                    <span class="material-icons size-18">redeem</span>
+                                </div>
+                                <div class="ref-badge-info">
+                                    <div class="ref-badge-title">
+                                        <span>Referral Reward Applied</span>
+                                        <span class="ref-code-tag">{{ getReferralCode(item) }}</span>
+                                    </div>
+                                    <div class="ref-badge-sub" *ngIf="item.referred_by">
+                                        Referred by partner: <strong>{{ item.referred_by }}</strong>
+                                    </div>
+                                    <div class="ref-badge-sub" *ngIf="!item.referred_by">
+                                        25% First-Order Cashback Benefit Applied (One-time Offer)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="ref-badge-saved" *ngIf="item.coupon_discount > 0">
+                                <span class="saved-lbl">Discount:</span>
+                                <span class="saved-val">- ₹{{ item.coupon_discount | number }}</span>
+                            </div>
+                        </div>
+
                         <!-- Address snippet if present -->
                         <div class="expanded-meta-grid" *ngIf="item.address">
                             <div class="meta-box full-width">
@@ -406,6 +475,25 @@
                                     <span>Delivered To</span>
                                 </div>
                                 <div class="meta-box-content">{{ item.address }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Receipt Payment Summary -->
+                        <div class="receipt-summary-card">
+                            <div class="receipt-row discount-row" *ngIf="item.coupon_discount > 0">
+                                <span class="receipt-lbl discount-lbl">
+                                    <span class="material-icons size-14">local_offer</span>
+                                    <span>Discount ({{ item.coupon || getReferralCode(item) }}):</span>
+                                </span>
+                                <span class="receipt-val discount-val">- ₹{{ item.coupon_discount | number }}</span>
+                            </div>
+                            <div class="receipt-row" *ngIf="item.refund_amount > 0">
+                                <span class="receipt-lbl refund-lbl">Wallet Refund:</span>
+                                <span class="receipt-val refund-val">- ₹{{ item.refund_amount | number }}</span>
+                            </div>
+                            <div class="receipt-row total-receipt-row">
+                                <span class="receipt-lbl">{{ item.payment_type === 'COD' ? 'Amount Paid (COD):' : 'Total Paid:' }}</span>
+                                <span class="receipt-val total-val">₹{{ item.order_total | number }}</span>
                             </div>
                         </div>
                     </div>
@@ -428,7 +516,7 @@
     </div>
 
     <!-- TAB 2: SUBSCRIBED PLANS -->
-    <div id="Subscribed" class="tabcontent" style="display: none;">
+    <div id="Subscribed" class="tabcontent" [style.display]="activeTab === 'Subscribed' ? 'block' : 'none'">
         <div *ngIf="activeTab === 'Subscribed'" class="subscribed-tab-content">
             <div *ngIf="subscriptionOrdersLength === 0" class="empty-state-card">
                 <div class="empty-icon-circle subs-circle">

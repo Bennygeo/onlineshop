@@ -80,10 +80,10 @@
                     <div class="ai-product-chips-grid">
                         <div class="ai-prod-chip" *ngFor="let product of aiSuggestedProducts">
                             <div class="chip-left" (click)="viewProductDetail(product)" style="cursor: pointer;">
-                                <img [src]="product.img_url || 'assets/general/no_image.png'" 
+                                <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" 
                                      class="chip-thumb" 
-                                     [alt]="product.name" 
-                                     onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                                     [alt]="product.name || 'Product'" 
+                                     onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                                 <div class="chip-info">
                                     <span class="chip-name" [title]="product.name">{{ product.name }}</span>
                                     <div class="chip-pricing">
@@ -170,7 +170,7 @@
                     <div class="search-product-card" *ngFor="let product of trendingProducts">
                         <div class="card-badge" *ngIf="product.cat">{{ product.cat }}</div>
                         <div class="card-img-wrap" (click)="viewProductDetail(product)" style="cursor: pointer;">
-                            <img [src]="product.img_url || 'assets/general/no_image.png'" class="card-img" [alt]="product.name" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                            <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" class="card-img" [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                         </div>
                         <div class="card-info" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <h4 class="card-title" [title]="product.name">{{ product.name }}</h4>
@@ -210,7 +210,7 @@
                 <div class="search-product-card" *ngFor="let product of filteredResults">
                     <div class="card-badge" *ngIf="product.cat">{{ product.cat }}</div>
                     <div class="card-img-wrap" (click)="viewProductDetail(product)" style="cursor: pointer;">
-                        <img [src]="product.img_url || 'assets/general/no_image.png'" class="card-img" [alt]="product.name" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+                        <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" class="card-img" [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                     </div>
                     <div class="card-info" (click)="viewProductDetail(product)" style="cursor: pointer;">
                         <h4 class="card-title" [title]="product.name">{{ product.name }}</h4>

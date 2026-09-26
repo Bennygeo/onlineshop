@@ -10,7 +10,8 @@ const routes: Routes = [
   },
   {
     path: 'web',
-    component: WebComponent
+    redirectTo: 'home/view',
+    pathMatch: 'full'
   },
   {
     path: 'products',

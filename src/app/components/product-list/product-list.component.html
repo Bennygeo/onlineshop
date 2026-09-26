@@ -89,7 +89,7 @@
 
                 <div style="position: relative;">
                     <div class="imgAlign">
-                        <img [src]="descriptionOptions.imgurl" class="product_thumb">
+                        <img [src]="descriptionOptions.imgurl || 'assets/general/product_placeholder.svg'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" class="product_thumb" [alt]="descriptionOptions.productname || 'Product'">
                     </div>
                     <h5 class="p_desc_sub_titles" style="text-align: center;">{{descriptionOptions.productname}}
                     </h5>

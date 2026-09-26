@@ -19,6 +19,15 @@
     left: 0;
     width: 100%;
     z-index: 1000;
+
+    > div {
+        max-width: 1200px;
+        margin: 0 auto;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
 }
 
 .headerItems {
@@ -350,4 +359,43 @@
     left: 0px;
     font-size: 20px;
     font-weight: bolder;
+}
+
+/* ==========================================================================
+   Header Address Popup Modal Desktop Rules
+   ========================================================================== */
+@media (min-width: 769px) {
+    .popup_parent {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 2200 !important;
+        background: rgba(15, 23, 42, 0.65) !important;
+        backdrop-filter: blur(6px) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 24px !important;
+        box-sizing: border-box !important;
+
+        .popup_cont {
+            position: relative !important;
+            top: auto !important;
+            bottom: auto !important;
+            left: auto !important;
+            right: auto !important;
+            width: 100% !important;
+            max-width: 580px !important; // Never exceeds 580px on desktop
+            height: auto !important;
+            max-height: 86vh !important;
+            border-radius: 24px !important;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+            padding: 20px 24px !important;
+            margin: 0 auto !important;
+            overflow-y: auto !important;
+            box-sizing: border-box !important;
+        }
+    }
 }

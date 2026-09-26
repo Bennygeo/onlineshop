@@ -57,8 +57,8 @@ export class SubscriptionViewComponent implements OnInit {
   }
 
   onImgError(event: any) {
-    if (event && event.target) {
-      event.target.src = 'assets/orders/orders_veg.png';
+    if (event && event.target && !event.target.src.includes('product_placeholder.svg')) {
+      event.target.src = 'assets/general/product_placeholder.svg';
     }
   }
 

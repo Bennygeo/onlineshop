@@ -26,6 +26,28 @@ export class RazorpayService {
 
   currentUserMobile: string;
 
+  private loadScript(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (this.nativeWindow.Razorpay) {
+        resolve(true);
+        return;
+      }
+      const existingScript = document.getElementById('razorpay-checkout-js') as HTMLScriptElement;
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(true));
+        existingScript.addEventListener('error', () => resolve(false));
+        return;
+      }
+      const script = document.createElement('script');
+      script.id = 'razorpay-checkout-js';
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }
+
   initiatePaymentModal(user: User, amt: any) {
 
     let receiptNumber = `Receipt#${Math.floor(Math.random() * 5123 * 43) + 10}`;
@@ -39,30 +61,32 @@ export class RazorpayService {
     }
     amt = _amt;
     this.currentUserMobile = user.mobile || "9876543210";
-    // this.changeEvent.next("INIT");
-    this._api.postApi('wallet/razor_pay.php', { amount: amt * 100, currency: "INR", reciept: receiptNumber, payment_capture: 1, mobile: this.currentUserMobile }).subscribe({
-      next: (res: any) => {
-        let order = {
-          currency: "INR",
-          key: res['key'],
-          order_id: res.order_id,
-          final_amount: res.amount,
-          is_mock: res.is_mock
-        }
-        if (res.is_mock) {
-          this.openDemoPaymentModal(order, user);
-        } else {
-          try {
-            var rzp1 = new this.nativeWindow.Razorpay(this.preparePaymentDetails(order, user));
-            rzp1.open();
-          } catch (e) {
-            this.openDemoPaymentModal(order, user);
+
+    this.loadScript().then(() => {
+      this._api.postApi('wallet/razor_pay.php', { amount: amt * 100, currency: "INR", reciept: receiptNumber, payment_capture: 1, mobile: this.currentUserMobile }).subscribe({
+        next: (res: any) => {
+          let order = {
+            currency: "INR",
+            key: res['key'],
+            order_id: res.order_id,
+            final_amount: res.amount,
+            is_mock: res.is_mock
           }
+          if (res.is_mock) {
+            this.openDemoPaymentModal(order, user);
+          } else {
+            try {
+              var rzp1 = new this.nativeWindow.Razorpay(this.preparePaymentDetails(order, user));
+              rzp1.open();
+            } catch (e) {
+              this.openDemoPaymentModal(order, user);
+            }
+          }
+        },
+        error: (err: Error) => {
+          this.changeEvent.next("FAILED");
         }
-      },
-      error: (err: Error) => {
-        this.changeEvent.next("FAILED");
-      }
+      });
     });
 
   }

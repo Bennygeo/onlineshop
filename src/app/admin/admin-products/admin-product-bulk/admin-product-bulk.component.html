@@ -1,0 +1,384 @@
+<div class="bulk-upload-page">
+  <!-- Top Navigation & Header -->
+  <div class="bulk-header-row">
+    <div class="header-left">
+      <button class="back-link-btn" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+        <span>Back to Catalog</span>
+      </button>
+      <h2>Bulk Upload & Update via Excel</h2>
+      <p>Add dozens of new products or update prices, stock, and delivery slots across your store catalog using Microsoft Excel (.xlsx) or CSV.</p>
+    </div>
+
+    <div class="header-actions">
+      <button type="button" class="btn-template" (click)="downloadSampleTemplate()" title="Download ready-to-use sample Excel sheet with column headers and sample products">
+        <span class="material-icons">download</span>
+        <span>Download Sample Excel Template</span>
+      </button>
+      <button type="button" class="btn-export" (click)="exportCurrentCatalog()" title="Download current store catalog to Excel for bulk editing">
+        <span class="material-icons">file_download</span>
+        <span>Export Live Products to Excel</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Excel Upload & Dropzone Card -->
+  <div class="upload-dropzone-card" [class.dragging]="isDragging" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+    <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx, .xls, .csv" style="display: none;" />
+
+    <div class="dropzone-content" *ngIf="!fileName">
+      <div class="upload-icon-circle">
+        <span class="material-icons">cloud_upload</span>
+      </div>
+      <h3>Drag & Drop Your Excel Spreadsheet Here</h3>
+      <p>Supports <strong>.xlsx</strong>, <strong>.xls</strong>, or <strong>.csv</strong> spreadsheets formatted according to our standard template</p>
+      
+      <div class="dropzone-actions">
+        <button type="button" class="btn-browse-file" (click)="fileInput.click()">
+          <span class="material-icons">folder_open</span>
+          <span>Browse Excel File</span>
+        </button>
+        <button type="button" class="btn-get-template" (click)="downloadSampleTemplate()">
+          <span class="material-icons">description</span>
+          <span>Need a template? Download here</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loaded File Bar -->
+    <div class="loaded-file-bar" *ngIf="fileName">
+      <div class="file-info-left">
+        <span class="material-icons file-icon">table_chart</span>
+        <div>
+          <h4 class="loaded-file-name">{{ fileName }}</h4>
+          <span class="loaded-file-meta">{{ fileSizeText }} • {{ parsedRows.length }} Product Rows Found</span>
+        </div>
+      </div>
+
+      <div class="file-actions-right">
+        <button type="button" class="btn-change-file" (click)="fileInput.click()">
+          <span class="material-icons size-16">sync</span>
+          <span>Change File</span>
+        </button>
+        <button type="button" class="btn-clear-file" (click)="clearLoadedFile()">
+          <span class="material-icons size-16">close</span>
+          <span>Remove</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Result Banner (when finished) -->
+  <div class="upload-result-card" *ngIf="uploadResult">
+    <div class="result-header">
+      <span class="material-icons result-icon">check_circle</span>
+      <div>
+        <h4>Bulk Operation Successful!</h4>
+        <p>{{ uploadResult.message }}</p>
+      </div>
+    </div>
+    <div class="result-stats">
+      <div class="res-stat-pill added">
+        <span class="val">{{ uploadResult.inserted || 0 }}</span>
+        <span class="lbl">New Products Added</span>
+      </div>
+      <div class="res-stat-pill updated">
+        <span class="val">{{ uploadResult.updated || 0 }}</span>
+        <span class="lbl">Products Updated</span>
+      </div>
+      <div class="res-stat-pill total">
+        <span class="val">{{ uploadResult.total || 0 }}</span>
+        <span class="lbl">Total Processed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parsed Rows Preview Section (Shown when file is loaded) -->
+  <div class="preview-section" *ngIf="parsedRows.length > 0">
+    <div class="preview-toolbar">
+      <div class="toolbar-stats-left">
+        <h4>Data Preview & Verification</h4>
+        <div class="filter-pills">
+          <button class="pill-btn" [class.active]="activeFilter === 'ALL'" (click)="activeFilter = 'ALL'">
+            All Rows ({{ parsedRows.length }})
+          </button>
+          <button class="pill-btn new" [class.active]="activeFilter === 'NEW'" (click)="activeFilter = 'NEW'">
+            <span class="dot"></span>
+            New Products ({{ newCount }})
+          </button>
+          <button class="pill-btn update" [class.active]="activeFilter === 'UPDATE'" (click)="activeFilter = 'UPDATE'">
+            <span class="dot"></span>
+            Updates to Existing ({{ updateCount }})
+          </button>
+          <button class="pill-btn error" *ngIf="invalidCount > 0" [class.active]="activeFilter === 'INVALID'" (click)="activeFilter = 'INVALID'">
+            <span class="dot"></span>
+            Issues Found ({{ invalidCount }})
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar-actions-right">
+        <button type="button" class="btn-upload-submit" (click)="submitBulkUpload()" [disabled]="isUploading">
+          <span class="material-icons" *ngIf="!isUploading">cloud_done</span>
+          <span class="material-icons spin" *ngIf="isUploading">sync</span>
+          <span>{{ isUploading ? 'Processing Import...' : 'Upload & Apply ' + (parsedRows.length - invalidCount) + ' Product(s)' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Upload Progress Bar -->
+    <div class="progress-bar-container" *ngIf="isUploading">
+      <div class="progress-fill" [style.width.%]="uploadProgress"></div>
+      <span class="progress-text">Updating product tables across system... {{ uploadProgress }}%</span>
+    </div>
+
+    <!-- Preview Table -->
+    <div class="preview-table-container">
+      <table class="preview-table">
+        <thead>
+          <tr>
+            <th>Row</th>
+            <th>Action</th>
+            <th>Product Name</th>
+            <th>Category</th>
+            <th>Selling Price</th>
+            <th>MRP</th>
+            <th>Cost Price</th>
+            <th>Pack / Unit</th>
+            <th>Stock Mode</th>
+            <th>Stock Qty</th>
+            <th>Delivery Schedule</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of filteredPreviewRows" [class.row-invalid]="r.actionType === 'INVALID'">
+            <td class="row-num">#{{ r.rowIndex }}</td>
+            <td>
+              <span class="action-chip new" *ngIf="r.actionType === 'NEW'">
+                <span class="material-icons size-13">add_circle</span> NEW
+              </span>
+              <span class="action-chip update" *ngIf="r.actionType === 'UPDATE'">
+                <span class="material-icons size-13">update</span> UPDATE
+              </span>
+              <span class="action-chip invalid" *ngIf="r.actionType === 'INVALID'" [title]="r.validationErrors.join(', ')">
+                <span class="material-icons size-13">error</span> ERROR
+              </span>
+            </td>
+            <td>
+              <div class="p-cell-info">
+                <span class="p-name">{{ r.name || '—' }}</span>
+                <span class="p-tamil" *ngIf="r.tamil_name">{{ r.tamil_name }}</span>
+                <span class="p-error-text" *ngIf="r.validationErrors.length > 0">{{ r.validationErrors.join(', ') }}</span>
+              </div>
+            </td>
+            <td><span class="cat-pill">{{ r.cat }}</span></td>
+            <td><span class="price-pill">₹ {{ r.price }}</span></td>
+            <td><span class="mrp-pill">₹ {{ r.original_price }}</span></td>
+            <td><span class="cost-pill">₹ {{ r.stock_price }}</span></td>
+            <td><span class="spec-pill">{{ r.weight }} {{ r.unit_name }}</span></td>
+            <td>
+              <span class="mode-pill" [class.unlimited]="r.is_unlimited == 1">
+                {{ r.is_unlimited == 1 ? 'Market Sourced' : 'Track Stock' }}
+              </span>
+            </td>
+            <td>
+              <span class="qty-pill">{{ r.is_unlimited == 1 ? '∞' : (r.stock_qty + ' ' + r.unit_name) }}</span>
+            </td>
+            <td><span class="days-pill">{{ r.preferred_days }}</span></td>
+            <td>
+              <span class="status-pill" [class.active]="r.disabled == 0" [class.hidden]="r.disabled == 1">
+                {{ r.disabled == 0 ? 'Active' : 'Hidden' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Excel Format Specification Guide Card -->
+  <div class="format-guide-card">
+    <div class="guide-header">
+      <span class="material-icons guide-icon">help_outline</span>
+      <div>
+        <h3>Excel Sheet Column Format & Guidelines</h3>
+        <p>Follow the column headers below to ensure your Excel sheet is parsed accurately. For best results, use our pre-formatted template.</p>
+      </div>
+      <button class="btn-download-guide-template" (click)="downloadSampleTemplate()">
+        <span class="material-icons size-16">download</span>
+        <span>Download Sample .xlsx</span>
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="format-specs-table">
+        <thead>
+          <tr>
+            <th>Column Header</th>
+            <th>Required?</th>
+            <th>Accepted Values & Data Type</th>
+            <th>Sample Value</th>
+            <th>Notes / Behavior</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Product ID</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td>Text (Alphanumeric)</td>
+            <td><code>PROD_1727255400</code></td>
+            <td>Leave empty for new products. If provided, updates that existing product record.</td>
+          </tr>
+          <tr>
+            <td><code>Product Name</code></td>
+            <td><span class="req-badge req">Required</span></td>
+            <td>Text (string)</td>
+            <td><code>Fresh Organic Tomatoes</code></td>
+            <td>English title of product. If matches existing product name, it will update it.</td>
+          </tr>
+          <tr>
+            <td><code>Tamil Name</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td>Text (Unicode)</td>
+            <td><code>நாட்டு தக்காளி</code></td>
+            <td>Regional name for local customer search.</td>
+          </tr>
+          <tr>
+            <td><code>Category</code></td>
+            <td><span class="req-badge rec">Recommended</span></td>
+            <td>Text</td>
+            <td><code>Vegetables</code></td>
+            <td>Vegetables, Fruits, Greens, Dairy, Tender Coconut, etc. Defaults to Vegetables if empty.</td>
+          </tr>
+          <tr>
+            <td><code>Sub Category</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td>Text</td>
+            <td><code>Country</code>, <code>Organic</code></td>
+            <td>Grouping tag inside category. Defaults to "General".</td>
+          </tr>
+          <tr>
+            <td><code>Selling Price</code></td>
+            <td><span class="req-badge req">Required</span></td>
+            <td>Number (positive)</td>
+            <td><code>45</code> or <code>45.00</code></td>
+            <td>Live customer price in Indian Rupees (INR). Must be greater than 0.</td>
+          </tr>
+          <tr>
+            <td><code>MRP</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td>Number</td>
+            <td><code>55</code></td>
+            <td>Original retail price before discount. Defaults to Selling Price if empty.</td>
+          </tr>
+          <tr>
+            <td><code>Cost Price</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td>Number</td>
+            <td><code>35</code></td>
+            <td>Wholesale purchase cost. Used for profit analysis. Defaults to 80% of selling price.</td>
+          </tr>
+          <tr>
+            <td><code>Weight</code></td>
+            <td><span class="req-badge rec">Recommended</span></td>
+            <td>Number</td>
+            <td><code>500</code>, <code>1</code>, <code>250</code></td>
+            <td>Numeric pack size. Defaults to 500 for grams or 1 for kg/ltr/pack.</td>
+          </tr>
+          <tr>
+            <td><code>Unit</code></td>
+            <td><span class="req-badge rec">Recommended</span></td>
+            <td><code>grams</code>, <code>kg</code>, <code>pack</code>, <code>ltr</code>, <code>ml</code>, <code>pcs</code></td>
+            <td><code>grams</code></td>
+            <td>Unit of measurement. Defaults to grams.</td>
+          </tr>
+          <tr>
+            <td><code>Stock Mode</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>Market Sourced</code> or <code>Track Inventory</code></td>
+            <td><code>Market Sourced</code></td>
+            <td>Market Sourced = unlimited fresh daily sourcing. Track Inventory = limits purchase by stock count.</td>
+          </tr>
+          <tr>
+            <td><code>Stock Qty</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td>Number</td>
+            <td><code>50</code></td>
+            <td>Initial physical stock. Relevant when Stock Mode is Track Inventory.</td>
+          </tr>
+          <tr>
+            <td><code>In Stock</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>Yes</code> or <code>No</code></td>
+            <td><code>Yes</code></td>
+            <td>Mark product currently available or out of stock. Defaults to Yes.</td>
+          </tr>
+          <tr>
+            <td><code>GST %</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td>Number (0, 5, 12, 18)</td>
+            <td><code>5</code></td>
+            <td>Applicable GST percentage. Defaults to 5%.</td>
+          </tr>
+          <tr>
+            <td><code>Status</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>Active</code> or <code>Hidden</code></td>
+            <td><code>Active</code></td>
+            <td>Hidden items are saved in catalog but not shown to customers.</td>
+          </tr>
+          <tr>
+            <td><code>Subscription</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>Yes</code> or <code>No</code></td>
+            <td><code>Yes</code></td>
+            <td>Enables customer daily/alternate day repeat subscription orders. Defaults to No.</td>
+          </tr>
+          <tr>
+            <td><code>Next Day Delivery</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>Yes</code> or <code>No</code></td>
+            <td><code>Yes</code></td>
+            <td>Next morning 7 AM delivery slot. Defaults to Yes.</td>
+          </tr>
+          <tr>
+            <td><code>Immediate 10 Min</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>Yes</code> or <code>No</code></td>
+            <td><code>No</code></td>
+            <td>10-minute instant delivery slot. Defaults to No.</td>
+          </tr>
+          <tr>
+            <td><code>Immediate 30 Min</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>Yes</code> or <code>No</code></td>
+            <td><code>No</code></td>
+            <td>30-minute express delivery slot. Defaults to No.</td>
+          </tr>
+          <tr>
+            <td><code>Immediate 60 Min</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>Yes</code> or <code>No</code></td>
+            <td><code>No</code></td>
+            <td>60-minute quick delivery slot. Defaults to No.</td>
+          </tr>
+          <tr>
+            <td><code>Delivery Days</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td><code>All Days</code> or comma-separated days</td>
+            <td><code>Monday, Wednesday, Friday</code></td>
+            <td>Restricts fulfillment to specific days. Outside these days, orders schedule forward. Defaults to All Days.</td>
+          </tr>
+          <tr>
+            <td><code>Image URL</code></td>
+            <td><span class="req-badge opt">Optional</span></td>
+            <td>URL or local asset path</td>
+            <td><code>assets/categories/Thinkspot_veggiesIcon.png</code></td>
+            <td>Defaults to standard category icon if left blank.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -4,7 +4,7 @@
         <!-- Thumbnail -->
         <div class="productThumbCol">
             <div class="imgBox">
-                <img [src]="product.img_url" [alt]="product.name" loading="lazy" />
+                <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" loading="lazy" />
             </div>
         </div>
 
@@ -74,7 +74,7 @@
         <!-- Thumbnail -->
         <div class="productThumbCol">
             <div class="imgBox">
-                <img [src]="product.img_url" [alt]="product.name" loading="lazy" />
+                <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" loading="lazy" />
                 <span class="subsCornerBadge" title="Recurring Subscription">
                     <span class="material-icons-round">event_repeat</span>
                 </span>

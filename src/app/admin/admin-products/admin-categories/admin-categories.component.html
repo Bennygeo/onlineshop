@@ -1,0 +1,147 @@
+<div class="manage-categories-page">
+  <!-- Header Bar -->
+  <div class="categories-header-row">
+    <div class="header-left">
+      <button class="back-link-btn" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+        <span>Back to Products</span>
+      </button>
+      <h2>Manage Store Categories</h2>
+      <p>Organize products into customer-facing departments, customize category icons, and manage category listings.</p>
+    </div>
+
+    <div class="header-stats">
+      <div class="stat-box">
+        <span class="stat-num">{{ categoryOptions.length }}</span>
+        <span class="stat-lbl">Active Categories</span>
+      </div>
+      <div class="stat-box highlight">
+        <span class="stat-num">{{ totalProductsCount }}</span>
+        <span class="stat-lbl">Total Categorized Items</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="categories-content-layout">
+    <!-- Left: Create New Category Form Card -->
+    <div class="create-category-card">
+      <div class="card-head">
+        <span class="material-icons head-icon">add_circle</span>
+        <div>
+          <h3>Create New Category</h3>
+          <p>Add a new departmental grouping for products</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="form-group">
+          <label>Category Display Name *</label>
+          <input type="text" [(ngModel)]="newCategory.label" placeholder="e.g. Organic Millet, Cold Beverages" required />
+          <small class="field-hint">Name displayed on the storefront navigation & filters</small>
+        </div>
+
+        <div class="form-group">
+          <label>Category Key / Code (Slug)</label>
+          <input type="text" [(ngModel)]="newCategory.key" placeholder="e.g. organic_millet (Auto-generated if empty)" />
+          <small class="field-hint">Used in URLs and database queries</small>
+        </div>
+
+        <div class="form-group">
+          <label>Category Icon / Image URL</label>
+          <input type="text" [(ngModel)]="newCategory.img_url" placeholder="assets/categories/Thinkspot_veggiesIcon.png" />
+        </div>
+
+        <!-- Preset Icon Selection -->
+        <label class="preset-label">Choose Preset Icon:</label>
+        <div class="preset-icons-grid">
+          <button type="button" *ngFor="let p of presetIcons" class="preset-btn" [class.selected]="newCategory.img_url === p.url" (click)="selectPresetIcon(p.url)">
+            <img [src]="p.url" alt="{{ p.label }}" />
+            <span>{{ p.label }}</span>
+          </button>
+        </div>
+
+        <!-- Live Preview of New Category -->
+        <div class="new-cat-preview">
+          <span class="preview-label">Category Badge Preview:</span>
+          <div class="preview-pill">
+            <img [src]="newCategory.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="Preview" />
+            <div class="preview-text">
+              <span class="p-name">{{ newCategory.label || 'Category Name' }}</span>
+              <span class="p-key">Key: {{ newCategory.key || 'auto_key' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="btn-create-category" (click)="submitAddCategory()" [disabled]="isAddingCategory">
+          <span class="material-icons" *ngIf="!isAddingCategory">check</span>
+          <span class="material-icons spin" *ngIf="isAddingCategory">sync</span>
+          <span>{{ isAddingCategory ? 'Creating...' : 'Create Category' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Existing Categories List Card -->
+    <div class="existing-categories-card">
+      <div class="card-head">
+        <div class="head-title-wrap">
+          <span class="material-icons head-icon">category</span>
+          <div>
+            <h3>Existing Categories</h3>
+            <p>{{ categoryOptions.length }} categories configured</p>
+          </div>
+        </div>
+
+        <!-- Search input -->
+        <div class="cat-search-box">
+          <span class="material-icons">search</span>
+          <input type="text" placeholder="Search categories..." [(ngModel)]="categorySearchQuery" />
+          <button class="clear-btn" *ngIf="categorySearchQuery" (click)="categorySearchQuery = ''">
+            <span class="material-icons size-14">close</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="loading-state" *ngIf="categoriesLoading">
+          <span class="material-icons spin">sync</span>
+          <span>Loading categories...</span>
+        </div>
+
+        <!-- Categories Grid -->
+        <div class="categories-grid" *ngIf="!categoriesLoading">
+          <div class="category-item-card" *ngFor="let cat of getFilteredCategories()">
+            <div class="cat-card-left">
+              <div class="cat-icon-frame">
+                <img [src]="cat.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ cat.label }}" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+              </div>
+              <div class="cat-details">
+                <h4 class="cat-title">{{ cat.label }}</h4>
+                <div class="cat-key-badge">
+                  <code>key: {{ cat.key }}</code>
+                </div>
+              </div>
+            </div>
+
+            <div class="cat-card-right">
+              <button class="products-count-badge" (click)="viewProductsInCategory(cat.key)" title="View all products under {{ cat.label }} in catalog">
+                <span class="material-icons size-16">inventory_2</span>
+                <span>{{ cat.product_count || 0 }} Products</span>
+                <span class="material-icons size-14">arrow_forward</span>
+              </button>
+
+              <button class="btn-delete" (click)="deleteCategory(cat)" title="Delete category {{ cat.label }}">
+                <span class="material-icons size-18">delete_outline</span>
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="no-results" *ngIf="getFilteredCategories().length === 0">
+            <span class="material-icons size-36">search_off</span>
+            <p>No categories found matching "{{ categorySearchQuery }}".</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

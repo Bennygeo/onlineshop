@@ -8,37 +8,51 @@
   padding-top: 6px;
   padding-bottom: 0px;
   letter-spacing: 1.1px;
-  width: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: auto;
+  max-width: 320px;
+  margin: 0 auto;
 }
 
 .otpInput {
   position: relative;
-  width: 40px;
-  height: 40px;
-  margin: 5px;
-  border: none;
-  border: 1px solid #cccccc;
-  font-size: $font-xxxl;
+  width: 42px;
+  height: 46px;
+  margin: 0;
+  border: 1.5px solid #cbd5e1;
+  font-size: 20px;
+  font-weight: 700;
   text-align: center;
   outline: none;
-  margin-bottom: 24px;
-  border-radius: 8px;
+  margin-bottom: 20px;
+  border-radius: 10px;
   color: $teal-100;
+  background: #ffffff;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: $teal-100;
+    box-shadow: 0 0 0 3px rgba(9, 126, 99, 0.15);
+  }
 }
 
 .otpInput-error {
   position: relative;
-  width: 40px;
-  height: 40px;
-  margin: 5px;
-  border: none;
-  border: 1px solid #dd0505;
-  font-size: $font-xxxl;
+  width: 42px;
+  height: 46px;
+  margin: 0;
+  border: 1.5px solid #ef4444;
+  font-size: 20px;
+  font-weight: 700;
   text-align: center;
   outline: none;
-  margin-bottom: 24px;
-  border-radius: 8px;
-  color: #dd0505;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  color: #ef4444;
+  background: #fef2f2;
 }
 
 .mobile-prefix {
@@ -174,4 +188,169 @@
 
 .fetch-status {
   font-size: $font-xs;
+}
+
+// Unserviceable Location UI Alert
+.unserviceable-popup {
+  padding: 30px 24px;
+  max-width: 380px;
+  margin: 0 auto;
+
+  .unserviceable-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .unserviceable-icon-box {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: #fef2f2;
+    border: 2px dashed #fca5a5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+
+    .unserviceable-icon {
+      font-size: 34px;
+      color: #ef4444;
+    }
+  }
+
+  .unserviceable-title {
+    font-size: 19px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.3px;
+  }
+
+  .unserviceable-desc {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+
+    strong {
+      color: #0f172a;
+      font-weight: 700;
+    }
+  }
+
+  .serviceable-zones-info {
+    width: 100%;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 22px;
+    box-sizing: border-box;
+
+    .zones-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #0d9488;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      margin-bottom: 8px;
+
+      .material-icons {
+        font-size: 15px;
+      }
+    }
+
+    .zone-pill-box {
+      display: flex;
+      justify-content: center;
+
+      .serviceable-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #ccfbf1;
+        border: 1px solid #99f6e4;
+        color: #0f766e;
+        padding: 8px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        .material-icons {
+          font-size: 16px;
+          color: #0d9488;
+        }
+
+        .pill-tap-hint {
+          font-size: 10px;
+          background: #ffffff;
+          padding: 2px 6px;
+          border-radius: 10px;
+          color: #0d9488;
+          font-weight: 700;
+          margin-left: 4px;
+        }
+
+        &:hover {
+          background: #99f6e4;
+          transform: translateY(-1px);
+        }
+      }
+    }
+  }
+
+  .unserviceable-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+
+    .retry-pin-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      border-radius: 10px;
+
+      .material-icons {
+        font-size: 18px;
+      }
+    }
+
+    .explore-anyway-btn {
+      background: transparent;
+      border: 1px solid #cbd5e1;
+      color: #64748b;
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+
+      .material-icons {
+        font-size: 16px;
+      }
+
+      &:hover {
+        background: #f1f5f9;
+        color: #0f172a;
+      }
+    }
+  }
 }

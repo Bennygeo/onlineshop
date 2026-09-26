@@ -282,103 +282,130 @@
     /* Top Row */
     .card-header-bar {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
+        flex-direction: column;
+        gap: 6px;
         margin-bottom: 12px;
-        flex-wrap: wrap;
+
+        .card-header-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            gap: 8px;
+        }
+
+        .card-header-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 11.5px;
+        }
 
         .header-left-meta {
             display: flex;
             align-items: center;
             gap: 8px;
             flex-wrap: wrap;
+        }
 
-            .order-tag-btn {
-                position: relative;
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                background: #f1f5f9;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 2px 8px;
-                cursor: pointer;
-                transition: all 0.15s ease;
+        .order-tag-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 2px 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
 
-                .tag-icon {
-                    color: #64748b;
-                }
-
-                .order-id-txt {
-                    font-size: 12px;
-                    font-weight: 700;
-                    color: #0f172a;
-                    letter-spacing: 0.2px;
-                }
-
-                .copy-icon {
-                    color: #94a3b8;
-                    transition: color 0.15s ease;
-                }
-
-                &:hover {
-                    background: #e2e8f0;
-                    .copy-icon {
-                        color: #0f172a;
-                    }
-                }
-
-                .copied-tooltip {
-                    position: absolute;
-                    bottom: calc(100% + 6px);
-                    left: 50%;
-                    transform: translateX(-50%);
-                    background: #0f172a;
-                    color: #ffffff;
-                    font-size: 10.5px;
-                    font-weight: 600;
-                    padding: 3px 8px;
-                    border-radius: 6px;
-                    white-space: nowrap;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-                    animation: tooltipPop 0.15s ease;
-                }
-            }
-
-            .meta-dot {
-                color: #cbd5e1;
-                font-size: 12px;
-            }
-
-            .order-time-txt {
-                font-size: 12px;
-                font-weight: 500;
+            .tag-icon {
                 color: #64748b;
             }
 
-            .payment-chip {
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-                font-size: 11px;
-                font-weight: 600;
-                color: #0284c7;
-                background: #e0f2fe;
-                padding: 2px 7px;
-                border-radius: 6px;
+            .order-id-txt {
+                font-size: 12px;
+                font-weight: 700;
+                color: #0f172a;
+                letter-spacing: 0.2px;
+            }
 
-                &.cod-chip {
-                    color: #b45309;
-                    background: #fef3c7;
-                }
+            .copy-icon {
+                color: #94a3b8;
+                transition: color 0.15s ease;
+            }
 
-                &.offline-chip {
-                    color: #6d28d9;
-                    background: #f3e8ff;
-                    border: 1px solid #ddd6fe;
+            &:hover {
+                background: #e2e8f0;
+                .copy-icon {
+                    color: #0f172a;
                 }
             }
+
+            .copied-tooltip {
+                position: absolute;
+                bottom: calc(100% + 6px);
+                left: 50%;
+                transform: translateX(-50%);
+                background: #0f172a;
+                color: #ffffff;
+                font-size: 10.5px;
+                font-weight: 600;
+                padding: 3px 8px;
+                border-radius: 6px;
+                white-space: nowrap;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                animation: tooltipPop 0.15s ease;
+            }
+        }
+
+        .meta-dot {
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        .order-time-txt {
+            font-size: 12px;
+            font-weight: 500;
+            color: #64748b;
+        }
+
+        .payment-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #0284c7;
+            background: #e0f2fe;
+            padding: 2px 7px;
+            border-radius: 6px;
+
+            &.cod-chip {
+                color: #b45309;
+                background: #fef3c7;
+            }
+
+            &.offline-chip {
+                color: #6d28d9;
+                background: #f3e8ff;
+                border: 1px solid #ddd6fe;
+            }
+        }
+
+        .referral-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #b45309;
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            padding: 2px 7px;
+            border-radius: 6px;
         }
 
         .header-right-status {
@@ -1242,3 +1269,275 @@
         color: #6366f1;
     }
 }
+
+/* Referral Badges & Order Details Styling */
+.referral-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #9333ea;
+    background: #faf5ff;
+    border: 1px solid #e9d5ff;
+    padding: 2.5px 8px;
+    border-radius: 6px;
+    letter-spacing: -0.1px;
+    box-shadow: 0 1px 2px rgba(147, 51, 234, 0.06);
+
+    .material-icons {
+        color: #a855f7;
+    }
+}
+
+.referral-order-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-top: 14px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+    border: 1px solid #d8b4fe;
+    box-shadow: 0 2px 6px rgba(147, 51, 234, 0.06);
+
+    .ref-badge-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .ref-badge-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: #9333ea;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(147, 51, 234, 0.25);
+        }
+
+        .ref-badge-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+
+            .ref-badge-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 13px;
+                font-weight: 700;
+                color: #581c87;
+
+                .ref-code-tag {
+                    background: #7e22ce;
+                    color: #ffffff;
+                    font-size: 10.5px;
+                    font-weight: 800;
+                    padding: 1px 7px;
+                    border-radius: 4px;
+                    letter-spacing: 0.4px;
+                }
+            }
+
+            .ref-badge-sub {
+                font-size: 11.5px;
+                color: #6b21a8;
+                font-weight: 500;
+
+                strong {
+                    font-weight: 700;
+                    color: #4c1d95;
+                }
+            }
+        }
+    }
+
+    .ref-badge-saved {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: #ffffff;
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid #e9d5ff;
+        flex-shrink: 0;
+
+        .saved-lbl {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6b21a8;
+        }
+
+        .saved-val {
+            font-size: 13.5px;
+            font-weight: 800;
+            color: #16a34a;
+        }
+    }
+}
+
+.receipt-row.discount-row {
+    .discount-lbl {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #7e22ce;
+        font-weight: 600;
+
+        .material-icons {
+            color: #9333ea;
+        }
+    }
+
+    .discount-val {
+        color: #16a34a;
+        font-weight: 700;
+    }
+}
+
+/* ==========================================================================
+   Mobile Responsive Optimizations
+   ========================================================================== */
+@media (max-width: 640px) {
+    .orders-page-wrapper {
+        padding: 12px 10px 80px 10px;
+    }
+
+    .orders-header-container {
+        margin-bottom: 16px;
+
+        .header-main {
+            margin-bottom: 12px;
+        }
+
+        .tab-nav-wrapper {
+            width: 100%;
+
+            .segmented-tabs {
+                display: flex;
+                width: 100%;
+
+                .tab-btn {
+                    flex: 1;
+                    justify-content: center;
+                    padding: 8px 6px;
+                    font-size: 12.5px;
+                    gap: 6px;
+
+                    .tab-icon {
+                        font-size: 16px;
+                    }
+
+                    .tab-badge {
+                        padding: 1px 5px;
+                        font-size: 10.5px;
+                        min-width: 16px;
+                    }
+                }
+            }
+        }
+    }
+
+    .modern-order-card {
+        padding: 12px;
+        border-radius: 14px;
+
+        .card-header-bar {
+            margin-bottom: 10px;
+
+            .card-header-top-row {
+                .order-tag-btn {
+                    padding: 2px 6px;
+                    .order-id-txt {
+                        font-size: 11.5px;
+                    }
+                }
+
+                .header-right-status {
+                    .status-pill {
+                        font-size: 11px;
+                        padding: 2.5px 8px;
+                    }
+                }
+            }
+
+            .card-header-meta-row {
+                gap: 5px;
+                font-size: 11px;
+
+                .order-time-txt {
+                    font-size: 11px;
+                }
+
+                .payment-chip, .referral-chip {
+                    font-size: 10.5px;
+                    padding: 2px 6px;
+                }
+            }
+        }
+
+        .hero-summary-bar {
+            padding: 10px 12px;
+            gap: 10px;
+
+            .hero-left {
+                .delivery-badge-pill {
+                    font-size: 10.5px;
+                    padding: 3px 8px;
+                }
+
+                .hero-timing-text, .past-status-desc {
+                    font-size: 12.5px;
+                }
+            }
+
+            .hero-right {
+                .hero-total-price {
+                    font-size: 16px;
+                }
+                .hero-items-count {
+                    font-size: 11px;
+                }
+            }
+        }
+
+        .preview-thumbnails-strip {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+
+            .thumbs-container {
+                width: 100%;
+            }
+
+            .mode-instruction-tag,
+            .address-snippet-tag {
+                max-width: 100%;
+                width: 100%;
+                font-size: 10.5px;
+            }
+        }
+
+        .card-action-bar {
+            .details-toggle-btn {
+                font-size: 12px;
+            }
+
+            .action-btn-group {
+                gap: 6px;
+
+                .cancel-order-action-btn,
+                .reorder-action-btn {
+                    padding: 5px 10px;
+                    font-size: 11.5px;
+                }
+            }
+        }
+    }
+}
+

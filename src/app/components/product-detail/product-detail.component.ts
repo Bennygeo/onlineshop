@@ -21,7 +21,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   product: Product | null = null;
   loading: boolean = true;
   errorMessage: string = '';
-  
+
   // Active Tab: 'overview' | 'nutrition' | 'storage' | 'recipes'
   activeTab: string = 'overview';
 
@@ -79,7 +79,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     private location: Location,
     private titleService: Title,
     private metaService: Meta
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.cartS.loaderS?.hide?.();

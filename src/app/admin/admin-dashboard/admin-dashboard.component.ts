@@ -15,13 +15,35 @@ export class AdminDashboardComponent implements OnInit {
   paymentSettingsSaving: string = '';
   paymentSuccessToast: string = '';
 
+  // Period filter
+  selectedPeriod: string = 'lifetime';
+  customStartDate: string = '';
+  customEndDate: string = '';
+  showCustomDatePicker: boolean = false;
+
+  // Active sub-tab for deep dive sections (e.g. 'overview', 'products', 'marketing', 'expenses')
+  activeAnalyticsTab: string = 'overview';
+
   dashboardData: any = {
+    period: 'lifetime',
+    periodLabel: 'Lifetime (All Time)',
     totalRevenue: 0,
     totalOrders: 0,
+    aov: 0,
+    totalExpenses: 0,
     totalRefunds: 0,
     totalRefundCount: 0,
+    totalPromoDiscounts: 0,
+    totalPromoCount: 0,
+    totalReferralBonuses: 0,
+    totalReferralCount: 0,
+    totalProfit: 0,
+    profitMargin: 0,
+    totalWalletBalance: 0,
+    totalLedgerBalance: 0,
     pendingDeliveries: 0,
     activeCustomers: 0,
+    repeatCustomerRate: 0,
     statusBreakdown: {
       PLACED: 0,
       PACKED: 0,
@@ -29,14 +51,38 @@ export class AdminDashboardComponent implements OnInit {
       DELIVERED: 0,
       CANCELLED: 0
     },
+    paymentBreakdown: {
+      COD: { count: 0, amount: 0 },
+      ONLINE: { count: 0, amount: 0 },
+      WALLET: { count: 0, amount: 0 },
+      OFFLINE: { count: 0, amount: 0 }
+    },
+    topProducts: [],
+    categoryBreakdown: [],
+    dailyTrend: [],
+    recentOrders: [],
     today: {
+      date: '',
       revenue: 0,
       orders: 0,
+      aov: 0,
       refunds: 0,
       refundCount: 0,
+      promoDiscounts: 0,
+      promoCount: 0,
+      referralBonuses: 0,
+      referralCount: 0,
+      walletCredit: 0,
+      walletCreditCount: 0,
+      walletDebit: 0,
+      walletDebitCount: 0,
       pending: 0,
-      customers: 0
+      customers: 0,
+      profit: 0
     },
+    promoBreakdown: [],
+    recentPromoOrders: [],
+    recentReferralBonuses: [],
     expenses: {
       procurement: 0,
       rent: 0,
@@ -59,7 +105,11 @@ export class AdminDashboardComponent implements OnInit {
   constructor(
     private apiS: ApiService,
     public cartS: CartService
-  ) {}
+  ) {
+    const today = new Date().toISOString().split('T')[0];
+    this.customStartDate = today;
+    this.customEndDate = today;
+  }
 
   ngOnInit(): void {
     this.loadDashboardData();
@@ -129,9 +179,36 @@ export class AdminDashboardComponent implements OnInit {
     });
   }
 
+  changePeriod(period: string) {
+    this.selectedPeriod = period;
+    if (period === 'custom') {
+      this.showCustomDatePicker = true;
+      return;
+    }
+    this.showCustomDatePicker = false;
+    this.loadDashboardData();
+  }
+
+  applyCustomDateRange() {
+    if (!this.customStartDate || !this.customEndDate) {
+      alert('Please select both start and end dates.');
+      return;
+    }
+    this.selectedPeriod = 'custom';
+    this.loadDashboardData();
+  }
+
   loadDashboardData() {
     this.loading = true;
-    this.apiS.postApi('admin/sales_dashboard.php').subscribe({
+    const payload: any = {
+      period: this.selectedPeriod
+    };
+    if (this.selectedPeriod === 'custom') {
+      payload.start_date = this.customStartDate;
+      payload.end_date = this.customEndDate;
+    }
+
+    this.apiS.postApi('admin/sales_dashboard.php', payload).subscribe({
       next: (res: any) => {
         this.loading = false;
         if (res) {
@@ -159,6 +236,17 @@ export class AdminDashboardComponent implements OnInit {
     return (this.dashboardData.today?.revenue || 0) - this.todayTotalExpenses;
   }
 
+  get maxDailyRevenue(): number {
+    if (!this.dashboardData.dailyTrend || this.dashboardData.dailyTrend.length === 0) return 1;
+    return Math.max(...this.dashboardData.dailyTrend.map((d: any) => Number(d.revenue) || 0), 1);
+  }
+
+  get totalPaymentAmount(): number {
+    const pb = this.dashboardData.paymentBreakdown;
+    if (!pb) return 1;
+    return (pb.COD?.amount || 0) + (pb.ONLINE?.amount || 0) + (pb.WALLET?.amount || 0) + (pb.OFFLINE?.amount || 0) || 1;
+  }
+
   startEditExpense(type: string) {
     this.editingExpense = type;
   }
@@ -173,6 +261,9 @@ export class AdminDashboardComponent implements OnInit {
       })
     }).subscribe({
       next: () => {
+        if (!this.dashboardData.expenses) {
+          this.dashboardData.expenses = {};
+        }
         this.dashboardData.expenses[type] = amount;
         this.editingExpense = '';
       },

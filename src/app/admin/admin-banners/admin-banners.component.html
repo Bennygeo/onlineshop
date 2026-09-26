@@ -1,0 +1,450 @@
+<div class="banners-admin-page">
+  <!-- Toast Notification Floating Alert -->
+  <div class="toast-notification-banner" *ngIf="toastNotification.show" [class.show]="toastNotification.show"
+    [class.success]="toastNotification.type === 'success'" [class.error]="toastNotification.type === 'error'"
+    [class.info]="toastNotification.type === 'info'">
+    <div class="toast-content">
+      <span class="material-icons toast-icon">
+        {{ toastNotification.type === 'success' ? 'check_circle' : (toastNotification.type === 'error' ? 'error' : 'info') }}
+      </span>
+      <span class="toast-message">{{ toastNotification.message }}</span>
+    </div>
+    <button class="toast-close-btn" (click)="closeToast()" aria-label="Close notification">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-info">
+      <div class="title-with-pill">
+        <h2>Banners & Promotions Manager</h2>
+        <span class="badge-pill active-pill">
+          <span class="dot"></span>
+          {{ activeBannersCount }} Active
+        </span>
+        <span class="badge-pill total-pill">
+          {{ totalBannersCount }} Total Slides
+        </span>
+      </div>
+      <p>Configure hero promo carousels, seasonal campaigns, and marketing badges displayed on the store homepage.</p>
+    </div>
+
+    <div class="header-actions-group">
+      <button class="template-btn" (click)="openTemplateModal()" title="Explore pre-made promotional templates">
+        <span class="material-icons">auto_awesome</span>
+        <span>Quick Templates</span>
+      </button>
+
+      <button class="reset-btn" (click)="resetToDefaultBanners()" title="Reset back to factory default banners">
+        <span class="material-icons">restart_alt</span>
+        <span>Reset Defaults</span>
+      </button>
+
+      <button class="add-btn" (click)="openAddModal()" title="Create a new promotional banner">
+        <span class="material-icons">add_circle</span>
+        <span>Add Banner</span>
+      </button>
+
+      <button class="save-btn" [class.saving]="saving" [class.highlight]="hasUnsavedChanges" (click)="saveAllBanners(true)" title="Publish banners to live store">
+        <span class="material-icons">{{ saving ? 'hourglass_top' : (hasUnsavedChanges ? 'published_with_changes' : 'cloud_done') }}</span>
+        <span>{{ saving ? 'Saving...' : (hasUnsavedChanges ? 'Publish Changes' : 'Saved & Live') }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Real-time Live Carousel Storefront Simulator Card -->
+  <div class="live-preview-section">
+    <div class="preview-header">
+      <div class="preview-title-wrap">
+        <span class="material-icons preview-icon">visibility</span>
+        <div>
+          <h3>Live Storefront Carousel Preview</h3>
+          <p>Real-time visual simulation of how customer sees the top carousel</p>
+        </div>
+      </div>
+      <div class="preview-meta">
+        <span class="slide-counter" *ngIf="activePreviewBanners.length > 0">
+          Slide {{ previewSlideIndex + 1 }} of {{ activePreviewBanners.length }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Storefront Mock Device Viewport -->
+    <div class="mock-device-viewport">
+      <div class="hero-banner-container" *ngIf="activePreviewBanners.length > 0">
+        <div class="banner-carousel" [style.transform]="'translateX(-' + (previewSlideIndex * 100) + '%)'">
+          <div class="banner-slide" *ngFor="let slide of activePreviewBanners; let i = index"
+            [style.background]="slide.bgGradient">
+            <div class="slide-content">
+              <span class="slide-badge" *ngIf="slide.badge">{{ slide.badge }}</span>
+              <h2 class="slide-title">{{ slide.title }}</h2>
+              <p class="slide-desc">{{ slide.desc }}</p>
+              <div class="slide-cta">
+                <span>{{ slide.btnText || 'Shop Now' }}</span>
+                <span class="material-icons">arrow_forward</span>
+              </div>
+            </div>
+            <div class="slide-visual">
+              <img [src]="slide.imgUrl" [alt]="slide.title" class="slide-img"
+                (error)="onImageError($event)" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Arrow Controls -->
+        <button class="carousel-arrow prev" (click)="prevPreviewSlide($event)" aria-label="Previous Slide">
+          <span class="material-icons">chevron_left</span>
+        </button>
+        <button class="carousel-arrow next" (click)="nextPreviewSlide($event)" aria-label="Next Slide">
+          <span class="material-icons">chevron_right</span>
+        </button>
+
+        <!-- Indicator Dots -->
+        <div class="carousel-dots">
+          <span *ngFor="let slide of activePreviewBanners; let i = index" class="dot"
+            [class.active]="i === previewSlideIndex" (click)="goToPreviewSlide(i); $event.stopPropagation()">
+          </span>
+        </div>
+      </div>
+
+      <div class="empty-preview" *ngIf="activePreviewBanners.length === 0">
+        <span class="material-icons">view_carousel</span>
+        <p>No active banners configured. Click "Add Banner" or "Quick Templates" to create one.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Banner List Table / Cards -->
+  <div class="banners-list-section">
+    <div class="section-title-row">
+      <div class="title-wrap">
+        <span class="material-icons">format_list_bulleted</span>
+        <h3>Banner Slides & Ordering ({{ totalBannersCount }})</h3>
+      </div>
+      <div class="quick-tips">
+        <span class="material-icons">info</span>
+        <span>Use arrows to reorder slide sequence. Toggling switches will show or hide banner immediately.</span>
+      </div>
+    </div>
+
+    <!-- Banner Cards Grid -->
+    <div class="banners-grid" *ngIf="banners.length > 0">
+      <div class="banner-card" *ngFor="let banner of banners; let i = index" [class.inactive]="banner.active === false">
+        <!-- Card Header / Order & Status -->
+        <div class="card-header-bar">
+          <div class="order-badge">
+            <span class="index-num">#{{ i + 1 }}</span>
+            <span class="status-indicator" [class.active]="banner.active !== false">
+              {{ banner.active !== false ? 'Active' : 'Hidden' }}
+            </span>
+          </div>
+
+          <div class="card-quick-actions">
+            <button class="order-btn" [disabled]="i === 0" (click)="moveUp(i, $event)" title="Move slide up">
+              <span class="material-icons">arrow_upward</span>
+            </button>
+            <button class="order-btn" [disabled]="i === banners.length - 1" (click)="moveDown(i, $event)" title="Move slide down">
+              <span class="material-icons">arrow_downward</span>
+            </button>
+            <button class="toggle-btn" (click)="toggleActive(banner, i, $event)" [title]="banner.active !== false ? 'Deactivate banner' : 'Activate banner'">
+              <span class="material-icons" [class.active-icon]="banner.active !== false">
+                {{ banner.active !== false ? 'toggle_on' : 'toggle_off' }}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Card Banner Preview Box -->
+        <div class="card-banner-preview" [style.background]="banner.bgGradient" (click)="openEditModal(banner, i)">
+          <div class="preview-mini-content">
+            <span class="mini-badge" *ngIf="banner.badge">{{ banner.badge }}</span>
+            <h4 class="mini-title">{{ banner.title }}</h4>
+            <p class="mini-desc">{{ banner.desc }}</p>
+            <span class="mini-cta">{{ banner.btnText || 'Shop Now' }} →</span>
+          </div>
+          <div class="preview-mini-visual">
+            <img [src]="banner.imgUrl" [alt]="banner.title"
+              (error)="onImageError($event)" />
+          </div>
+        </div>
+
+        <!-- Card Metadata Footer -->
+        <div class="card-details-footer">
+          <div class="meta-row">
+            <span class="meta-label"><span class="material-icons">link</span> Route:</span>
+            <span class="meta-val route-code" [title]="banner.routerLink">{{ banner.routerLink || '/' }}</span>
+          </div>
+
+          <div class="action-buttons-group">
+            <button class="btn-action edit" (click)="openEditModal(banner, i)" title="Edit banner">
+              <span class="material-icons">edit</span>
+              <span>Edit</span>
+            </button>
+            <button class="btn-action copy" (click)="duplicateBanner(banner, i, $event)" title="Duplicate banner">
+              <span class="material-icons">content_copy</span>
+              <span>Duplicate</span>
+            </button>
+            <button class="btn-action delete" (click)="openDeleteModal(banner, i, $event)" title="Delete banner">
+              <span class="material-icons">delete_outline</span>
+              <span>Delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="banners.length === 0">
+      <div class="empty-icon-box">
+        <span class="material-icons">auto_awesome</span>
+      </div>
+      <h3>No banners found</h3>
+      <p>Start promoting categories, fresh harvest deals, and delivery features on your homepage!</p>
+      <div class="empty-buttons">
+        <button class="add-btn" (click)="openAddModal()">
+          <span class="material-icons">add</span>
+          <span>Create First Banner</span>
+        </button>
+        <button class="template-btn" (click)="openTemplateModal()">
+          <span class="material-icons">auto_awesome</span>
+          <span>Use Templates</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT BANNER MODAL -->
+  <div class="banner-modal-backdrop modal-backdrop" *ngIf="isEditorModalOpen" (click)="onBackdropClick($event, 'editor')">
+    <div class="banner-modal-dialog modal-dialog editor-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-left-title">
+          <span class="material-icons modal-header-icon">{{ isEditing ? 'edit_note' : 'add_circle' }}</span>
+          <div>
+            <h3>{{ isEditing ? 'Edit Promotional Banner' : 'Create New Promotional Banner' }}</h3>
+            <p>Customize banner visual gradient, copy text, category route, and badge</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="closeEditorModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body-split">
+        <!-- Left Pane: Form Controls -->
+        <div class="form-pane">
+          <!-- Preset Category Quick Picker -->
+          <div class="form-group preset-group">
+            <label class="section-label">
+              <span class="material-icons">bolt</span> Quick Category Auto-Fill
+            </label>
+            <div class="category-preset-chips">
+              <button type="button" class="preset-chip" *ngFor="let cat of categoryPresets" (click)="applyCategoryPreset(cat)">
+                <img [src]="cat.icon" alt="" class="chip-icon" />
+                <span>{{ cat.name }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Banner Title -->
+          <div class="form-group">
+            <label for="bannerTitle" class="form-label required">Banner Headline Title</label>
+            <input id="bannerTitle" type="text" class="form-control" [(ngModel)]="currentBanner.title"
+              placeholder="e.g. Farm Fresh Vegetables" required />
+          </div>
+
+          <!-- Subtitle / Description -->
+          <div class="form-group">
+            <label for="bannerDesc" class="form-label">Subtitle / Promotional Description</label>
+            <textarea id="bannerDesc" class="form-control textarea" [(ngModel)]="currentBanner.desc" rows="2"
+              placeholder="e.g. 100% Organic & handpicked daily from local farms"></textarea>
+          </div>
+
+          <div class="form-row two-cols">
+            <!-- Badge Text -->
+            <div class="form-group">
+              <label for="bannerBadge" class="form-label">Top Highlight Badge</label>
+              <input id="bannerBadge" type="text" class="form-control" [(ngModel)]="currentBanner.badge"
+                placeholder="e.g. Farm Fresh, 50% OFF, Flash Deal" />
+            </div>
+
+            <!-- CTA Button Text -->
+            <div class="form-group">
+              <label for="bannerCta" class="form-label">CTA Button Label</label>
+              <input id="bannerCta" type="text" class="form-control" [(ngModel)]="currentBanner.btnText"
+                placeholder="e.g. Shop Vegetables, Order Now" />
+            </div>
+          </div>
+
+          <!-- Destination Route -->
+          <div class="form-group">
+            <label for="bannerRoute" class="form-label required">Target Destination / Router Link</label>
+            <div class="input-with-select">
+              <input id="bannerRoute" type="text" class="form-control" [(ngModel)]="currentBanner.routerLink"
+                placeholder="/products/category/Vegetables" />
+              <select class="form-control route-dropdown" (change)="onRouteChange($event)">
+                <option value="" disabled selected>Select from common pages</option>
+                <option *ngFor="let cat of categoryPresets" [value]="cat.route">{{ cat.name }} ({{ cat.route }})</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Background Gradient Palette Picker -->
+          <div class="form-group">
+            <label class="form-label">Background Gradient Theme</label>
+            <div class="gradient-swatches-grid">
+              <button type="button" class="swatch-btn" *ngFor="let grad of gradientPresets"
+                [style.background]="grad.gradient" [class.selected]="currentBanner.bgGradient === grad.gradient"
+                (click)="applyGradientPreset(grad)" [title]="grad.name">
+                <span class="material-icons checkmark" *ngIf="currentBanner.bgGradient === grad.gradient">check</span>
+              </button>
+            </div>
+            <div class="custom-gradient-row">
+              <span class="sub-label">Custom CSS Gradient:</span>
+              <input type="text" class="form-control code-input" [(ngModel)]="currentBanner.bgGradient"
+                placeholder="linear-gradient(135deg, #059669 0%, #047857 100%)" />
+            </div>
+          </div>
+
+          <!-- Icon / Visual Asset Picker -->
+          <div class="form-group">
+            <label class="form-label">Icon / Image Asset</label>
+            <div class="icon-swatches-grid">
+              <button type="button" class="icon-swatch-btn" *ngFor="let icon of iconPresets"
+                [class.selected]="currentBanner.imgUrl === icon.path" (click)="applyIconPreset(icon)"
+                [title]="icon.name">
+                <img [src]="icon.path" [alt]="icon.name" />
+                <span class="icon-name">{{ icon.name }}</span>
+              </button>
+            </div>
+            <div class="custom-icon-row">
+              <span class="sub-label">Custom Image URL:</span>
+              <input type="text" class="form-control code-input" [(ngModel)]="currentBanner.imgUrl"
+                placeholder="assets/categories/Thinkspot_veggiesIcon.png" />
+            </div>
+          </div>
+
+          <!-- Active Toggle in Modal -->
+          <div class="form-group active-toggle-group">
+            <label class="switch-container">
+              <input type="checkbox" [checked]="currentBanner.active !== false"
+                (change)="onActiveChange($event)" />
+              <span class="slider round"></span>
+            </label>
+            <div class="toggle-text">
+              <span class="toggle-title">Active / Visible on Storefront</span>
+              <span class="toggle-desc">Turn off to temporarily hide without deleting</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Pane: Live Single Banner Preview -->
+        <div class="preview-pane">
+          <div class="preview-pane-header">
+            <span class="material-icons">smartphone</span>
+            <h4>Interactive Live Preview</h4>
+          </div>
+
+          <div class="single-banner-preview-card" [style.background]="currentBanner.bgGradient">
+            <div class="preview-card-content">
+              <span class="preview-card-badge" *ngIf="currentBanner.badge">{{ currentBanner.badge }}</span>
+              <h3 class="preview-card-title">{{ currentBanner.title || 'Your Banner Title' }}</h3>
+              <p class="preview-card-desc">{{ currentBanner.desc || 'Your promotional subtitle and description details go here.' }}</p>
+              <div class="preview-card-cta">
+                <span>{{ currentBanner.btnText || 'Shop Now' }}</span>
+                <span class="material-icons">arrow_forward</span>
+              </div>
+            </div>
+            <div class="preview-card-visual">
+              <img [src]="currentBanner.imgUrl" [alt]="currentBanner.title"
+                (error)="onImageError($event)" />
+            </div>
+          </div>
+
+          <div class="preview-specs-box">
+            <div class="spec-item">
+              <span class="spec-label">Target Link:</span>
+              <span class="spec-val">{{ currentBanner.routerLink || '/' }}</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-label">Visibility:</span>
+              <span class="spec-val status-text" [class.active]="currentBanner.active !== false">
+                {{ currentBanner.active !== false ? 'Visible on Homepage' : 'Hidden from Homepage' }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="cancel-modal-btn" (click)="closeEditorModal()">
+          Cancel
+        </button>
+        <button type="button" class="save-modal-btn" (click)="saveBannerFromModal()">
+          <span class="material-icons">check</span>
+          <span>{{ isEditing ? 'Update Banner' : 'Create Banner' }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUICK PROMO TEMPLATES MODAL -->
+  <div class="banner-modal-backdrop modal-backdrop" *ngIf="isTemplateModalOpen" (click)="onBackdropClick($event, 'template')">
+    <div class="banner-modal-dialog modal-dialog template-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-left-title">
+          <span class="material-icons modal-header-icon">auto_awesome</span>
+          <div>
+            <h3>Pre-Made Promotional Campaign Templates</h3>
+            <p>1-Click add trending marketing banners to your store</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" (click)="closeTemplateModal()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="template-cards-grid">
+          <div class="template-card" *ngFor="let tpl of promoTemplates" (click)="applyPromoTemplate(tpl)">
+            <div class="tpl-visual" [style.background]="tpl.bgGradient">
+              <span class="tpl-badge">{{ tpl.badge }}</span>
+              <img [src]="tpl.imgUrl" [alt]="tpl.title" />
+            </div>
+            <div class="tpl-content">
+              <h4>{{ tpl.title }}</h4>
+              <p>{{ tpl.desc }}</p>
+              <div class="tpl-footer">
+                <span class="tpl-cta">{{ tpl.btnText }} →</span>
+                <span class="add-pill">+ Add to Store</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="cancel-modal-btn" (click)="closeTemplateModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRMATION MODAL -->
+  <div class="banner-modal-backdrop modal-backdrop" *ngIf="isDeleteModalOpen" (click)="onBackdropClick($event, 'delete')">
+    <div class="banner-modal-dialog modal-dialog delete-modal" (click)="$event.stopPropagation()">
+      <div class="delete-icon-wrap">
+        <span class="material-icons">delete_forever</span>
+      </div>
+      <h3>Delete Promotional Banner?</h3>
+      <p>Are you sure you want to delete <strong>"{{ bannerToDelete?.title }}"</strong>? This banner will be removed from your customer homepage carousel.</p>
+      
+      <div class="delete-modal-actions">
+        <button type="button" class="cancel-modal-btn" (click)="closeDeleteModal()">Cancel</button>
+        <button type="button" class="confirm-delete-btn" (click)="confirmDelete()">
+          <span class="material-icons">delete</span>
+          <span>Yes, Delete Banner</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

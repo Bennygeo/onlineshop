@@ -64,33 +64,59 @@ export class OrderService {
           }).subscribe({
             next: (prodRes: any) => {
               const liveList = prodRes && Array.isArray(prodRes.live) ? prodRes.live : (Array.isArray(prodRes) ? prodRes : []);
-              if (liveList.length > 0) {
-                liveList.forEach((product) => {
-                  const qty = productsMap[product.id] ? productsMap[product.id].quantity : 1;
+              const liveMap = new Map<string, any>();
+              liveList.forEach((product: any) => {
+                if (product && product.id !== undefined && product.id !== null) {
+                  liveMap.set(String(product.id), product);
+                }
+              });
+
+              items.forEach((item: any) => {
+                const pid = String(item.productID || item.product_id || item.id || '');
+                if (!pid) return;
+
+                if (liveMap.has(pid)) {
+                  const product = liveMap.get(pid);
+                  const qty = productsMap[pid] ? productsMap[pid].quantity : (item.quantity || 1);
                   this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: product, unit: qty });
-                });
-              } else {
-                items.forEach((item) => {
+                } else {
                   const productObj: any = {
-                    id: item.productID || item.product_id,
-                    name: item.product_name || 'Product Item',
-                    price: item.price,
-                    weight: item.weight,
-                    img_url: item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'
+                    id: pid,
+                    productID: pid,
+                    name: item.product_name || item.name || 'Product Item',
+                    price: Number(item.price) || 0,
+                    original_price: Number(item.original_price || item.price) || 0,
+                    weight: item.weight || '',
+                    unit_name: item.unit_name || '',
+                    img_url: item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png',
+                    in_stock: true,
+                    is_unlimited: true,
+                    subscribe: false,
+                    units: item.quantity || 1
                   };
                   this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: productObj, unit: item.quantity || 1 });
-                });
-              }
+                }
+              });
               this.cartS.router.navigate(["products/cart"]);
             },
             error: () => {
-              items.forEach((item) => {
+              items.forEach((item: any) => {
+                const pid = String(item.productID || item.product_id || item.id || '');
+                if (!pid) return;
+
                 const productObj: any = {
-                  id: item.productID || item.product_id,
-                  name: item.product_name || 'Product Item',
-                  price: item.price,
-                  weight: item.weight,
-                  img_url: item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'
+                  id: pid,
+                  productID: pid,
+                  name: item.product_name || item.name || 'Product Item',
+                  price: Number(item.price) || 0,
+                  original_price: Number(item.original_price || item.price) || 0,
+                  weight: item.weight || '',
+                  unit_name: item.unit_name || '',
+                  img_url: item.img_url || 'assets/categories/Thinkspot_veggiesIcon.png',
+                  in_stock: true,
+                  is_unlimited: true,
+                  subscribe: false,
+                  units: item.quantity || 1
                 };
                 this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: productObj, unit: item.quantity || 1 });
               });

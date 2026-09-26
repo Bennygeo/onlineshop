@@ -3,7 +3,7 @@
     <div class="popup_cont addressModalCont" *ngIf="addressShowFlg" [@translateEffect]>
       
       <!-- Top Handle Bar -->
-      <div class="sheetHandleBar" (click)="closeAction()"></div>
+      <div class="sheetHandleBar" (click)="hasAddresses() ? closeAction() : null"></div>
 
       <!-- Header -->
       <div class="modalHeaderRow">
@@ -14,9 +14,9 @@
             </span>
             <h3 class="modalHeading">{{ title || (type === 'INSERT' ? 'Add New Address' : 'Edit Address') }}</h3>
           </div>
-          <p class="modalSubHeading">Enter your complete delivery address details</p>
+          <p class="modalSubHeading">{{ !hasAddresses() ? 'Please enter your delivery address to continue' : 'Enter your complete delivery address details' }}</p>
         </div>
-        <button class="modalCloseBtn" (click)="closeAction()" title="Close">
+        <button class="modalCloseBtn" (click)="closeAction()" title="Close" *ngIf="hasAddresses()">
           <span class="material-icons-round">close</span>
         </button>
       </div>

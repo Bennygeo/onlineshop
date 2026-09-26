@@ -42,6 +42,9 @@ export class AddressesComponent implements OnInit, OnDestroy {
         this.addresses = this.loginS.user.addresses;
         this.selectedAddress = this.loginS.user.address;
         this.syncActiveAddress();
+        if (this.addresses && this.addresses.length > 0) {
+          this.loginS.noAddressEvent.next(false);
+        }
       },
       error: () => {
         alert("Address change ERROR!");
@@ -52,25 +55,44 @@ export class AddressesComponent implements OnInit, OnDestroy {
     this.editBtnFlg = false;
     this.loginS.noAddressEvent.subscribe({
       next: (res: boolean) => {
-        if (res === true) {
+        const hasAddrs = (this.addresses && this.addresses.length > 0) ||
+                         (this.loginS.user?.addresses && this.loginS.user.addresses.length > 0);
+        if (res === true && !hasAddrs) {
           window.setTimeout(() => {
-            this.addAddressAction();
-          }, 600);
+            if (!this.addresses || this.addresses.length === 0) {
+              this.addAddressAction();
+            }
+          }, 300);
         }
       }
     });
   }
+
+  serviceablePincodes: Set<string> = new Set(['400071']);
 
   ngOnInit(): void {
     if (this.cartService.routeURL == "/home/address") {
       this.closebtnFlg = true;
       this.cartService.headerChangeEvent.next("type5");
     }
+    this.loadServiceablePincodes();
+  }
 
-    // const parents = this.utils.getAllParentDivs(document.querySelector('.address-cont'));
-    // parents.forEach(el => {
-    //   // el.style.overflowY = "hidden";
-    // });
+  loadServiceablePincodes(): void {
+    this._api.getApi('com/read_zone.php?action=get_serviceable_list').subscribe({
+      next: (res: any) => {
+        if (Array.isArray(res) && res.length > 0) {
+          this.serviceablePincodes = new Set(res.map((r: any) => String(r.pincode).trim()));
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  isPincodeServiceable(pin: any): boolean {
+    if (!pin) return false;
+    const cleanPin = String(pin).trim();
+    return this.serviceablePincodes.has(cleanPin);
   }
 
   public selectedIndex: number = 0;
@@ -108,13 +130,25 @@ export class AddressesComponent implements OnInit, OnDestroy {
       case "INSERT":
         if (res === "EXCEEDED") alert("MAX 15 address allowed!");
         else {
-          for (var ind = 0; ind < this.addresses.length; ind++)
+          if (!this.addresses) this.addresses = [];
+          for (var ind = 0; ind < this.addresses.length; ind++) {
             if (this.addresses[ind].active == 1) this.addresses[ind].active = 0;
+          }
+          if (this.addresses.length === 0) {
+            res.active = 1;
+            res.default = 1;
+            res.is_default = 1;
+          }
           this.addresses.push(res);
         }
-        this.user.addresses = this.addresses;
-        this.user.address = res;
+        this.loginS.user.addresses = this.user.addresses = this.addresses;
+        this.loginS.user.address = this.user.address = res;
+        this.loginS.user.pincode = this.user.pincode = res.pincode;
+        this.selectedAddress = res;
+        this.editBtnFlg = false;
+        this.loginS.noAddressEvent.next(false);
         this.loginS.addressChangeEvent.next(AddressAction.INSERT);
+        this.syncActiveAddress();
         break;
 
       case "UPDATE":
@@ -131,8 +165,12 @@ export class AddressesComponent implements OnInit, OnDestroy {
 
           this.user.address = this.addresses[index];
           this.user.addresses = this.addresses;
+          this.loginS.user.address = this.addresses[index];
+          this.loginS.user.addresses = this.addresses;
         }
+        this.editBtnFlg = false;
         this.loginS.addressChangeEvent.next(AddressAction.UPDATE);
+        this.syncActiveAddress();
         break;
 
       case "DELETE":
@@ -238,8 +276,14 @@ export class AddressesComponent implements OnInit, OnDestroy {
     });
   }
 
+  hasAddresses(): boolean {
+    return !!((this.addresses && this.addresses.length > 0) || (this.loginS.user?.addresses && this.loginS.user.addresses.length > 0));
+  }
+
   popupClose() {
-    this.loginS.addressCloseEvent.next(true);
+    if (this.hasAddresses()) {
+      this.loginS.addressCloseEvent.next(true);
+    }
   }
 
   isDefaultAddress(address: Address): boolean {

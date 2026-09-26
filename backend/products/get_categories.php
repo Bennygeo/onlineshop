@@ -35,14 +35,7 @@ $categoryIcons = [
 ];
 
 try {
-    // 1. Check if categories table exists
-    $tableExists = false;
-    $chk = $pdo->query("SHOW TABLES LIKE 'categories'");
-    if ($chk && $chk->rowCount() > 0) {
-        $tableExists = true;
-    }
-
-    if ($tableExists) {
+    try {
         $stmt = $pdo->query("SELECT id, key_name, label, img_url FROM `categories` WHERE disabled = 0 ORDER BY sort_order ASC, label ASC");
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -66,7 +59,7 @@ try {
             }
             sendJson($result);
         }
-    }
+    } catch (Exception $e) {}
 
     // Fallback: distinct cats from products table
     $stmt = $pdo->query("SELECT DISTINCT cat FROM products WHERE cat IS NOT NULL AND cat != '' AND disabled = 0 ORDER BY cat ASC");
@@ -83,7 +76,7 @@ try {
             'routerLink' => '/products/category/' . urlencode($c)
         ];
     }
-    sendJson($result);
+    sendJson($result, 200, 300);
 } catch (Exception $e) {
     sendJson(['error' => $e->getMessage()], 500);
 }

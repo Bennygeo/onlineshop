@@ -136,13 +136,15 @@ export class HeaderComponent implements OnInit {
     this.loginS.addressChangeEvent.subscribe({
       next: () => {
         this.user = this.loginS.user;
-        if (this.user.addresses.length > 0) {
+        if (this.user.addresses && this.user.addresses.length > 0) {
           this.userName = this.user.address?.name;
           this.addressName = this.loginS.user.address?.name;
         } else {
           this.userName = "TomorrowNeeds user";
           this.addressName = "600095";
-          this.addressFlg = true;
+          if (this.loginS.userStatus === Common.loginStatus.LOGIN) {
+            this.addressFlg = true;
+          }
         }
       },
       error: () => {
@@ -180,9 +182,12 @@ export class HeaderComponent implements OnInit {
 
     //if no address found in the id
     this.loginS.noAddressEvent.subscribe((res: boolean) => {
-      if (res === true) {
+      const hasAddresses = this.loginS.user?.addresses && this.loginS.user.addresses.length > 0;
+      if (res === true && !hasAddresses) {
         this.addressName = "600095";
-        this.addressFlg = true;
+        if (this.loginS.userStatus === Common.loginStatus.LOGIN) {
+          this.addressFlg = true;
+        }
       }
     });
   }
@@ -288,11 +293,19 @@ export class HeaderComponent implements OnInit {
   }
 
   addressOutsideClickAction(evt: any) {
-    if (evt.target.classList[0] == "popup_parent" || evt.target.classList[0] == "popup_cont") this.addressFlg = false;
+    if (evt.target === evt.currentTarget) {
+      const hasAddresses = this.loginS.user?.addresses && this.loginS.user.addresses.length > 0;
+      if (hasAddresses || this.loginS.userStatus !== Common.loginStatus.LOGIN) {
+        this.addressFlg = false;
+      }
+    }
   }
 
   addressCloseAction() {
-    this.addressFlg = false;
+    const hasAddresses = this.loginS.user?.addresses && this.loginS.user.addresses.length > 0;
+    if (hasAddresses || this.loginS.userStatus !== Common.loginStatus.LOGIN) {
+      this.addressFlg = false;
+    }
   }
 
   searchChange(evt: any) {

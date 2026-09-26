@@ -58,6 +58,14 @@ export class AppComponent implements OnInit {
         const hash = window.location.hash || "";
         this.isAdminPage = url.startsWith("/admin") || hash.includes("admin") || window.location.pathname.includes("admin");
 
+        if (!this.isAdminPage) {
+          if (url === "/web") {
+            this.cartS.router.navigate(["/home/view"], this.loginS.queryParams);
+          }
+          const isLarge = window.innerWidth >= 768 && !this.utils.isMobile();
+          this.isMobile = !isLarge;
+        }
+
         if (url === "/home/view" || url === "/products/search" || url.includes("/products/details") || url.includes("/products/detail") || url.includes("/product/")) {
           this.bottombarClass = "type1";
         } else if (url.search("/products/category/") != 1) {
@@ -109,18 +117,10 @@ export class AppComponent implements OnInit {
         return;
       }
 
-      if (isLargeScreen && !this.utils.isMobile()) {
-        // Only redirect root or mobile home to /web on large screen
-        if (currentUrl === '/' || currentUrl === '' || currentUrl === '/home/view') {
-          this.cartS.router.navigate(['/web']);
-        }
-        this.isMobile = false;
-      } else {
-        if (currentUrl === "/web") {
-          this.cartS.router.navigate(['/home/view']);
-        }
-        this.isMobile = true;
+      if (currentUrl === "/web") {
+        this.cartS.router.navigate(['/home/view']);
       }
+      this.isMobile = !isLargeScreen || this.utils.isMobile();
     });
   }
 }

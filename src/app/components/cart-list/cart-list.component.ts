@@ -61,6 +61,12 @@ export class CartListComponent implements OnInit, OnDestroy {
   istTimerInterval: any = null;
   istDetails: any = null;
 
+  // Serviceability state & modal
+  unserviceableModalFlg: boolean = false;
+  unserviceablePincode: string = '';
+  isAddressServiceable: boolean = true;
+  addressSubscription?: Subscription;
+
   get orderDeliverySummary() {
     return this.cartService.calculateOrderStandardDelivery();
   }
@@ -275,6 +281,12 @@ export class CartListComponent implements OnInit, OnDestroy {
       this.refreshDeliveryDetails();
     }, 15000);
 
+    // Check delivery address serviceability
+    this.checkAddressServiceability();
+    this.addressSubscription = this.loginS.addressChangeEvent.subscribe(() => {
+      this.checkAddressServiceability();
+    });
+
     this.orderInformation = this.cartService.orderInformation;
     if (this.orderInformation) {
       this.cartService.remainingToPay = this.orderInformation.remainingToPay;
@@ -332,12 +344,10 @@ export class CartListComponent implements OnInit, OnDestroy {
 
         // Place order directly
         this.cartService.placeOrder((orderRes: any) => {
+          this.handleOrderSuccess(orderRes);
+        }, 'Wallet', (err: any) => {
           this.isProcessingPayment = false;
-          if (orderRes && orderRes.total !== undefined) {
-            this.loginS.user.wallet = orderRes.total;
-          }
-          this.loginS.readWallet();
-          this.loginS.walletUpdateEvent.next([orderRes]);
+          this.handleOrderPlacementError(err);
         });
       },
       error: () => {
@@ -365,8 +375,44 @@ export class CartListComponent implements OnInit, OnDestroy {
       const targetCoupon: any = (masterCheck.length > 0) ? masterCheck[0] : (userCheck.length > 0 ? userCheck[0] : null);
 
       if (!targetCoupon) {
-        this.couponS.coupons.invalidFlg = true;
-        this.couponS.coupons.errorMsg = "Invalid promo code!";
+        // Check if code is a valid referral code (e.g. THINK0936)
+        this.loginS.referralValidation({ mobile: this.loginS.user.mobile, referralCode: codeVal }).subscribe({
+          next: (res: any) => {
+            if (res && (res.valid === true || res.status === 'SUCCESS')) {
+              this.loginS.setReferralInfo({
+                referrer: codeVal,
+                referrer_name: res.referrer_name || ('User ' + codeVal),
+                coupon_desc: res.coupon_desc || '25% OFF on first order',
+                status: 1
+              });
+              const welcome25Coupon: UserCoupon = {
+                mobile: this.loginS.user.mobile,
+                code: 'WELCOME25',
+                count: 1,
+                used_count: 0,
+                description: '25% OFF on first order (Referral Discount)',
+                offer: '25% OFF',
+                discount_percent: 25,
+                categories: 'all',
+                min_order_amount: 0
+              };
+              if (!this.couponS.coupons.users.some(u => String(u.code).toUpperCase() === 'WELCOME25')) {
+                this.couponS.coupons.users.push(welcome25Coupon);
+              }
+              this.couponS.selectedCoupon = welcome25Coupon;
+              this.couponS.coupons.addedFlg = true;
+              this.orderInformation = this.cartService.orderInformation;
+              this.cartService.remainingToPay = this.orderInformation.remainingToPay;
+            } else {
+              this.couponS.coupons.invalidFlg = true;
+              this.couponS.coupons.errorMsg = res?.message || "Invalid promo or referral code!";
+            }
+          },
+          error: () => {
+            this.couponS.coupons.invalidFlg = true;
+            this.couponS.coupons.errorMsg = "Invalid promo or referral code!";
+          }
+        });
         return;
       }
 
@@ -514,6 +560,56 @@ export class CartListComponent implements OnInit, OnDestroy {
     this.payAction();
   }
 
+  get activeDeliveryAddress(): any {
+    const userAddresses = this.loginS.user?.addresses || [];
+    return this.loginS.user?.address || (userAddresses.length > 0 ? userAddresses[0] : null);
+  }
+
+  checkAddressServiceability(): void {
+    const isOffline = (this.selectedPaymentMethod === 'OFFLINE' || this.loginS.getAdminMode()?.active);
+    if (isOffline) {
+      this.isAddressServiceable = true;
+      return;
+    }
+    const pin = this.activeDeliveryAddress?.pincode;
+    if (!pin) {
+      this.isAddressServiceable = true;
+      return;
+    }
+    this.cartService.getZone(String(pin).trim()).subscribe({
+      next: (res: any) => {
+        if (Array.isArray(res) && res.length > 0) {
+          this.isAddressServiceable = true;
+        } else {
+          this.isAddressServiceable = false;
+          this.unserviceablePincode = String(pin).trim();
+        }
+      },
+      error: () => {
+        this.isAddressServiceable = true;
+      }
+    });
+  }
+
+  openUnserviceableModal(pincode?: string): void {
+    this.unserviceablePincode = pincode || this.activeDeliveryAddress?.pincode || '629180';
+    this.unserviceableModalFlg = true;
+  }
+
+  closeUnserviceableModal(): void {
+    this.unserviceableModalFlg = false;
+  }
+
+  openAddressSelector(): void {
+    this.unserviceableModalFlg = false;
+    const hasAddress = (this.loginS.user?.addresses && this.loginS.user.addresses.length > 0) || !!this.loginS.user?.address;
+    if (hasAddress) {
+      this.loginS.headerAddressSelectionEvent.next(true);
+    } else {
+      this.loginS.noAddressEvent.next(true);
+    }
+  }
+
   payAction() {
     const isOffline = (this.selectedPaymentMethod === 'OFFLINE' || this.loginS.getAdminMode()?.active);
     const userAddresses = this.loginS.user?.addresses || [];
@@ -530,7 +626,7 @@ export class CartListComponent implements OnInit, OnDestroy {
           name: this.loginS.user?.name || 'Walk-in Customer',
           mobile: this.loginS.user?.mobile || this.loginS.getAdminMode()?.customerMobile || '',
           address: 'Store Counter / In-Store Direct Sale',
-          pincode: '600095',
+          pincode: '400071',
           active: 1,
           default: 1
         } as any;
@@ -545,20 +641,61 @@ export class CartListComponent implements OnInit, OnDestroy {
       this.loginS.user.address = activeAddress;
     }
 
+    // Check pincode serviceability BEFORE processing payment
+    if (!isOffline && activeAddress?.pincode) {
+      const pin = String(activeAddress.pincode).trim();
+      this.isProcessingPayment = true;
+      this.cartService.getZone(pin).subscribe({
+        next: (res: any) => {
+          this.isProcessingPayment = false;
+          if (!res || !Array.isArray(res) || res.length === 0) {
+            this.isAddressServiceable = false;
+            this.openUnserviceableModal(pin);
+            return;
+          }
+          this.isAddressServiceable = true;
+          this.proceedWithOrderPlacement(isOffline);
+        },
+        error: () => {
+          this.isProcessingPayment = false;
+          this.proceedWithOrderPlacement(isOffline);
+        }
+      });
+      return;
+    }
+
+    this.proceedWithOrderPlacement(isOffline);
+  }
+
+  private handleOrderSuccess(res: any): void {
+    if (this.istTimerInterval) {
+      clearInterval(this.istTimerInterval);
+      this.istTimerInterval = null;
+    }
+    this.isProcessingPayment = false;
+    this.payFlg = false;
+    this.cartService.orderPlacedFlag = true;
+    this.orderInformation = this.cartService.orderInformation;
+    this.cartProductsDateWise = {};
+    if (res && res.total !== undefined) {
+      this.loginS.user.wallet = res.total;
+    }
+    if (this.loginS.user?.walletHistory && Array.isArray(this.loginS.user.walletHistory)) {
+      this.loginS.user.walletHistory.unshift(res);
+    }
+    this.loginS.readWallet();
+    this.loginS.walletUpdateEvent.next([res]);
+    this.refreshDeliveryDetails();
+  }
+
+  private proceedWithOrderPlacement(isOffline: boolean) {
     if (this.selectedPaymentMethod === 'OFFLINE') {
       this.isProcessingPayment = true;
       this.cartService.placeOrder((res: any) => {
+        this.handleOrderSuccess(res);
+      }, 'OFFLINE', (err: any) => {
         this.isProcessingPayment = false;
-        if (res && res.total !== undefined) {
-          this.loginS.user.wallet = res.total;
-        }
-        if (this.loginS.user?.walletHistory && Array.isArray(this.loginS.user.walletHistory)) {
-          this.loginS.user.walletHistory.unshift(res);
-        }
-        this.loginS.readWallet();
-        this.loginS.walletUpdateEvent.next([res]);
-      }, 'OFFLINE', () => {
-        this.isProcessingPayment = false;
+        this.handleOrderPlacementError(err);
       });
       return;
     }
@@ -570,17 +707,10 @@ export class CartListComponent implements OnInit, OnDestroy {
       }
       this.isProcessingPayment = true;
       this.cartService.placeOrder((res: any) => {
+        this.handleOrderSuccess(res);
+      }, 'COD', (err: any) => {
         this.isProcessingPayment = false;
-        if (res && res.total !== undefined) {
-          this.loginS.user.wallet = res.total;
-        }
-        if (this.loginS.user?.walletHistory && Array.isArray(this.loginS.user.walletHistory)) {
-          this.loginS.user.walletHistory.unshift(res);
-        }
-        this.loginS.readWallet();
-        this.loginS.walletUpdateEvent.next([res]);
-      }, 'COD', () => {
-        this.isProcessingPayment = false;
+        this.handleOrderPlacementError(err);
       });
       return;
     }
@@ -594,18 +724,21 @@ export class CartListComponent implements OnInit, OnDestroy {
     } else {
       this.isProcessingPayment = true;
       this.cartService.placeOrder((res: any) => {
+        this.handleOrderSuccess(res);
+      }, 'Wallet', (err: any) => {
         this.isProcessingPayment = false;
-        if (res && res.total !== undefined) {
-          this.loginS.user.wallet = res.total;
-        }
-        if (this.loginS.user?.walletHistory && Array.isArray(this.loginS.user.walletHistory)) {
-          this.loginS.user.walletHistory.unshift(res);
-        }
-        this.loginS.readWallet();
-        this.loginS.walletUpdateEvent.next([res]);
-      }, 'Wallet', () => {
-        this.isProcessingPayment = false;
+        this.handleOrderPlacementError(err);
       });
+    }
+  }
+
+  private handleOrderPlacementError(err: any): void {
+    const msg = err?.message || err?.error?.error || '';
+    if (msg.includes('UNSERVICEABLE_PINCODE') || msg.toLowerCase().includes('not available in your area') || msg.toLowerCase().includes('not yet in your area')) {
+      const pin = this.activeDeliveryAddress?.pincode || this.unserviceablePincode || '629180';
+      this.openUnserviceableModal(pin);
+    } else {
+      alert(msg || "Unable to place order. Please check your delivery address or wallet balance.");
     }
   }
 
@@ -661,6 +794,7 @@ export class CartListComponent implements OnInit, OnDestroy {
     this.cartupdateEventSubscription?.unsubscribe();
     this.razorPaySubscription?.unsubscribe();
     this.storeSettingsSubscription?.unsubscribe();
+    this.addressSubscription?.unsubscribe();
     this.cartService.orderPlacedFlag = false;
   }
 }

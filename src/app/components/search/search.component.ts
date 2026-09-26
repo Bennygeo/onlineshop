@@ -85,11 +85,9 @@ export class SearchComponent implements OnInit, OnDestroy {
   quickCategories = [
     { name: 'Vegetables', cat: 'Vegetables', icon: 'eco' },
     { name: 'Fruits', cat: 'Fruits', icon: 'nutrition' },
-    { name: 'Batters', cat: 'Batter', icon: 'breakfast_dining' },
-    { name: 'Milk & Dairy', cat: 'Dairyeggs', icon: 'local_drink' },
-    { name: 'Coconut & Hydration', cat: 'Naturalhydrants', icon: 'water_drop' },
-    { name: 'Greens & Sprouts', cat: 'Greenssprouts', icon: 'grass' },
-    { name: 'Woodpressed Oils', cat: 'Woodpressed', icon: 'opacity' }
+    { name: 'Greens', cat: 'Greens', icon: 'grass' },
+    { name: 'Flowers', cat: 'Flowers', icon: 'local_florist' },
+    { name: 'Oils', cat: 'Oils', icon: 'opacity' }
   ];
 
   menus: menuOptions = {
@@ -122,6 +120,19 @@ export class SearchComponent implements OnInit, OnDestroy {
           if (trimmed.length >= 2) {
             this.loadingFlg = true;
             this.hasSearched = true;
+
+            // Instant in-memory search across cached product catalog
+            if (this.cartService.allProductsLoaded && this.cartService.productsList && this.cartService.productsList.length > 0) {
+              const q = trimmed.toLowerCase();
+              const matched = this.cartService.productsList.filter(p =>
+                (p.name && p.name.toLowerCase().includes(q)) ||
+                (p.tamil_name && p.tamil_name.toLowerCase().includes(q)) ||
+                (p.cat && p.cat.toLowerCase().includes(q)) ||
+                (p.sub_cat && p.sub_cat.toLowerCase().includes(q))
+              );
+              return of(matched);
+            }
+
             return this.apiService.postApi("/products/search_product.php", { query: trimmed }, true).pipe(
               catchError((err) => {
                 console.error("Search error:", err);

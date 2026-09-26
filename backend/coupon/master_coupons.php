@@ -49,13 +49,32 @@ try {
     try { $pdo->exec("ALTER TABLE coupons ADD COLUMN offer VARCHAR(100) DEFAULT NULL"); } catch (Exception $e) {}
     try { $pdo->exec("ALTER TABLE coupons ADD COLUMN offer_desc VARCHAR(255) DEFAULT NULL"); } catch (Exception $e) {}
 
-    // Seed VEG5 promo code
-    $seedStmt = $pdo->prepare("
-        INSERT INTO coupons (code, discount_percent, max_discount, min_order_amount, count, categories, description, offer, offer_desc, disabled) 
-        VALUES ('VEG5', 5.00, 100.00, 300.00, 5, 'Vegetables,Veg', '5% OFF on Vegetables category (Min cart > ₹300, 5 uses max)', '5% OFF on Vegetables', '5% discount on Vegetables items', 0)
-        ON DUPLICATE KEY UPDATE discount_percent = 5.00, min_order_amount = 300.00, count = 5, categories = 'Vegetables,Veg', description = VALUES(description), offer = VALUES(offer)
+    // Seed master promo codes
+    $pdo->exec("
+        UPDATE coupons SET 
+            offer = '10% OFF', 
+            description = '10% OFF on orders above ₹300 (Max discount ₹100)', 
+            offer_desc = '10% discount on order' 
+        WHERE code = 'WELCOME10' AND (description IS NULL OR description = '');
+
+        UPDATE coupons SET 
+            offer = '15% OFF', 
+            description = '15% OFF on orders above ₹500 (Max discount ₹150)', 
+            offer_desc = '15% discount on order' 
+        WHERE code = 'SUPER50' AND (description IS NULL OR description = '');
+
+        UPDATE coupons SET 
+            offer = '25% OFF Referral Offer', 
+            description = 'Special Referral Benefit: 25% OFF on your first order (One-time use, min cart ₹100)', 
+            offer_desc = '25% discount on first order' 
+        WHERE code = 'WELCOME25' AND (description IS NULL OR description = '' OR description = '25% OFF on first order (One-time use)');
+
+        UPDATE coupons SET 
+            offer = '5% OFF on Veg', 
+            description = '5% OFF on Vegetables category (Min cart > ₹300, 5 uses max)', 
+            offer_desc = '5% discount on Vegetables items' 
+        WHERE code = 'VEG5' AND (description IS NULL OR description = '');
     ");
-    $seedStmt->execute();
 
     $stmt = $pdo->query("SELECT code, discount_percent, max_discount, min_order_amount, count, categories, description, offer, offer_desc FROM coupons WHERE disabled = 0");
     $coupons = $stmt->fetchAll();

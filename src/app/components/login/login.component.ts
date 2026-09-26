@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, NgZone, ChangeDetectorRef } from '@angular/core';
 import { FormControl, Validators, FormGroupDirective, NgForm } from '@angular/forms';
 import { ValidationsService } from '../../services/validations.service';
 import { Utils } from '../../utils/utils';
@@ -46,13 +46,14 @@ import { StorageService } from 'src/app/services/storage.service';
     ])
   ]
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
 
   matcher = new MyErrorStateMatcher();
 
   pincodeFormControl = new FormControl('', [
     Validators.required,
-    ValidationsService.checkLimit(500000, 999999)
+    ValidationsService.checkLimit(100000, 999999),
+    Validators.pattern(/^[0-9]{6}$/)
   ]);
 
   mobileFormControl = new FormControl('', [
@@ -61,7 +62,7 @@ export class LoginComponent implements OnInit {
   ]);
 
   referralFormControl = new FormControl('', [
-    Validators.required, Validators.maxLength(6)
+    Validators.required, Validators.maxLength(20)
   ]);
 
   userID: string;
@@ -73,10 +74,15 @@ export class LoginComponent implements OnInit {
 
   otpCode: string;
   otpUserVal: string;
+  otpSessionId: string = "";
   secondsCounter: any;
   resend_otp_flag: boolean = false;
   otpFlag: boolean;
   validOTPFlg: boolean;
+
+  otpValues: string[] = ['', '', '', '', '', ''];
+  private isFillingOtp: boolean = false;
+  private webOtpAbortController: AbortController | null = null;
 
   btnName: string = "Verify";
   maxTimerInterval: number = 30;
@@ -85,6 +91,8 @@ export class LoginComponent implements OnInit {
   mobilePageFlg: boolean;
   otpPageFlg: boolean;
   referralFlg: boolean = false;
+  unserviceableModalFlg: boolean = false;
+  enteredPincode: string = '';
 
   fetchStatus: string = "";
   locationFetchBtnFlg: boolean = false;
@@ -101,7 +109,9 @@ export class LoginComponent implements OnInit {
     public loginS: LoginService,
     private _location: LocationService,
     private storageS: StorageService,
-    private cartS: CartService
+    private cartS: CartService,
+    private ngZone: NgZone,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
@@ -144,98 +154,194 @@ export class LoginComponent implements OnInit {
     }
   }
 
-  next(evt, target) {
-
-    if (target) target.value = "";
-    var getKeyCode = function (str) {
-      return str.charCodeAt(str.length);
+  ngOnDestroy(): void {
+    if (this.webOtpAbortController) {
+      try { this.webOtpAbortController.abort(); } catch (e) { }
+      this.webOtpAbortController = null;
     }
-
-    evt.currentTarget.value = "";
-    charKeyCode = evt.keyCode;
-
-    if (navigator.userAgent.match(/Android/i)) {
-      var inputValue = evt.currentTarget.value;
-      var charKeyCode = evt.keyCode || evt.which;
-
-      if (charKeyCode == 0 || charKeyCode == 229) charKeyCode = getKeyCode(inputValue);
+    if (this.secondsCounter) {
+      window.clearInterval(this.secondsCounter);
     }
+  }
 
-    if (evt.keyCode == 17 || evt.keyCode == 86) return;
+  getOtpValue(): string {
+    let val = "";
+    for (let i = 1; i <= 6; i++) {
+      const el: any = document.getElementById("otp_" + i);
+      if (el && el.value !== undefined && el.value !== "") {
+        val += String(el.value).trim();
+      } else if (this.otpValues && this.otpValues[i - 1]) {
+        val += String(this.otpValues[i - 1]).trim();
+      }
+    }
+    return val;
+  }
 
-    if (charKeyCode == 8) {
-      if (evt.currentTarget.value.length < 1) {
-        if (evt.currentTarget.id.slice(-1) == 4 && this.input_val_on_key_down.length == 1) {
-          this._utils.getElement("#otp_" + (evt.currentTarget.id.slice(-1))).focus();
-        } else {
-          let _target = (evt.currentTarget.id.slice(-1) - 1) || 1;
-          this._utils.getElement("#otp_" + _target).focus();
+  fillOtpString(otpStr: string) {
+    if (!otpStr) return;
+    const digits = String(otpStr).replace(/\D/g, '').slice(0, 6);
+    if (digits.length === 0) return;
+
+    this.isFillingOtp = true;
+    try {
+      for (let i = 0; i < 6; i++) {
+        const d = digits[i] || '';
+        this.otpValues[i] = d;
+        const el: any = document.getElementById(`otp_${i + 1}`);
+        if (el) {
+          el.value = d;
+          try {
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          } catch (e) { }
         }
       }
-      this.input_val_on_key_down = "";
-      return;
-    }
 
-    if (evt.keyCode == 46) {
-      evt.currentTarget.value = "";
-      return;
-    }
+      this.otpUserVal = this.getOtpValue();
+      if (this.otpUserVal.length === 6 || (this.otpUserVal.length === 4 && this.otpUserVal === '1111')) {
+        this.otpFlag = false;
+        this.pauseTimer();
+        this.btnName = "Verify";
+        this.cdr.detectChanges();
 
-    evt.currentTarget.value = this.inputVal;
-
-    if (((evt.keyCode >= 48 && evt.keyCode <= 57) || (evt.keyCode >= 96 && evt.keyCode <= 105) || evt.keyCode == 229) && !Number.isNaN(charKeyCode)) {
-      this.otpUserVal = this._utils.getElement("#otp_1").value + this._utils.getElement("#otp_2").value + this._utils.getElement("#otp_3").value + this._utils.getElement("#otp_4").value;
-      if (target) {
-        target.value = "";
-        target.focus();
+        // Auto submit after a brief delay for seamless mobile 1-tap UX
+        setTimeout(() => {
+          if (!this.otpFlag && this.btnName === "Verify") {
+            this.otpSubmit();
+          }
+        }, 150);
+      } else {
+        this.otpFlag = true;
+        const nextIdx = Math.min(digits.length + 1, 6);
+        const nextEl: any = document.getElementById(`otp_${nextIdx}`);
+        if (nextEl) nextEl.focus();
+        this.cdr.detectChanges();
       }
-    } else if (evt.keyCode == 13) {
-      this.otpSubmit();
-    } else {
-      return;
+    } finally {
+      this.isFillingOtp = false;
     }
   }
 
-  focusFunction(evt) {
-    evt.currentTarget.value = "";
-  }
+  onOtpInput(evt: any, index: number, nextTarget: any) {
+    if (this.isFillingOtp) return;
 
-  onKeydown(evt) {
-    this.input_val_on_key_down = evt.currentTarget.value;
-  }
-
-  onKeyUpHandler(val, target) {
-    this.next(val, target);
-  }
-
-  onOtpChange(evt: any) {
     this.otpStatus = "";
-    this.inputVal = evt.data;
-    this.otpUserVal = this._utils.getElement("#otp_1").value + this._utils.getElement("#otp_2").value + this._utils.getElement("#otp_3").value + this._utils.getElement("#otp_4").value;
+    const rawVal = evt?.target?.value || "";
+    const digits = rawVal.replace(/\D/g, '');
 
-    if (this.otpUserVal.length == 4) {
-      this.otpFlag = false
-      this.pauseTimer();
+    // Case 1: Mobile SMS Autofill clicked or multi-digit paste/input
+    if (digits.length > 1) {
+      this.fillOtpString(digits);
+      return;
+    }
+
+    // Case 2: Single digit typed
+    if (digits.length === 1) {
+      evt.target.value = digits;
+      if (this.otpValues && index >= 1 && index <= 6) {
+        this.otpValues[index - 1] = digits;
+      }
+      this.otpUserVal = this.getOtpValue();
+
+      if (this.otpUserVal.length === 6 || (this.otpUserVal.length === 4 && this.otpUserVal === '1111')) {
+        this.otpFlag = false;
+        this.pauseTimer();
+        this.btnName = "Verify";
+      } else {
+        this.otpFlag = true;
+        if (nextTarget) {
+          nextTarget.focus();
+        }
+      }
     } else {
+      evt.target.value = "";
+      if (this.otpValues && index >= 1 && index <= 6) {
+        this.otpValues[index - 1] = "";
+      }
+      this.otpUserVal = this.getOtpValue();
       this.otpFlag = true;
-      this.resumeTimer();
+    }
+    this.cdr.detectChanges();
+  }
+
+  onKeyUpHandler(evt: any, nextTarget: any, index: number) {
+    // Handle backspace
+    if (evt.key === 'Backspace' || evt.keyCode === 8) {
+      const currentEl: any = document.getElementById(`otp_${index}`);
+      if (currentEl && currentEl.value === '') {
+        const prevIdx = index - 1;
+        if (prevIdx >= 1) {
+          const prevEl: any = document.getElementById(`otp_${prevIdx}`);
+          if (prevEl) {
+            prevEl.value = '';
+            if (this.otpValues && this.otpValues[prevIdx - 1] !== undefined) {
+              this.otpValues[prevIdx - 1] = '';
+            }
+            prevEl.focus();
+          }
+        }
+      }
+      if (this.otpValues && index >= 1 && index <= 6) {
+        this.otpValues[index - 1] = currentEl?.value || '';
+      }
+      this.otpUserVal = this.getOtpValue();
+      this.otpFlag = true;
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (evt.key === 'Enter' || evt.keyCode === 13) {
+      if (!this.otpFlag) {
+        this.otpSubmit();
+      }
     }
   }
 
   onPasteAction(evt: ClipboardEvent) {
-    let clipboardData = evt.clipboardData || window['clipboardData'];
-    let pastedText = clipboardData.getData('text');
-
-    window.setTimeout(() => {
-      for (let i in pastedText) {
-        this._utils.getElement("#otp_" + (Number(i) + 1)).focus();
-        this._utils.getElement("#otp_" + (Number(i) + 1)).value = pastedText[i];
-      }
-    }, 300);
-
-    if (pastedText.length == 4) this.otpFlag = false;
-    return;
+    evt.preventDefault();
+    const clipboardData = evt.clipboardData || (window as any)['clipboardData'];
+    const pastedText = (clipboardData?.getData('text') || '').trim();
+    this.fillOtpString(pastedText);
   }
+
+  listenForWebOtp() {
+    if (typeof window === 'undefined' || !('OTPCredential' in window) || !navigator.credentials) {
+      return;
+    }
+
+    // Abort previous in-flight listener if any
+    if (this.webOtpAbortController) {
+      try {
+        this.webOtpAbortController.abort();
+      } catch (e) { }
+      this.webOtpAbortController = null;
+    }
+
+    try {
+      this.webOtpAbortController = new AbortController();
+      navigator.credentials.get({
+        otp: { transport: ['sms'] },
+        signal: this.webOtpAbortController.signal
+      } as any).then((content: any) => {
+        this.webOtpAbortController = null;
+        const code = (content && (content.code || content.id || content.otp)) 
+          ? String(content.code || content.id || content.otp) 
+          : (typeof content === 'string' ? content : '');
+
+        if (code) {
+          this.ngZone.run(() => {
+            this.fillOtpString(code);
+            this.cdr.detectChanges();
+          });
+        }
+      }).catch((err: any) => {
+        this.webOtpAbortController = null;
+      });
+    } catch (err) {
+      this.webOtpAbortController = null;
+    }
+  }
+
 
   otpTimer() {
     this.maxTimerInterval--;
@@ -275,27 +381,23 @@ export class LoginComponent implements OnInit {
       this.btnName = "Validating...";
       this.otpStatus = "Validating...";
 
-      if (environment.production) {
-        this.api.postApi("com/validate_otp.php", { mobile: this.userID, otp: this.otpUserVal }).subscribe({
-          next: (res: any) => {
-            const isSuccess = res === "SUCCESS" || (typeof res === 'object' && (res?.status === "SUCCESS" || res?.verified === true));
-            if (isSuccess) {
-              this.handleSuccessfulOTP();
-            } else {
-              this.handleInvalidOTP();
-            }
-          },
-          error: () => {
-            this.handleInvalidOTP();
+      this.api.postApi("com/validate_otp.php", { 
+        mobile: this.userID, 
+        otp: this.otpUserVal,
+        sessionId: this.otpSessionId 
+      }).subscribe({
+        next: (res: any) => {
+          const isSuccess = res === "SUCCESS" || (typeof res === 'object' && (res?.status === "SUCCESS" || res?.verified === true));
+          if (isSuccess) {
+            this.handleSuccessfulOTP();
+          } else {
+            this.handleInvalidOTP(res?.message);
           }
-        });
-      } else {
-        if (this.otpUserVal === '1111') {
-          this.handleSuccessfulOTP();
-        } else {
-          this.handleInvalidOTP();
+        },
+        error: (err: any) => {
+          this.handleInvalidOTP(err?.error?.message);
         }
-      }
+      });
     } else if (this.btnName === "Resend") {
       this.otpFlag = true;
       this.maxTimerInterval = 30;
@@ -326,7 +428,7 @@ export class LoginComponent implements OnInit {
         if (isNewUser) {
           this.referralFlg = true;
           if (res.referrer != null) {
-            this.loginS.referrrarinfo = res.referrer;
+            this.loginS.setReferralInfo(res.referrer);
             this.referralSuccessFlg = true;
           }
         } else {
@@ -346,11 +448,11 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  handleInvalidOTP() {
+  handleInvalidOTP(customMsg?: string) {
     this.mobileFormControl.enable();
     this.loginS.user.mobile = this.userID;
     this.validOTPFlg = false;
-    this.otpStatus = "Wrong OTP! Enter 1111";
+    this.otpStatus = customMsg || "Invalid OTP! Please check the SMS and try again";
     this.btnName = "Verify";
     this.otpFlag = false;
     this.resumeTimer();
@@ -368,12 +470,13 @@ export class LoginComponent implements OnInit {
       if (res && (res.status == "INVALID" || res.valid === false)) {
         this.referralErrorCodeFlg = true;
       } else {
-        this.loginS.referrrarinfo = res || {
+        const refInfo = res || {
           referrer_name: 'TomorrowNeeds Partner',
-          coupon_desc: '₹100 Cashback Bonus',
+          coupon_desc: '25% CASHBACK Coupon Unlocked! (1-time use)',
           referrer: code,
           status: 1
         };
+        this.loginS.setReferralInfo(refInfo);
         this.referralSuccessFlg = true;
         // Refresh wallet balance so the ₹100 credit appears in user's wallet
         this.loginS.readWallet();
@@ -392,57 +495,51 @@ export class LoginComponent implements OnInit {
   }
 
   sendOTPAction(): void {
-    console.log("Send otp action");
+    console.log("Send otp action for:", this.userID);
 
     this.sendOTPBtnFlg = true;
     this.fetchStatus = "Sending verification code...";
+    this.otpStatus = "";
 
-    if (!environment.production) {
-      this.otpCode = this._utils.generateOTP();
-      console.log(this.otpCode);
-      console.log("--------------------");
-
-      // this.api.postApi("com/otp.php", { mobile: this.userID }).subscribe((res) => {
-      this.fetchStatus = "routing...";
-
-      //Route to otp page
-      this.otpPageFlg = true;
-      this.mobilePageFlg = false;
-      this.locationPageFlg = false;
-
-      //Sttart otp timer        
-      this.resend_otp_flag = true;
-      this.btnName = "Resend in 30";
-      this.otpTimer();
-
-      window.setTimeout(() => {
-        this.fetchStatus = "";
-        document.getElementById("otp_1").focus();
-      }, 1000);
-      // });
-    }
-
-    if (environment.production) {
-      this.otpCode = this._utils.generateOTP();
-
-      this.api.postApi("com/otp.php", { mobile: this.userID }).subscribe((res) => {
-        this.fetchStatus = "routing...";
-
-        //Route to otp page
-        this.otpPageFlg = true;
-        this.mobilePageFlg = false;
-        this.locationPageFlg = false;
-
-        //Sttart otp timer        
-        this.resend_otp_flag = true;
-        this.btnName = "Resend in 30";
-        this.otpTimer();
-
-        window.setTimeout(() => {
+    this.api.postApi("com/otp.php", { mobile: this.userID }).subscribe({
+      next: (res: any) => {
+        if (res && res.status === "SUCCESS") {
+          this.otpSessionId = res.sessionId || "";
           this.fetchStatus = "";
-        }, 1000);
-      });
-    }
+
+          // Route to otp page
+          this.otpPageFlg = true;
+          this.mobilePageFlg = false;
+          this.locationPageFlg = false;
+
+          // Reset OTP values
+          this.otpValues = ['', '', '', '', '', ''];
+          this.otpUserVal = '';
+          this.otpFlag = true;
+
+          // Start otp timer
+          this.resend_otp_flag = true;
+          this.maxTimerInterval = 30;
+          this.btnName = "Resend in 30";
+          this.otpTimer();
+
+          // Listen for native mobile WebOTP auto-fill
+          this.listenForWebOtp();
+
+          window.setTimeout(() => {
+            const el = document.getElementById("otp_1");
+            if (el) el.focus();
+          }, 300);
+        } else {
+          this.sendOTPBtnFlg = false;
+          this.fetchStatus = res?.message || "Failed to send verification code. Please try again.";
+        }
+      },
+      error: (err: any) => {
+        this.sendOTPBtnFlg = false;
+        this.fetchStatus = err?.error?.message || "Failed to send verification code. Please check your network.";
+      }
+    });
   }
 
   fetchLocation(evt: MouseEvent) {
@@ -503,25 +600,71 @@ export class LoginComponent implements OnInit {
   }
 
   goNext(): void {
-    this.cartS.getZone(this.pincodeFormControl.value).subscribe(res => {
-      if (res.length > 0) {
-        this.loginS.user.zone = res[0].zone;
-      } else {
-        this.loginS.user.zone = "zone2";
-        alert("Maybe the products you see not comes under our delivery zone area!");
-      }
-      this.cartS.zoneChangeEvent.next(this.loginS.user.zone);
-      this.loginS.user.pincode = this.pincodeFormControl.value;
-    });
+    const enteredPin = String(this.pincodeFormControl.value || '').trim();
+    if (!enteredPin) return;
 
+    this.cartS.getZone(enteredPin).subscribe({
+      next: (res: any) => {
+        if (res && res.length > 0) {
+          // Pincode is serviceable!
+          const matchedZone = (res[0].zone || 'zone1').toLocaleLowerCase();
+          this.loginS.user.zone = matchedZone;
+          this.loginS.user.pincode = enteredPin;
+          this.cartS.zoneChangeEvent.next(matchedZone);
+          this.storageS.setItem("tnk_location", btoa(enteredPin));
+
+          this.unserviceableModalFlg = false;
+          this.locationPageFlg = false;
+          this.otpPageFlg = false;
+          this.mobilePageFlg = true;
+        } else {
+          // Pincode is NOT in the serviceable list -> Show beautiful alert UI!
+          this.enteredPincode = enteredPin;
+          this.unserviceableModalFlg = true;
+          this.locationPageFlg = false;
+        }
+      },
+      error: () => {
+        // Fallback: show unserviceable alert UI
+        this.enteredPincode = enteredPin;
+        this.unserviceableModalFlg = true;
+        this.locationPageFlg = false;
+      }
+    });
+  }
+
+  retryPincode(): void {
+    this.unserviceableModalFlg = false;
+    this.locationPageFlg = true;
+    this.pincodeFormControl.setValue('');
+  }
+
+  useServiceablePincode(pincode: string): void {
+    this.pincodeFormControl.setValue(pincode);
+    this.unserviceableModalFlg = false;
+    this.goNext();
+  }
+
+  exploreAnyway(): void {
+    // Sets user zone to zone2 (loads 0 products as requested)
+    this.loginS.user.zone = "zone2";
+    this.loginS.user.pincode = this.enteredPincode;
+    this.cartS.zoneChangeEvent.next("zone2");
+    this.storageS.setItem("tnk_location", btoa(this.enteredPincode));
+
+    this.unserviceableModalFlg = false;
     this.locationPageFlg = false;
     this.otpPageFlg = false;
-    this.mobilePageFlg = true;
+    this.mobilePageFlg = false;
+    this.bgClickFlg = false;
   }
 
   skipAction(evt: MouseEvent): void {
-    this.pincodeFormControl.setValue("600095");
-    alert("Maybe the products you see not comes under our delivery zone area!");
+    this.pincodeFormControl.setValue("400071");
+    this.loginS.user.zone = "zone1";
+    this.loginS.user.pincode = "400071";
+    this.cartS.zoneChangeEvent.next("zone1");
+    this.storageS.setItem("tnk_location", btoa("400071"));
     this.locationPageFlg = false;
     this.otpPageFlg = false;
     this.mobilePageFlg = false;

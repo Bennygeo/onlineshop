@@ -130,7 +130,7 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   private subs: Subscription = new Subscription();
 
-  // 4 Featured Slides: Vegetables, Fruits, Milk, Tender Coconut
+  // 5 Featured Slides: Vegetables, Fruits, Greens, Flowers, Oils
   heroSlides = [
     {
       id: 'veg',
@@ -151,30 +151,41 @@ export class ViewComponent implements OnInit, OnDestroy {
       category: 'Fruits',
       routerLink: '/products/category/Fruits',
       bgGradient: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
-      imgUrl: 'assets/categories/Thinkspot_fruitIcon.png',
+      imgUrl: 'assets/categories/fruitsIcons.png',
       btnText: 'Shop Fruits'
     },
     {
-      id: 'milk',
-      title: 'Pure Farm Fresh Milk',
-      desc: 'Unadulterated, wholesome & fresh daily delivery',
-      badge: 'Pure & Fresh',
-      category: 'Dairyeggs',
-      routerLink: '/products/category/Dairyeggs',
-      bgGradient: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-      imgUrl: 'assets/categories/Thinkspot_greensIcon.png',
-      btnText: 'Shop Milk & Dairy'
-    },
-    {
-      id: 'coconut',
-      title: 'Natural Tender Coconut',
-      desc: 'Cool, refreshing 100% natural electrolyte hydration',
-      badge: 'Natural Hydration',
-      category: 'Naturalhydrants',
-      routerLink: '/products/category/Naturalhydrants',
+      id: 'greens',
+      title: 'Nutritious Fresh Greens',
+      desc: 'Crisp, healthy & rich in essential vitamins',
+      badge: 'Healthy Greens',
+      category: 'Greens',
+      routerLink: '/products/category/Greens',
       bgGradient: 'linear-gradient(135deg, #15803d 0%, #166534 100%)',
       imgUrl: 'assets/categories/Thinkspot_greensIcon.png',
-      btnText: 'Shop Tender Coconut'
+      btnText: 'Shop Greens'
+    },
+    {
+      id: 'flowers',
+      title: 'Aromatic & Fresh Flowers',
+      desc: 'Pooja flowers, garlands and floral arrangements',
+      badge: 'Fresh Blooms',
+      category: 'Flowers',
+      routerLink: '/products/category/Flowers',
+      bgGradient: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+      imgUrl: 'assets/categories/Thinkspot_flowers.png',
+      btnText: 'Shop Flowers'
+    },
+    {
+      id: 'oils',
+      title: 'Pure Woodpressed Oils',
+      desc: 'Traditional cold-pressed oils packed with natural nutrients',
+      badge: 'Cold Pressed',
+      category: 'Oils',
+      routerLink: '/products/category/Oils',
+      bgGradient: 'linear-gradient(135deg, #b45309 0%, #92400e 100%)',
+      imgUrl: 'assets/categories/oil.png',
+      btnText: 'Shop Oils'
     }
   ];
 
@@ -219,10 +230,8 @@ export class ViewComponent implements OnInit, OnDestroy {
   get isTomorrowWeeklyOff(): boolean {
     if (!this.isWeeklyOffActive) return false;
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const now = new Date();
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const istTime = new Date(utcTime + (3600000 * 5.5));
-    const tomorrowIndex = (istTime.getDay() + 1) % 7;
+    const ist = this.cartS.getIstParts();
+    const tomorrowIndex = (ist.day + 1) % 7;
     const tomorrowName = days[tomorrowIndex].toLowerCase();
     const offName = this.weeklyOffDay.toLowerCase().trim();
     return (tomorrowName === offName || tomorrowName.startsWith(offName) || offName.startsWith(tomorrowName));
@@ -230,10 +239,8 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   get todayDayName(): string {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const now = new Date();
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const istTime = new Date(utcTime + (3600000 * 5.5));
-    return days[istTime.getDay()];
+    const ist = this.cartS.getIstParts();
+    return days[ist.day];
   }
 
   // --- Off-Day First Login / Visit Popup ---
@@ -320,6 +327,7 @@ export class ViewComponent implements OnInit, OnDestroy {
           this.userName = "there";
           this.activeUpcomingOrder = null;
           this.recent_products = [];
+          this.recentPurchasesLoadedMobile = '';
           this.walletBalance = 0;
           this.calculateRestockPredictions();
         }
@@ -344,8 +352,18 @@ export class ViewComponent implements OnInit, OnDestroy {
           } else {
             this.activeUpcomingOrder = null;
           }
-          if (this.recent_products.length === 0 && this.loginS.user?.mobile) {
-            this.loadRecentPurchases();
+        }
+      })
+    );
+
+    // Read hero promo banners
+    this.subs.add(
+      this.cartS.getHeroBanners().subscribe((banners: any[]) => {
+        if (banners && banners.length > 0) {
+          const activeSlides = banners.filter(b => b.active !== false);
+          this.heroSlides = activeSlides.length > 0 ? activeSlides : banners;
+          if (this.activeSlideIndex >= this.heroSlides.length) {
+            this.activeSlideIndex = 0;
           }
         }
       })
@@ -413,14 +431,25 @@ export class ViewComponent implements OnInit, OnDestroy {
     );
   }
 
-  loadRecentPurchases() {
+  private isRecentPurchasesLoading: boolean = false;
+  recentPurchasesLoadedMobile: string = '';
+
+  loadRecentPurchases(force: boolean = false) {
     const mobile = this.loginS.user?.mobile;
     if (!mobile) {
+      this.recent_products = [];
+      this.recentPurchasesLoadedMobile = '';
       this.calculateRestockPredictions();
       return;
     }
-    this.cartS.readRecentPurchases(mobile).subscribe({
+    if (!force && (this.isRecentPurchasesLoading || this.recentPurchasesLoadedMobile === mobile)) {
+      return;
+    }
+    this.isRecentPurchasesLoading = true;
+    this.cartS.readRecentPurchases(mobile, force).subscribe({
       next: (data: any) => {
+        this.isRecentPurchasesLoading = false;
+        this.recentPurchasesLoadedMobile = mobile;
         if (Array.isArray(data) && data.length > 0) {
           this.recent_products = data;
           this.syncProductUnits(this.recent_products);
@@ -430,6 +459,8 @@ export class ViewComponent implements OnInit, OnDestroy {
         this.calculateRestockPredictions();
       },
       error: () => {
+        this.isRecentPurchasesLoading = false;
+        this.recentPurchasesLoadedMobile = mobile;
         this.recent_products = [];
         this.calculateRestockPredictions();
       }
@@ -902,7 +933,8 @@ export class ViewComponent implements OnInit, OnDestroy {
   }
 
   updateGreeting() {
-    const hour = new Date().getHours();
+    const ist = this.cartS.getIstParts();
+    const hour = ist.hours;
     if (hour >= 4 && hour < 12) {
       this.greetingData = { greeting: 'Good morning', icon: 'wb_sunny' };
     } else if (hour >= 12 && hour < 17) {
@@ -916,13 +948,13 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   safeDate(rawDate: any): Date {
     if (!rawDate || rawDate === "undefined" || rawDate === "null" || rawDate === "0000-00-00 00:00:00" || rawDate === "0000-00-00") {
-      let d = new Date();
+      let d = new Date(this.cartS.serverTime);
       d.setDate(d.getDate() + 1);
       return d;
     }
-    if (rawDate instanceof Date) return isNaN(rawDate.getTime()) ? new Date() : rawDate;
+    if (rawDate instanceof Date) return isNaN(rawDate.getTime()) ? new Date(this.cartS.serverTime) : rawDate;
     const d = new Date(rawDate);
-    return isNaN(d.getTime()) ? new Date() : d;
+    return isNaN(d.getTime()) ? new Date(this.cartS.serverTime) : d;
   }
 
   formatShortId(orderId: string): string {
@@ -935,8 +967,8 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   isTomorrow(d: any): boolean {
     if (!d) return false;
-    const now = new Date();
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const ist = this.cartS.getIstParts();
+    const tomorrow = new Date(ist.year, ist.month, ist.date + 1);
     const checkDate = (d instanceof Date) ? d : new Date(d);
     if (isNaN(checkDate.getTime())) return false;
     return checkDate.getDate() === tomorrow.getDate() && checkDate.getMonth() === tomorrow.getMonth() && checkDate.getFullYear() === tomorrow.getFullYear();

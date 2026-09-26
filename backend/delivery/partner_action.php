@@ -49,7 +49,11 @@ try {
             $stmtItems = $pdo->prepare("UPDATE order_items SET item_status = 'delivered' WHERE order_id = ?");
             $stmtItems->execute([$orderId]);
 
-            sendJson(['status' => 'SUCCESS', 'order_id' => $orderId, 'status_updated' => 'DELIVERED']);
+            // Process referral reward for referrer (User 1) on delivery of User 2's order
+            require_once __DIR__ . '/../referral/process_referral_reward.php';
+            $rewardResult = processReferralOnDelivery($pdo, $orderId);
+
+            sendJson(['status' => 'SUCCESS', 'order_id' => $orderId, 'status_updated' => 'DELIVERED', 'referral_reward' => $rewardResult]);
             break;
 
         case 'mark_undelivered':

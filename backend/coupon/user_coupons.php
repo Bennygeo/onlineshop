@@ -21,13 +21,13 @@ try {
     $stmt = $pdo->prepare("
         SELECT MIN(uc.id) AS id, uc.coupon_code AS code, MAX(uc.used) AS used_count, uc.mobile,
                c.discount_percent, c.max_discount, c.min_order_amount,
-               COALESCE(c.count, 5) AS count,
-               COALESCE(c.categories, 'Vegetables,Veg') AS categories,
-               COALESCE(c.description, '5% OFF on Vegetables') AS description,
-               COALESCE(c.offer, '5% OFF') AS offer
+               COALESCE(c.count, 1) AS count,
+               COALESCE(c.categories, 'all') AS categories,
+               COALESCE(c.description, 'Discount Coupon') AS description,
+               COALESCE(c.offer, CONCAT(ROUND(COALESCE(c.discount_percent, 25)), '% OFF')) AS offer
         FROM user_coupons uc 
         LEFT JOIN coupons c ON uc.coupon_code = c.code 
-        WHERE uc.mobile = ? AND uc.used < COALESCE(c.count, 5)
+        WHERE uc.mobile = ?
         GROUP BY uc.mobile, uc.coupon_code
     ");
     $stmt->execute([$mobile]);

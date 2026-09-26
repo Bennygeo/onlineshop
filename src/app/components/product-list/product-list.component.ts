@@ -99,15 +99,27 @@ export class ProductListComponent implements OnInit, OnDestroy {
     * Categories menu click handler
     */
     this.menus.menuClickHandler = (menu: string): void => {
-      this.productsOptions.loadingFlg = true;
       this.menus.activeMenu = menu;
       this.cartS.setLastCategory(menu);
       this.productService.menus.activeMenu = menu;
       this.location.replaceState(`/products/category/${encodeURIComponent(menu)}`);
 
-      //re-position the menu
+      // re-position the menu
       this.productService.menu_position();
-      this.cartS.read_products(this.loginS.user.zone, menu);
+
+      // If all products are already downloaded in memory, render immediately with ZERO API calls
+      if (this.cartS.allProductsLoaded && this.cartS.productsList && this.cartS.productsList.length > 0) {
+        this.productsOptions.products = this.cartS.productsList;
+        const renderResult = this.renderProducts();
+        this.productsOptions.productsCategoryWise = renderResult.productsCategoryWise;
+        this.productsOptions.productsCategoryWise = this.cartS.updateCartValuesWithProduct(renderResult.productsCategoryWise);
+        this.menus.subCategoryList = renderResult.subCategories;
+        this.productsOptions.loadingFlg = false;
+      } else {
+        // If not loaded yet, initiate the single download for all products
+        this.productsOptions.loadingFlg = true;
+        this.cartS.read_products(this.loginS.user.zone, 'all');
+      }
     }
 
     this.productService.descUpdateEvent.subscribe((desc: DescriptionOptions) => {
@@ -147,7 +159,7 @@ export class ProductListComponent implements OnInit, OnDestroy {
       this.productsOptions.loadingFlg = false;
 
       this.productService.menu_position();
-      this.location.replaceState(`/products/category/${this.menus.activeMenu}?tnk=${Date.now()}`);
+      this.location.replaceState(`/products/category/${encodeURIComponent(this.menus.activeMenu)}`);
     });
 
     this.cartS.productsExistEvent.subscribe((res: string) => {
@@ -169,7 +181,8 @@ export class ProductListComponent implements OnInit, OnDestroy {
       // console.log("height :: " + productContHeight);
       //update product page height (page height - menu height - footer height)
       let timeout = setTimeout(() => {
-        this._utils.css(".productsCont", { top: "9px", height: productContHeight, width: "calc(100vw - 67px)", "overflow-y": "scroll" });
+        const contWidth = window.innerWidth >= 1200 ? "calc(1200px - 67px)" : "calc(100% - 67px)";
+        this._utils.css(".productsCont", { top: "9px", height: productContHeight, width: contWidth, "overflow-y": "scroll" });
         clearTimeout(timeout);
       });
     });
@@ -203,9 +216,9 @@ export class ProductListComponent implements OnInit, OnDestroy {
     // 3. Fallback to remembered category
     if (!targetCat || targetCat === 'category') {
       targetCat = this.cartS.lastSelectedCategory ||
-                  this.productService.menus.activeMenu ||
-                  localStorage.getItem('tnkspt_last_category') ||
-                  '';
+        this.productService.menus.activeMenu ||
+        localStorage.getItem('tnkspt_last_category') ||
+        '';
     }
 
     this.cartS.loadCategories().subscribe({
@@ -216,8 +229,8 @@ export class ProductListComponent implements OnInit, OnDestroy {
           this.menus.list = catList;
 
           const remembered = this.cartS.lastSelectedCategory ||
-                             this.productService.menus.activeMenu ||
-                             localStorage.getItem('tnkspt_last_category');
+            this.productService.menus.activeMenu ||
+            localStorage.getItem('tnkspt_last_category');
 
           if (!targetCat || !catList.includes(targetCat)) {
             if (remembered && catList.includes(remembered)) {
@@ -269,19 +282,19 @@ export class ProductListComponent implements OnInit, OnDestroy {
     let cat = "";
 
     for (var i = 0; i < this.productsOptions.products.length; i++) {
+      const prod = this.productsOptions.products[i];
+      if (!prod) continue;
+      cat = prod['cat'] || '';
+      let sub_cat = (prod['sub_cat'] || '').trim();
 
-      cat = this.productsOptions.products[i]['cat'];
-      let sub_cat = this.productsOptions.products[i]['sub_cat'];
-
-      if (cat.toLocaleLowerCase() == this.menus.activeMenu.toLocaleLowerCase()) {
-        sub_cat = sub_cat.trim();
+      if (cat.toLocaleLowerCase() == (this.menus.activeMenu || '').toLocaleLowerCase()) {
         if (sub_cat != '') {
           _sub_categories.push(sub_cat);
           if (!_sub_category_products[sub_cat]) _sub_category_products[sub_cat] = { products: [] };
-          _sub_category_products[sub_cat].products.push(this.productsOptions.products[i]);
+          _sub_category_products[sub_cat].products.push(prod);
         } else {
           if (!_sub_category_products[cat]) _sub_category_products[cat] = { products: [] };
-          _sub_category_products[cat].products.push(this.productsOptions.products[i]);
+          _sub_category_products[cat].products.push(prod);
         }
       }
     }
@@ -291,7 +304,8 @@ export class ProductListComponent implements OnInit, OnDestroy {
 
     let timeout = setTimeout(() => {
       let productContHeight = (this.isCart) ? (window.innerHeight - 116) + "px" : (window.innerHeight - 50) + "px";
-      this._utils.css(".productsCont", { top: "9px", height: productContHeight, width: "calc(100vw - 67px)", "overflow-y": "scroll" });
+      const contWidth = window.innerWidth >= 1200 ? "calc(1200px - 67px)" : "calc(100% - 67px)";
+      this._utils.css(".productsCont", { top: "9px", height: productContHeight, width: contWidth, "overflow-y": "scroll" });
       clearTimeout(timeout);
     });
 

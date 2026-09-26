@@ -1,374 +1,894 @@
 <div class="dashboard-page">
+  <!-- HEADER BAR -->
   <div class="page-title-row">
-    <div>
-      <h2>Sales & Analytics Dashboard</h2>
-      <p>Overview of store revenue, order fulfillment, and active customer metrics.</p>
-    </div>
-    <button class="refresh-btn" (click)="loadDashboardData()">
-      <span class="material-icons">refresh</span>
-      <span>Refresh Stats</span>
-    </button>
-  </div>
-
-  <!-- TODAY'S SNAPSHOT -->
-  <div class="section-block">
-    <div class="section-header">
-      <h3><span class="material-icons">today</span> Today's Snapshot</h3>
-      <span class="date-tag">{{ dashboardData.today?.date || ('' | date:'mediumDate') }}</span>
+    <div class="title-meta">
+      <div class="title-with-badge">
+        <h2>Sales & Analytics Dashboard</h2>
+        <span class="live-pill"><span class="pulse-dot"></span> LIVE METRICS</span>
+      </div>
+      <p class="subtitle-desc">
+        Comprehensive performance metrics, revenue breakdown, product leaders, and liabilities for 
+        <strong class="period-highlight">{{ dashboardData.periodLabel }}</strong>
+      </p>
     </div>
 
-    <div class="kpi-grid">
-      <div class="kpi-card revenue">
-        <div class="kpi-icon">
-          <span class="material-icons">payments</span>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Total Revenue</span>
-          <h3 class="kpi-val">₹ {{ dashboardData.today?.revenue | number:'1.2-2' }}</h3>
-          <span class="kpi-sub">Today's earnings</span>
-        </div>
+    <div class="header-controls">
+      <!-- Period Selector Filter Group -->
+      <div class="period-filter-group">
+        <button class="filter-pill-btn" [class.active]="selectedPeriod === '1day'" (click)="changePeriod('1day')">
+          Today
+        </button>
+        <button class="filter-pill-btn" [class.active]="selectedPeriod === '7days'" (click)="changePeriod('7days')">
+          7D
+        </button>
+        <button class="filter-pill-btn" [class.active]="selectedPeriod === '15days'" (click)="changePeriod('15days')">
+          15D
+        </button>
+        <button class="filter-pill-btn" [class.active]="selectedPeriod === '30days'" (click)="changePeriod('30days')">
+          30D
+        </button>
+        <button class="filter-pill-btn" [class.active]="selectedPeriod === 'lifetime'" (click)="changePeriod('lifetime')">
+          All Time
+        </button>
+        <button class="filter-pill-btn custom-btn" [class.active]="selectedPeriod === 'custom'" (click)="changePeriod('custom')">
+          <span class="material-icons size-15">date_range</span> Custom
+        </button>
       </div>
 
-      <div class="kpi-card orders">
-        <div class="kpi-icon">
-          <span class="material-icons">shopping_bag</span>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Total Orders</span>
-          <h3 class="kpi-val">{{ dashboardData.today?.orders }}</h3>
-          <span class="kpi-sub">Orders today</span>
-        </div>
-      </div>
-
-      <div class="kpi-card refunds">
-        <div class="kpi-icon">
-          <span class="material-icons">replay</span>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Refunds Processed</span>
-          <h3 class="kpi-val">₹ {{ dashboardData.today?.refunds | number:'1.2-2' }}</h3>
-          <span class="kpi-sub">{{ dashboardData.today?.refundCount || 0 }} refund(s) today</span>
-        </div>
-      </div>
-
-      <div class="kpi-card pending">
-        <div class="kpi-icon">
-          <span class="material-icons">local_shipping</span>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Active / Pending</span>
-          <h3 class="kpi-val">{{ dashboardData.today?.pending }}</h3>
-          <span class="kpi-sub">Awaiting delivery</span>
-        </div>
-      </div>
-
-      <div class="kpi-card customers">
-        <div class="kpi-icon">
-          <span class="material-icons">groups</span>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Active Customers</span>
-          <h3 class="kpi-val">{{ dashboardData.today?.customers }}</h3>
-          <span class="kpi-sub">Unique buyers today</span>
-        </div>
-      </div>
+      <button class="refresh-btn" (click)="loadDashboardData()" [disabled]="loading" title="Refresh Dashboard Data">
+        <span class="material-icons" [class.spin-anim]="loading">refresh</span>
+        <span>{{ loading ? 'Updating...' : 'Refresh' }}</span>
+      </button>
     </div>
   </div>
 
-  <!-- PAYMENT GATEWAYS & CHECKOUT CONTROLS -->
-  <div class="section-block payment-gateways-block">
-    <div class="section-header">
-      <div>
-        <h3><span class="material-icons">tune</span> Payment Gateways & Checkout Controls</h3>
-        <p class="section-subtitle-text">Instantly enable or disable payment methods available to customers at checkout.</p>
+  <!-- Custom Date Range Bar (Expanded when Custom is active) -->
+  <div class="custom-range-card" *ngIf="showCustomDatePicker || selectedPeriod === 'custom'">
+    <div class="range-inputs">
+      <div class="input-field">
+        <label>Start Date</label>
+        <input type="date" [(ngModel)]="customStartDate" />
       </div>
-      <div class="header-actions">
-        <span class="status-summary-pill" *ngIf="enableRazorpay && enableCod">
-          <span class="dot green"></span> All Payment Options Active
+      <div class="input-field">
+        <label>End Date</label>
+        <input type="date" [(ngModel)]="customEndDate" />
+      </div>
+      <button class="apply-range-btn" (click)="applyCustomDateRange()">
+        <span class="material-icons">filter_alt</span> Apply Range
+      </button>
+    </div>
+  </div>
+
+  <!-- TODAY'S FAST OPERATIONS SNAPSHOT (Always visible at top) -->
+  <div class="today-operations-banner">
+    <div class="banner-badge">
+      <span class="material-icons">bolt</span>
+      <span>Today's Pulse ({{ dashboardData.today?.date || 'Live' }})</span>
+    </div>
+
+    <div class="today-metrics-row">
+      <div class="t-metric-item">
+        <span class="t-lbl">Today's Revenue</span>
+        <span class="t-val rev">₹ {{ (dashboardData.today?.revenue || 0) | number:'1.2-2' }}</span>
+        <span class="t-sub">{{ dashboardData.today?.orders || 0 }} order(s) &bull; AOV ₹{{ (dashboardData.today?.aov || 0) | number:'1.0-0' }}</span>
+      </div>
+
+      <div class="t-metric-divider"></div>
+
+      <div class="t-metric-item">
+        <span class="t-lbl">Fulfillment Queue</span>
+        <span class="t-val pending">{{ dashboardData.today?.pending || 0 }}</span>
+        <span class="t-sub">Pending deliveries</span>
+      </div>
+
+      <div class="t-metric-divider"></div>
+
+      <div class="t-metric-item">
+        <span class="t-lbl">Net Profit / Loss</span>
+        <span class="t-val" [class.profit]="todayProfit >= 0" [class.loss]="todayProfit < 0">
+          {{ todayProfit >= 0 ? '+' : '-' }}₹ {{ (todayProfit < 0 ? -todayProfit : todayProfit) | number:'1.2-2' }}
         </span>
-        <span class="status-summary-pill warning" *ngIf="(!enableRazorpay || !enableCod) && (enableRazorpay || enableCod)">
-          <span class="dot amber"></span> Partial Checkout Active
+        <span class="t-sub">Expenses ₹{{ todayTotalExpenses | number:'1.0-0' }}</span>
+      </div>
+
+      <div class="t-metric-divider"></div>
+
+      <div class="t-metric-item">
+        <span class="t-lbl">Wallet Online Top-ups</span>
+        <span class="t-val wallet">₹ {{ (dashboardData.today?.walletCredit || 0) | number:'1.2-2' }}</span>
+        <span class="t-sub">{{ dashboardData.today?.walletCreditCount || 0 }} deposit(s) via Razorpay</span>
+      </div>
+
+      <div class="t-metric-divider"></div>
+
+      <div class="t-metric-item">
+        <span class="t-lbl">Refunds & Returns</span>
+        <span class="t-val refunds">₹ {{ (dashboardData.today?.refunds || 0) | number:'1.2-2' }}</span>
+        <span class="t-sub">{{ dashboardData.today?.refundCount || 0 }} refunded</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXECUTIVE KPI METRIC CARDS GRID (For Selected Period) -->
+  <div class="kpi-grid">
+    <!-- 1. Total Revenue -->
+    <div class="kpi-card revenue">
+      <div class="kpi-header-row">
+        <span class="kpi-label">Gross Revenue</span>
+        <div class="kpi-icon"><span class="material-icons">payments</span></div>
+      </div>
+      <h3 class="kpi-val">₹ {{ (dashboardData.totalRevenue || 0) | number:'1.2-2' }}</h3>
+      <div class="kpi-footer-row">
+        <span class="kpi-sub-highlight"><span class="material-icons size-13">shopping_bag</span> {{ dashboardData.totalOrders || 0 }} Total Orders</span>
+        <span class="kpi-aov-tag">AOV: ₹{{ (dashboardData.aov || 0) | number:'1.0-0' }}</span>
+      </div>
+    </div>
+
+    <!-- 2. Net Profit -->
+    <div class="kpi-card profit" [class.negative-card]="dashboardData.totalProfit < 0">
+      <div class="kpi-header-row">
+        <span class="kpi-label">Estimated Net Profit</span>
+        <div class="kpi-icon"><span class="material-icons">account_balance</span></div>
+      </div>
+      <h3 class="kpi-val">₹ {{ (dashboardData.totalProfit || 0) | number:'1.2-2' }}</h3>
+      <div class="kpi-footer-row">
+        <span class="margin-badge" [class.pos]="dashboardData.profitMargin >= 0" [class.neg]="dashboardData.profitMargin < 0">
+          {{ dashboardData.profitMargin || 0 }}% Margin
         </span>
-        <span class="status-summary-pill danger" *ngIf="!enableRazorpay && !enableCod">
-          <span class="dot red"></span> Both Methods Disabled
+        <span class="kpi-sub-text">Expenses: ₹{{ (dashboardData.totalExpenses || 0) | number:'1.0-0' }}</span>
+      </div>
+    </div>
+
+    <!-- 3. Active Buyers & Repeat Rate -->
+    <div class="kpi-card customers">
+      <div class="kpi-header-row">
+        <span class="kpi-label">Active Buyers</span>
+        <div class="kpi-icon"><span class="material-icons">groups</span></div>
+      </div>
+      <h3 class="kpi-val">{{ dashboardData.activeCustomers || 0 }}</h3>
+      <div class="kpi-footer-row">
+        <span class="repeat-tag" title="Customers who placed > 1 order in this period">
+          <span class="material-icons size-13">repeat</span> {{ dashboardData.repeatCustomerRate || 0 }}% Repeat Rate
         </span>
       </div>
     </div>
 
-    <!-- Success Toast Notification -->
-    <div class="payment-toast" *ngIf="paymentSuccessToast">
-      <span class="material-icons">check_circle</span>
-      <span>{{ paymentSuccessToast }}</span>
-    </div>
-
-    <!-- Alert Banner when both disabled -->
-    <div class="payment-alert-warning" *ngIf="!enableRazorpay && !enableCod">
-      <span class="material-icons">warning</span>
-      <div>
-        <strong>Warning: Both Razorpay and COD are disabled!</strong>
-        <p>Customers will be unable to complete checkout on the storefront until at least one payment method is enabled.</p>
+    <!-- 4. Discounts & Marketing Cost -->
+    <div class="kpi-card discounts">
+      <div class="kpi-header-row">
+        <span class="kpi-label">Total Discounts Given</span>
+        <div class="kpi-icon"><span class="material-icons">redeem</span></div>
+      </div>
+      <h3 class="kpi-val">₹ {{ ((dashboardData.totalPromoDiscounts || 0) + (dashboardData.totalReferralBonuses || 0)) | number:'1.2-2' }}</h3>
+      <div class="kpi-footer-row">
+        <span class="kpi-chip promo">Coupons: ₹{{ (dashboardData.totalPromoDiscounts || 0) | number:'1.0-0' }}</span>
+        <span class="kpi-chip referral">Referrals: ₹{{ (dashboardData.totalReferralBonuses || 0) | number:'1.0-0' }}</span>
       </div>
     </div>
 
-    <div class="payment-toggles-grid">
-      <!-- Razorpay Card -->
-      <div class="payment-toggle-card" [class.enabled]="enableRazorpay" [class.disabled]="!enableRazorpay">
-        <div class="card-left">
-          <div class="payment-brand-badge razorpay-badge">
-            <span class="material-icons">credit_card</span>
-          </div>
-          <div class="toggle-meta">
-            <div class="toggle-title-row">
-              <h4>Razorpay (Online & Wallet Recharge)</h4>
-              <span class="badge-status" [class.active]="enableRazorpay" [class.inactive]="!enableRazorpay">
-                {{ enableRazorpay ? 'ENABLED' : 'DISABLED' }}
-              </span>
+    <!-- 5. Store Float & Liabilities -->
+    <div class="kpi-card liabilities">
+      <div class="kpi-header-row">
+        <span class="kpi-label">Store Liabilities & Float</span>
+        <div class="kpi-icon"><span class="material-icons">account_balance_wallet</span></div>
+      </div>
+      <h3 class="kpi-val">₹ {{ ((dashboardData.totalWalletBalance || 0) + (dashboardData.totalLedgerBalance || 0)) | number:'1.2-2' }}</h3>
+      <div class="kpi-footer-row">
+        <span class="kpi-chip wallet">Wallets: ₹{{ (dashboardData.totalWalletBalance || 0) | number:'1.0-0' }}</span>
+        <span class="kpi-chip ledger">Prepaid Subs: ₹{{ (dashboardData.totalLedgerBalance || 0) | number:'1.0-0' }}</span>
+      </div>
+    </div>
+
+    <!-- 6. Total Refunds -->
+    <div class="kpi-card refunds">
+      <div class="kpi-header-row">
+        <span class="kpi-label">Total Refunds Processed</span>
+        <div class="kpi-icon"><span class="material-icons">replay</span></div>
+      </div>
+      <h3 class="kpi-val">₹ {{ (dashboardData.totalRefunds || 0) | number:'1.2-2' }}</h3>
+      <div class="kpi-footer-row">
+        <span class="kpi-sub-text">{{ dashboardData.totalRefundCount || 0 }} refund transaction(s)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       1. REVENUE TRENDS & ORDER FULFILLMENT
+       ========================================================================= -->
+  <div class="open-section-group">
+    <div class="open-section-header">
+      <div class="icon-title">
+        <span class="material-icons section-icon">analytics</span>
+        <h3>Revenue & Order Performance Trends</h3>
+      </div>
+      <span class="section-tag">Sales Volume & Status Distribution</span>
+    </div>
+
+    <!-- Revenue Trend Chart -->
+    <div class="section-block" *ngIf="dashboardData.dailyTrend && dashboardData.dailyTrend.length > 0">
+      <div class="section-header">
+        <div>
+          <h3><span class="material-icons">show_chart</span> Daily Revenue & Order Volume Trend</h3>
+          <p class="section-subtitle-text">Performance trend across the selected period</p>
+        </div>
+      </div>
+
+      <div class="trend-chart-container">
+        <div class="chart-bars-row">
+          <div class="trend-bar-col" *ngFor="let item of dashboardData.dailyTrend">
+            <div class="bar-fill-track" [title]="(item.sale_date | date:'mediumDate') + ': ₹' + item.revenue + ' (' + item.order_count + ' orders)'">
+              <div class="bar-fill" [style.height.%]="(item.revenue / maxDailyRevenue) * 100">
+                <span class="bar-val-pop" *ngIf="item.revenue > 0">₹{{ (item.revenue || 0) | number:'1.0-0' }}</span>
+              </div>
             </div>
-            <p class="toggle-desc">
-              Accept UPI (GPay, PhonePe, Paytm), Debit/Credit Cards, NetBanking, and online wallet top-ups via Razorpay gateway.
-            </p>
+            <span class="bar-date-label">{{ item.sale_date | date:'dd MMM' }}</span>
+            <span class="bar-count-label">{{ item.order_count }} ord</span>
           </div>
-        </div>
-
-        <div class="card-right">
-          <button type="button" 
-                  class="switch-btn" 
-                  [class.on]="enableRazorpay" 
-                  (click)="togglePaymentSetting('razorpay')" 
-                  [disabled]="paymentSettingsSaving === 'razorpay'"
-                  [title]="enableRazorpay ? 'Click to Disable Razorpay' : 'Click to Enable Razorpay'">
-            <span class="switch-handle" [class.saving]="paymentSettingsSaving === 'razorpay'"></span>
-          </button>
-          <span class="switch-label">{{ enableRazorpay ? 'Active' : 'Disabled' }}</span>
         </div>
       </div>
+    </div>
 
-      <!-- Cash on Delivery (COD) Card -->
-      <div class="payment-toggle-card" [class.enabled]="enableCod" [class.disabled]="!enableCod">
-        <div class="card-left">
-          <div class="payment-brand-badge cod-badge">
-            <span class="material-icons">local_atm</span>
-          </div>
-          <div class="toggle-meta">
-            <div class="toggle-title-row">
-              <h4>Cash on Delivery (COD)</h4>
-              <span class="badge-status" [class.active]="enableCod" [class.inactive]="!enableCod">
-                {{ enableCod ? 'ENABLED' : 'DISABLED' }}
-              </span>
+    <!-- Status Breakdown & Recent Live Orders -->
+    <div class="two-col-grid">
+      <!-- Status Breakdown -->
+      <div class="section-block">
+        <div class="section-header">
+          <h3><span class="material-icons">donut_small</span> Order Status Distribution</h3>
+        </div>
+
+        <div class="status-list">
+          <div class="status-item-row placed">
+            <div class="status-item-left">
+              <span class="status-dot"></span>
+              <span class="st-name">Placed / New</span>
             </div>
-            <p class="toggle-desc">
-              Allow customers to place orders without paying upfront and pay in cash or UPI at their doorstep upon arrival.
-            </p>
+            <div class="status-item-right">
+              <span class="st-count">{{ dashboardData.statusBreakdown?.PLACED || 0 }}</span>
+              <span class="st-pct">{{ dashboardData.totalOrders ? (((dashboardData.statusBreakdown?.PLACED || 0) / dashboardData.totalOrders) * 100 | number:'1.0-0') : 0 }}%</span>
+            </div>
+          </div>
+
+          <div class="status-item-row packed">
+            <div class="status-item-left">
+              <span class="status-dot"></span>
+              <span class="st-name">Packed & Ready</span>
+            </div>
+            <div class="status-item-right">
+              <span class="st-count">{{ dashboardData.statusBreakdown?.PACKED || 0 }}</span>
+              <span class="st-pct">{{ dashboardData.totalOrders ? (((dashboardData.statusBreakdown?.PACKED || 0) / dashboardData.totalOrders) * 100 | number:'1.0-0') : 0 }}%</span>
+            </div>
+          </div>
+
+          <div class="status-item-row out">
+            <div class="status-item-left">
+              <span class="status-dot"></span>
+              <span class="st-name">Out for Delivery</span>
+            </div>
+            <div class="status-item-right">
+              <span class="st-count">{{ dashboardData.statusBreakdown?.OUT_FOR_DELIVERY || 0 }}</span>
+              <span class="st-pct">{{ dashboardData.totalOrders ? (((dashboardData.statusBreakdown?.OUT_FOR_DELIVERY || 0) / dashboardData.totalOrders) * 100 | number:'1.0-0') : 0 }}%</span>
+            </div>
+          </div>
+
+          <div class="status-item-row delivered">
+            <div class="status-item-left">
+              <span class="status-dot"></span>
+              <span class="st-name">Delivered Successfully</span>
+            </div>
+            <div class="status-item-right">
+              <span class="st-count">{{ dashboardData.statusBreakdown?.DELIVERED || 0 }}</span>
+              <span class="st-pct">{{ dashboardData.totalOrders ? (((dashboardData.statusBreakdown?.DELIVERED || 0) / dashboardData.totalOrders) * 100 | number:'1.0-0') : 0 }}%</span>
+            </div>
+          </div>
+
+          <div class="status-item-row cancelled">
+            <div class="status-item-left">
+              <span class="status-dot"></span>
+              <span class="st-name">Cancelled Orders</span>
+            </div>
+            <div class="status-item-right">
+              <span class="st-count">{{ dashboardData.statusBreakdown?.CANCELLED || 0 }}</span>
+              <span class="st-pct">{{ dashboardData.totalOrders ? (((dashboardData.statusBreakdown?.CANCELLED || 0) / dashboardData.totalOrders) * 100 | number:'1.0-0') : 0 }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Orders Live Feed -->
+      <div class="section-block">
+        <div class="section-header">
+          <h3><span class="material-icons">history</span> Recent Live Orders</h3>
+        </div>
+
+        <div class="recent-orders-list" *ngIf="dashboardData.recentOrders && dashboardData.recentOrders.length > 0; else noRecentOrders">
+          <div class="recent-order-item" *ngFor="let ord of dashboardData.recentOrders">
+            <div class="ord-left">
+              <div class="ord-id-tag">#{{ ord.order_id }}</div>
+              <div class="ord-meta">
+                <span>{{ ord.mobile }}</span> &bull; 
+                <span class="ord-items">{{ ord.item_count || 1 }} item(s)</span>
+              </div>
+            </div>
+
+            <div class="ord-right">
+              <div class="ord-amount">₹ {{ ord.total_amount | number:'1.2-2' }}</div>
+              <div class="ord-status-badge" [ngClass]="ord.status?.toLowerCase()">
+                {{ ord.status }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <ng-template #noRecentOrders>
+          <div class="empty-placeholder">
+            <span class="material-icons">inbox</span>
+            <p>No orders recorded in this period yet.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       2. TOP PRODUCTS & CATEGORIES
+       ========================================================================= -->
+  <div class="open-section-group">
+    <div class="open-section-header">
+      <div class="icon-title">
+        <span class="material-icons section-icon">inventory_2</span>
+        <h3>Product Leaders & Category Contribution</h3>
+      </div>
+      <span class="section-tag">Best Sellers & Margins</span>
+    </div>
+
+    <div class="two-col-grid">
+      <!-- Top 10 Best Sellers Table -->
+      <div class="section-block">
+        <div class="section-header">
+          <div>
+            <h3><span class="material-icons">military_tech</span> Top 10 Best-Selling Products</h3>
+            <p class="section-subtitle-text">Ranked by units sold in the selected period</p>
           </div>
         </div>
 
-        <div class="card-right">
-          <button type="button" 
-                  class="switch-btn" 
-                  [class.on]="enableCod" 
-                  (click)="togglePaymentSetting('cod')" 
-                  [disabled]="paymentSettingsSaving === 'cod'"
-                  [title]="enableCod ? 'Click to Disable COD' : 'Click to Enable COD'">
-            <span class="switch-handle" [class.saving]="paymentSettingsSaving === 'cod'"></span>
-          </button>
-          <span class="switch-label">{{ enableCod ? 'Active' : 'Disabled' }}</span>
+        <div class="table-responsive" *ngIf="dashboardData.topProducts && dashboardData.topProducts.length > 0; else noTopProducts">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Category</th>
+                <th class="text-right">Units</th>
+                <th class="text-right">Revenue</th>
+                <th class="text-right">Est. Gross Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let prod of dashboardData.topProducts; let i = index">
+                <td><span class="rank-badge rank-{{ i + 1 }}">{{ i + 1 }}</span></td>
+                <td>
+                  <div class="prod-cell">
+                    <img [src]="prod.img_url || 'assets/home/no_img.png'" class="prod-thumb" />
+                    <span class="prod-name" [title]="prod.name">{{ prod.name }}</span>
+                  </div>
+                </td>
+                <td><span class="cat-pill">{{ prod.cat || 'General' }}</span></td>
+                <td class="text-right font-bold">{{ prod.units_sold }}</td>
+                <td class="text-right font-bold text-teal">₹ {{ prod.total_revenue | number:'1.2-2' }}</td>
+                <td class="text-right font-semibold text-green">₹ {{ (prod.gross_profit || 0) | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noTopProducts>
+          <div class="empty-placeholder">
+            <span class="material-icons">inventory_2</span>
+            <p>No product sales recorded in this period.</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Category Sales Breakdown -->
+      <div class="section-block">
+        <div class="section-header">
+          <div>
+            <h3><span class="material-icons">category</span> Category Sales Contribution</h3>
+            <p class="section-subtitle-text">Sales share by store category</p>
+          </div>
+        </div>
+
+        <div class="category-breakdown-list" *ngIf="dashboardData.categoryBreakdown && dashboardData.categoryBreakdown.length > 0; else noCatBreakdown">
+          <div class="cat-row-card" *ngFor="let cat of dashboardData.categoryBreakdown">
+            <div class="cat-meta-row">
+              <span class="cat-name">{{ cat.category }}</span>
+              <span class="cat-rev">₹ {{ cat.total_sales | number:'1.2-2' }}</span>
+            </div>
+            <div class="cat-progress-track">
+              <div class="cat-progress-fill" [style.width.%]="dashboardData.totalRevenue ? ((cat.total_sales / dashboardData.totalRevenue) * 100) : 0"></div>
+            </div>
+            <div class="cat-sub-row">
+              <span>{{ cat.units_sold }} item(s) across {{ cat.order_count }} order(s)</span>
+              <span>{{ dashboardData.totalRevenue ? (((cat.total_sales / dashboardData.totalRevenue) * 100) | number:'1.1-1') : 0 }}% Share</span>
+            </div>
+          </div>
+        </div>
+        <ng-template #noCatBreakdown>
+          <div class="empty-placeholder">
+            <span class="material-icons">category</span>
+            <p>No category breakdown available.</p>
+          </div>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       3. PAYMENT MODES & STORE LIABILITIES
+       ========================================================================= -->
+  <div class="open-section-group">
+    <div class="open-section-header">
+      <div class="icon-title">
+        <span class="material-icons section-icon">credit_card</span>
+        <h3>Payment Modes & Store Balance Sheet (Liabilities)</h3>
+      </div>
+      <span class="section-tag">Working Capital & Float</span>
+    </div>
+
+    <!-- Payment Methods Split Grid -->
+    <div class="section-block">
+      <div class="section-header">
+        <div>
+          <h3><span class="material-icons">payments</span> Payment Methods Distribution</h3>
+          <p class="section-subtitle-text">Revenue & transaction volume split across checkout methods</p>
+        </div>
+      </div>
+
+      <div class="payment-method-grid">
+        <!-- COD Card -->
+        <div class="pay-method-card cod">
+          <div class="pm-top">
+            <span class="material-icons pm-icon">local_atm</span>
+            <span class="pm-title">Cash on Delivery (COD)</span>
+          </div>
+          <h3 class="pm-val">₹ {{ (dashboardData.paymentBreakdown?.COD?.amount || 0) | number:'1.2-2' }}</h3>
+          <div class="pm-footer">
+            <span>{{ dashboardData.paymentBreakdown?.COD?.count || 0 }} order(s)</span>
+            <span class="pm-pct">{{ (((dashboardData.paymentBreakdown?.COD?.amount || 0) / totalPaymentAmount) * 100) | number:'1.1-1' }}% of Total</span>
+          </div>
+        </div>
+
+        <!-- Razorpay / Online Card -->
+        <div class="pay-method-card razorpay">
+          <div class="pm-top">
+            <span class="material-icons pm-icon">credit_card</span>
+            <span class="pm-title">Razorpay (UPI / Cards / NetBanking)</span>
+          </div>
+          <h3 class="pm-val">₹ {{ (dashboardData.paymentBreakdown?.ONLINE?.amount || 0) | number:'1.2-2' }}</h3>
+          <div class="pm-footer">
+            <span>{{ dashboardData.paymentBreakdown?.ONLINE?.count || 0 }} order(s)</span>
+            <span class="pm-pct">{{ (((dashboardData.paymentBreakdown?.ONLINE?.amount || 0) / totalPaymentAmount) * 100) | number:'1.1-1' }}% of Total</span>
+          </div>
+        </div>
+
+        <!-- Wallet Card -->
+        <div class="pay-method-card wallet">
+          <div class="pm-top">
+            <span class="material-icons pm-icon">account_balance_wallet</span>
+            <span class="pm-title">Wallet Balance Payments</span>
+          </div>
+          <h3 class="pm-val">₹ {{ (dashboardData.paymentBreakdown?.WALLET?.amount || 0) | number:'1.2-2' }}</h3>
+          <div class="pm-footer">
+            <span>{{ dashboardData.paymentBreakdown?.WALLET?.count || 0 }} order(s)</span>
+            <span class="pm-pct">{{ (((dashboardData.paymentBreakdown?.WALLET?.amount || 0) / totalPaymentAmount) * 100) | number:'1.1-1' }}% of Total</span>
+          </div>
+        </div>
+
+        <!-- Offline Orders Card -->
+        <div class="pay-method-card offline">
+          <div class="pm-top">
+            <span class="material-icons pm-icon">storefront</span>
+            <span class="pm-title">Admin / Offline Orders</span>
+          </div>
+          <h3 class="pm-val">₹ {{ (dashboardData.paymentBreakdown?.OFFLINE?.amount || 0) | number:'1.2-2' }}</h3>
+          <div class="pm-footer">
+            <span>{{ dashboardData.paymentBreakdown?.OFFLINE?.count || 0 }} order(s)</span>
+            <span class="pm-pct">{{ (((dashboardData.paymentBreakdown?.OFFLINE?.amount || 0) / totalPaymentAmount) * 100) | number:'1.1-1' }}% of Total</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Store Balance Sheet & Floating Liabilities -->
+    <div class="section-block liabilities-card-block">
+      <div class="section-header">
+        <div>
+          <h3><span class="material-icons">account_balance</span> Store Balance Sheet & Floating Liabilities</h3>
+          <p class="section-subtitle-text">Customer balances held in custody and outstanding future delivery commitments</p>
+        </div>
+      </div>
+
+      <div class="liabilities-grid">
+        <div class="liability-card">
+          <div class="l-icon-box"><span class="material-icons">wallet</span></div>
+          <div class="l-info">
+            <span class="l-title">Customer Wallet Balances Outstanding</span>
+            <h3 class="l-val text-amber">₹ {{ (dashboardData.totalWalletBalance || 0) | number:'1.2-2' }}</h3>
+            <p class="l-desc">Total liquid funds deposited by customers currently stored in their Thinkspot wallets.</p>
+          </div>
+        </div>
+
+        <div class="liability-card">
+          <div class="l-icon-box"><span class="material-icons">calendar_month</span></div>
+          <div class="l-info">
+            <span class="l-title">Prepaid Subscriptions Unfulfilled (Ledger Float)</span>
+            <h3 class="l-val text-teal">₹ {{ (dashboardData.totalLedgerBalance || 0) | number:'1.2-2' }}</h3>
+            <p class="l-desc">Value of future scheduled morning deliveries already paid upfront by subscription users.</p>
+          </div>
+        </div>
+
+        <div class="liability-card total-float">
+          <div class="l-icon-box"><span class="material-icons">savings</span></div>
+          <div class="l-info">
+            <span class="l-title">Total Store Float Reserve</span>
+            <h3 class="l-val text-blue">₹ {{ ((dashboardData.totalWalletBalance || 0) + (dashboardData.totalLedgerBalance || 0)) | number:'1.2-2' }}</h3>
+            <p class="l-desc">Combined customer float providing store working capital.</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- TODAY'S EXPENSES -->
-  <div class="section-block">
-    <div class="section-header">
-      <h3><span class="material-icons">receipt_long</span> Today's Expenses</h3>
-      <div class="expense-summary-tags">
-        <span class="total-expense-tag expense-tag">Total: ₹ {{ todayTotalExpenses | number:'1.2-2' }}</span>
-        <span class="profit-tag" [class.positive]="todayProfit >= 0" [class.negative]="todayProfit < 0">
-          {{ todayProfit >= 0 ? 'Profit' : 'Loss' }}: ₹ {{ (todayProfit < 0 ? -todayProfit : todayProfit) | number:'1.2-2' }}
-        </span>
+  <!-- =========================================================================
+       4. PROMO CODES & REFERRAL ROI
+       ========================================================================= -->
+  <div class="open-section-group">
+    <div class="open-section-header">
+      <div class="icon-title">
+        <span class="material-icons section-icon">loyalty</span>
+        <h3>Marketing ROI (Promo Coupons & Referral Program)</h3>
+      </div>
+      <span class="section-tag">Customer Acquisition & Discounts</span>
+    </div>
+
+    <div class="two-col-grid">
+      <!-- Promo Code Usage Breakdown -->
+      <div class="section-block">
+        <div class="section-header">
+          <div>
+            <h3><span class="material-icons">local_offer</span> Coupon & Promo Code Performance</h3>
+            <p class="section-subtitle-text">Total discount impact per coupon</p>
+          </div>
+        </div>
+
+        <div class="table-responsive" *ngIf="dashboardData.promoBreakdown && dashboardData.promoBreakdown.length > 0; else noPromoBreakdown">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Coupon Code</th>
+                <th class="text-right">Redemptions</th>
+                <th class="text-right">Total Discount Given</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let promo of dashboardData.promoBreakdown">
+                <td><span class="promo-code-pill">{{ promo.coupon }}</span></td>
+                <td class="text-right font-bold">{{ promo.usage_count }} times</td>
+                <td class="text-right font-bold text-amber">₹ {{ promo.total_discount | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noPromoBreakdown>
+          <div class="empty-placeholder">
+            <span class="material-icons">loyalty</span>
+            <p>No promo coupon redemptions recorded.</p>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Recent Promo Orders Feed -->
+      <div class="section-block">
+        <div class="section-header">
+          <div>
+            <h3><span class="material-icons">receipt</span> Recent Discounted Orders</h3>
+            <p class="section-subtitle-text">Orders where promo codes were applied</p>
+          </div>
+        </div>
+
+        <div class="table-responsive" *ngIf="dashboardData.recentPromoOrders && dashboardData.recentPromoOrders.length > 0; else noRecentPromo">
+          <table class="analytics-table compact">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>User</th>
+                <th>Coupon</th>
+                <th class="text-right">Discount</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let pOrd of dashboardData.recentPromoOrders">
+                <td>#{{ pOrd.order_id }}</td>
+                <td>{{ pOrd.mobile }}</td>
+                <td><span class="promo-code-pill small">{{ pOrd.coupon }}</span></td>
+                <td class="text-right text-amber font-bold">-₹{{ pOrd.coupon_discount }}</td>
+                <td class="text-right font-semibold">₹{{ pOrd.total_amount }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ng-template #noRecentPromo>
+          <div class="empty-placeholder">
+            <span class="material-icons">receipt_long</span>
+            <p>No recent promo orders.</p>
+          </div>
+        </ng-template>
       </div>
     </div>
 
-    <div class="expense-grid">
-      <!-- Procurement -->
-      <div class="expense-card procurement">
-        <div class="expense-icon">
-          <span class="material-icons">inventory_2</span>
-        </div>
-        <div class="expense-body">
-          <span class="expense-label">Procurement</span>
-          <div class="expense-val-row" *ngIf="editingExpense !== 'procurement'">
-            <span class="expense-val">₹ {{ dashboardData.expenses?.procurement | number:'1.2-2' }}</span>
-            <button class="edit-expense-btn" (click)="startEditExpense('procurement')">
-              <span class="material-icons">edit</span>
-            </button>
-          </div>
-          <div class="expense-edit-row" *ngIf="editingExpense === 'procurement'">
-            <input type="number" [(ngModel)]="expenseInputs.procurement" class="expense-input" />
-            <button class="save-btn" (click)="saveExpense('procurement')"><span class="material-icons">check</span></button>
-            <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
-          </div>
+    <!-- Referral Bonuses Audit Feed -->
+    <div class="section-block">
+      <div class="section-header">
+        <div>
+          <h3><span class="material-icons">card_giftcard</span> Referral Reward Bonuses Audit</h3>
+          <p class="section-subtitle-text">Recent wallet reward credits issued to brand advocates</p>
         </div>
       </div>
 
-      <!-- Rent -->
-      <div class="expense-card rent">
-        <div class="expense-icon">
-          <span class="material-icons">home_work</span>
+      <div class="table-responsive" *ngIf="dashboardData.recentReferralBonuses && dashboardData.recentReferralBonuses.length > 0; else noReferralBonuses">
+        <table class="analytics-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Recipient Mobile</th>
+              <th>Description</th>
+              <th class="text-right">Reward Credit</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ref of dashboardData.recentReferralBonuses">
+              <td>#{{ ref.id }}</td>
+              <td><strong>{{ ref.mobile }}</strong></td>
+              <td>{{ ref.description }}</td>
+              <td class="text-right text-green font-bold">+₹ {{ ref.amount | number:'1.2-2' }}</td>
+              <td>{{ ref.created_at | date:'mediumDate' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #noReferralBonuses>
+        <div class="empty-placeholder">
+          <span class="material-icons">redeem</span>
+          <p>No referral bonuses issued yet.</p>
         </div>
-        <div class="expense-body">
-          <span class="expense-label">Rent</span>
-          <div class="expense-val-row" *ngIf="editingExpense !== 'rent'">
-            <span class="expense-val">₹ {{ dashboardData.expenses?.rent | number:'1.2-2' }}</span>
-            <button class="edit-expense-btn" (click)="startEditExpense('rent')">
-              <span class="material-icons">edit</span>
-            </button>
-          </div>
-          <div class="expense-edit-row" *ngIf="editingExpense === 'rent'">
-            <input type="number" [(ngModel)]="expenseInputs.rent" class="expense-input" />
-            <button class="save-btn" (click)="saveExpense('rent')"><span class="material-icons">check</span></button>
-            <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
-          </div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       5. OPERATING EXPENSES & COGS MANAGER
+       ========================================================================= -->
+  <div class="open-section-group">
+    <div class="open-section-header">
+      <div class="icon-title">
+        <span class="material-icons section-icon">receipt_long</span>
+        <h3>Operating Expenses & Cost of Goods Sold (COGS)</h3>
+      </div>
+      <span class="section-tag">P&L Financial Controls</span>
+    </div>
+
+    <div class="section-block">
+      <div class="section-header">
+        <div>
+          <h3><span class="material-icons">calculate</span> Daily Expense Breakdown</h3>
+          <p class="section-subtitle-text">Manage daily procurement, fixed facility rent, and logistics overhead</p>
+        </div>
+        <div class="expense-summary-tags">
+          <span class="total-expense-tag expense-tag">Total Expenses: ₹ {{ todayTotalExpenses | number:'1.2-2' }}</span>
+          <span class="profit-tag" [class.positive]="todayProfit >= 0" [class.negative]="todayProfit < 0">
+            {{ todayProfit >= 0 ? 'Net Profit' : 'Net Loss' }}: ₹ {{ (todayProfit < 0 ? -todayProfit : todayProfit) | number:'1.2-2' }}
+          </span>
         </div>
       </div>
 
-      <!-- Delivery Charges -->
-      <div class="expense-card delivery-exp">
-        <div class="expense-icon">
-          <span class="material-icons">two_wheeler</span>
-        </div>
-        <div class="expense-body">
-          <span class="expense-label">Delivery Charges</span>
-          <div class="expense-val-row" *ngIf="editingExpense !== 'delivery'">
-            <span class="expense-val">₹ {{ dashboardData.expenses?.delivery | number:'1.2-2' }}</span>
-            <button class="edit-expense-btn" (click)="startEditExpense('delivery')">
-              <span class="material-icons">edit</span>
-            </button>
+      <div class="expense-grid">
+        <!-- Procurement -->
+        <div class="expense-card procurement">
+          <div class="expense-icon">
+            <span class="material-icons">inventory_2</span>
           </div>
-          <div class="expense-edit-row" *ngIf="editingExpense === 'delivery'">
-            <input type="number" [(ngModel)]="expenseInputs.delivery" class="expense-input" />
-            <button class="save-btn" (click)="saveExpense('delivery')"><span class="material-icons">check</span></button>
-            <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+          <div class="expense-body">
+            <span class="expense-label">Procurement / Wholesale COGS</span>
+            <div class="expense-val-row" *ngIf="editingExpense !== 'procurement'">
+              <span class="expense-val">₹ {{ (dashboardData.expenses?.procurement || 0) | number:'1.2-2' }}</span>
+              <button class="edit-expense-btn" (click)="startEditExpense('procurement')" title="Edit Procurement Cost">
+                <span class="material-icons">edit</span>
+              </button>
+            </div>
+            <div class="expense-edit-row" *ngIf="editingExpense === 'procurement'">
+              <input type="number" [(ngModel)]="expenseInputs.procurement" class="expense-input" />
+              <button class="save-btn" (click)="saveExpense('procurement')"><span class="material-icons">check</span></button>
+              <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Other Expenses -->
-      <div class="expense-card other-exp">
-        <div class="expense-icon">
-          <span class="material-icons">more_horiz</span>
-        </div>
-        <div class="expense-body">
-          <span class="expense-label">Other Expenses</span>
-          <div class="expense-val-row" *ngIf="editingExpense !== 'other'">
-            <span class="expense-val">₹ {{ dashboardData.expenses?.other | number:'1.2-2' }}</span>
-            <button class="edit-expense-btn" (click)="startEditExpense('other')">
-              <span class="material-icons">edit</span>
-            </button>
+        <!-- Rent -->
+        <div class="expense-card rent">
+          <div class="expense-icon">
+            <span class="material-icons">home_work</span>
           </div>
-          <div class="expense-edit-row" *ngIf="editingExpense === 'other'">
-            <input type="number" [(ngModel)]="expenseInputs.other" class="expense-input" />
-            <button class="save-btn" (click)="saveExpense('other')"><span class="material-icons">check</span></button>
-            <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+          <div class="expense-body">
+            <span class="expense-label">Facility & Store Rent</span>
+            <div class="expense-val-row" *ngIf="editingExpense !== 'rent'">
+              <span class="expense-val">₹ {{ (dashboardData.expenses?.rent || 0) | number:'1.2-2' }}</span>
+              <button class="edit-expense-btn" (click)="startEditExpense('rent')" title="Edit Rent">
+                <span class="material-icons">edit</span>
+              </button>
+            </div>
+            <div class="expense-edit-row" *ngIf="editingExpense === 'rent'">
+              <input type="number" [(ngModel)]="expenseInputs.rent" class="expense-input" />
+              <button class="save-btn" (click)="saveExpense('rent')"><span class="material-icons">check</span></button>
+              <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delivery Charges -->
+        <div class="expense-card delivery-exp">
+          <div class="expense-icon">
+            <span class="material-icons">two_wheeler</span>
+          </div>
+          <div class="expense-body">
+            <span class="expense-label">Delivery Staff & Fleet Charges</span>
+            <div class="expense-val-row" *ngIf="editingExpense !== 'delivery'">
+              <span class="expense-val">₹ {{ (dashboardData.expenses?.delivery || 0) | number:'1.2-2' }}</span>
+              <button class="edit-expense-btn" (click)="startEditExpense('delivery')" title="Edit Delivery Charges">
+                <span class="material-icons">edit</span>
+              </button>
+            </div>
+            <div class="expense-edit-row" *ngIf="editingExpense === 'delivery'">
+              <input type="number" [(ngModel)]="expenseInputs.delivery" class="expense-input" />
+              <button class="save-btn" (click)="saveExpense('delivery')"><span class="material-icons">check</span></button>
+              <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Other Expenses -->
+        <div class="expense-card other-exp">
+          <div class="expense-icon">
+            <span class="material-icons">more_horiz</span>
+          </div>
+          <div class="expense-body">
+            <span class="expense-label">Packaging, Electricity & Other</span>
+            <div class="expense-val-row" *ngIf="editingExpense !== 'other'">
+              <span class="expense-val">₹ {{ (dashboardData.expenses?.other || 0) | number:'1.2-2' }}</span>
+              <button class="edit-expense-btn" (click)="startEditExpense('other')" title="Edit Other Expenses">
+                <span class="material-icons">edit</span>
+              </button>
+            </div>
+            <div class="expense-edit-row" *ngIf="editingExpense === 'other'">
+              <input type="number" [(ngModel)]="expenseInputs.other" class="expense-input" />
+              <button class="save-btn" (click)="saveExpense('other')"><span class="material-icons">check</span></button>
+              <button class="cancel-btn" (click)="cancelEditExpense()"><span class="material-icons">close</span></button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- LIFETIME STATS -->
-  <div class="section-block">
-    <div class="section-header">
-      <h3><span class="material-icons">bar_chart</span> Lifetime Overview</h3>
+  <!-- =========================================================================
+       6. CHECKOUT GATEWAYS CONTROLS
+       ========================================================================= -->
+  <div class="open-section-group">
+    <div class="open-section-header">
+      <div class="icon-title">
+        <span class="material-icons section-icon">tune</span>
+        <h3>Payment Gateways & Storefront Checkout Controls</h3>
+      </div>
+      <span class="section-tag">Instant Switch</span>
     </div>
 
-    <div class="kpi-grid">
-      <div class="kpi-card revenue">
-        <div class="kpi-icon">
-          <span class="material-icons">payments</span>
+    <div class="section-block payment-gateways-block">
+      <div class="section-header">
+        <div>
+          <h3><span class="material-icons">toggle_on</span> Payment Options Availability</h3>
+          <p class="section-subtitle-text">Instantly toggle payment methods available to customers at checkout</p>
         </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Total Revenue</span>
-          <h3 class="kpi-val">₹ {{ dashboardData.totalRevenue | number:'1.2-2' }}</h3>
-          <span class="kpi-sub">Lifetime earnings</span>
-        </div>
-      </div>
-
-      <div class="kpi-card orders">
-        <div class="kpi-icon">
-          <span class="material-icons">shopping_bag</span>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Total Orders</span>
-          <h3 class="kpi-val">{{ dashboardData.totalOrders }}</h3>
-          <span class="kpi-sub">Orders recorded</span>
+        <div class="header-actions">
+          <span class="status-summary-pill" *ngIf="enableRazorpay && enableCod">
+            <span class="dot green"></span> All Payment Options Active
+          </span>
+          <span class="status-summary-pill warning" *ngIf="(!enableRazorpay || !enableCod) && (enableRazorpay || enableCod)">
+            <span class="dot amber"></span> Partial Checkout Active
+          </span>
+          <span class="status-summary-pill danger" *ngIf="!enableRazorpay && !enableCod">
+            <span class="dot red"></span> Both Methods Disabled
+          </span>
         </div>
       </div>
 
-      <div class="kpi-card refunds">
-        <div class="kpi-icon">
-          <span class="material-icons">replay</span>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Total Refunds</span>
-          <h3 class="kpi-val">₹ {{ dashboardData.totalRefunds | number:'1.2-2' }}</h3>
-          <span class="kpi-sub">{{ dashboardData.totalRefundCount || 0 }} lifetime refund(s)</span>
-        </div>
+      <!-- Success Toast Notification -->
+      <div class="payment-toast" *ngIf="paymentSuccessToast">
+        <span class="material-icons">check_circle</span>
+        <span>{{ paymentSuccessToast }}</span>
       </div>
 
-      <div class="kpi-card pending">
-        <div class="kpi-icon">
-          <span class="material-icons">local_shipping</span>
-        </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Active / Pending</span>
-          <h3 class="kpi-val">{{ dashboardData.pendingDeliveries }}</h3>
-          <span class="kpi-sub">Awaiting delivery</span>
+      <!-- Alert Banner when both disabled -->
+      <div class="payment-alert-warning" *ngIf="!enableRazorpay && !enableCod">
+        <span class="material-icons">warning</span>
+        <div>
+          <strong>Warning: Both Razorpay and COD are disabled!</strong>
+          <p>Customers will be unable to complete checkout on the storefront until at least one payment method is enabled.</p>
         </div>
       </div>
 
-      <div class="kpi-card customers">
-        <div class="kpi-icon">
-          <span class="material-icons">groups</span>
+      <div class="payment-toggles-grid">
+        <!-- Razorpay Card -->
+        <div class="payment-toggle-card" [class.enabled]="enableRazorpay" [class.disabled]="!enableRazorpay">
+          <div class="card-left">
+            <div class="payment-brand-badge razorpay-badge">
+              <span class="material-icons">credit_card</span>
+            </div>
+            <div class="toggle-meta">
+              <div class="toggle-title-row">
+                <h4>Razorpay (Online & Wallet Recharge)</h4>
+                <span class="badge-status" [class.active]="enableRazorpay" [class.inactive]="!enableRazorpay">
+                  {{ enableRazorpay ? 'ENABLED' : 'DISABLED' }}
+                </span>
+              </div>
+              <p class="toggle-desc">
+                Accept UPI (GPay, PhonePe, Paytm), Debit/Credit Cards, NetBanking, and online wallet top-ups via Razorpay gateway.
+              </p>
+            </div>
+          </div>
+
+          <div class="card-right">
+            <button type="button" 
+                    class="switch-btn" 
+                    [class.on]="enableRazorpay" 
+                    (click)="togglePaymentSetting('razorpay')" 
+                    [disabled]="paymentSettingsSaving === 'razorpay'"
+                    [title]="enableRazorpay ? 'Click to Disable Razorpay' : 'Click to Enable Razorpay'">
+              <span class="switch-handle" [class.saving]="paymentSettingsSaving === 'razorpay'"></span>
+            </button>
+            <span class="switch-label">{{ enableRazorpay ? 'Active' : 'Disabled' }}</span>
+          </div>
         </div>
-        <div class="kpi-info">
-          <span class="kpi-label">Active Customers</span>
-          <h3 class="kpi-val">{{ dashboardData.activeCustomers }}</h3>
-          <span class="kpi-sub">Registered buyers</span>
+
+        <!-- Cash on Delivery (COD) Card -->
+        <div class="payment-toggle-card" [class.enabled]="enableCod" [class.disabled]="!enableCod">
+          <div class="card-left">
+            <div class="payment-brand-badge cod-badge">
+              <span class="material-icons">local_atm</span>
+            </div>
+            <div class="toggle-meta">
+              <div class="toggle-title-row">
+                <h4>Cash on Delivery (COD)</h4>
+                <span class="badge-status" [class.active]="enableCod" [class.inactive]="!enableCod">
+                  {{ enableCod ? 'ENABLED' : 'DISABLED' }}
+                </span>
+              </div>
+              <p class="toggle-desc">
+                Allow customers to place orders without paying upfront and pay in cash or UPI at their doorstep upon arrival.
+              </p>
+            </div>
+          </div>
+
+          <div class="card-right">
+            <button type="button" 
+                    class="switch-btn" 
+                    [class.on]="enableCod" 
+                    (click)="togglePaymentSetting('cod')" 
+                    [disabled]="paymentSettingsSaving === 'cod'"
+                    [title]="enableCod ? 'Click to Disable COD' : 'Click to Enable COD'">
+              <span class="switch-handle" [class.saving]="paymentSettingsSaving === 'cod'"></span>
+            </button>
+            <span class="switch-label">{{ enableCod ? 'Active' : 'Disabled' }}</span>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Status Breakdown Section -->
-  <div class="section-block">
-    <div class="section-header">
-      <h3><span class="material-icons">donut_small</span> Order Status Breakdown</h3>
-    </div>
-    <div class="status-grid">
-      <div class="status-card placed">
-        <span class="status-title">Placed / New</span>
-        <span class="status-count">{{ dashboardData.statusBreakdown?.PLACED || 0 }}</span>
-      </div>
-
-      <div class="status-card packed">
-        <span class="status-title">Packed</span>
-        <span class="status-count">{{ dashboardData.statusBreakdown?.PACKED || 0 }}</span>
-      </div>
-
-      <div class="status-card out">
-        <span class="status-title">Out for Delivery</span>
-        <span class="status-count">{{ dashboardData.statusBreakdown?.OUT_FOR_DELIVERY || 0 }}</span>
-      </div>
-
-      <div class="status-card delivered">
-        <span class="status-title">Delivered</span>
-        <span class="status-count">{{ dashboardData.statusBreakdown?.DELIVERED || 0 }}</span>
-      </div>
-
-      <div class="status-card cancelled">
-        <span class="status-title">Cancelled</span>
-        <span class="status-count">{{ dashboardData.statusBreakdown?.CANCELLED || 0 }}</span>
       </div>
     </div>
   </div>

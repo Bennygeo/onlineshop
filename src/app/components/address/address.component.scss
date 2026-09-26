@@ -12,6 +12,12 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    box-sizing: border-box;
+
+    @media (min-width: 769px) {
+        align-items: center !important;
+        padding: 24px !important;
+    }
 }
 
 .addressModalCont {
@@ -26,6 +32,13 @@
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
     font-family: $inter;
+
+    @media (min-width: 769px) {
+        border-radius: 24px !important;
+        max-height: 86vh !important;
+        padding: 20px 24px 28px 24px !important;
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    }
 
     &::-webkit-scrollbar {
         width: 4px;

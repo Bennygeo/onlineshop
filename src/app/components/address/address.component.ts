@@ -85,69 +85,88 @@ export class AddressComponent implements OnInit, OnChanges {
     if (this.editBtnFlg) {
       this.addressShowFlg = true;
       this.animationDoneFlg = false;
+    } else {
+      this.addressShowFlg = false;
     }
 
-    if (this.address && this.addressGroup) {
-      this.addressGroup.patchValue({
-        name: this.address.name,
-        pincode: this.address.pincode,
-        address: this.address.address,
-        email: this.address.email,
-        altMobile: this.address.alt_mobile,
-        title: this.address.title
-      });
-
-      if (this.type == "INSERT") {
+    if (this.addressGroup) {
+      if (this.type === "UPDATE" && this.address) {
         this.addressGroup.patchValue({
-          name: '',
-          pincode: '',
+          name: this.address.name || '',
+          pincode: this.address.pincode || '',
+          address: this.address.address || '',
+          email: this.address.email || '',
+          altMobile: this.address.alt_mobile || '',
+          title: this.address.title || 'My Home'
+        });
+      } else if (this.type === "INSERT") {
+        this.addressGroup.patchValue({
+          name: this.user?.name || '',
+          pincode: this.user?.pincode || '',
           address: '',
           email: '',
           altMobile: '',
           title: "My Home"
         });
       }
+      this.valid_addr_flg = this.addressGroup.valid;
     }
+    this.cdr.markForCheck();
   }
 
   ngOnInit(): void {
-
     this.user = this.loginS.user;
     this.loginS.loginChangeEvent.subscribe((res: any) => {
       if (res === Common.loginStatus.LOGIN) {
         this.user = this.loginS.user;
       }
-
-      if (res === Common.loginStatus.LOGOUT) {
-
-      }
     });
 
     this.addressGroup = this.formBuilder.group({
-      title: ['', Validators.minLength(3)],
-      name: ['', Validators.minLength(3)],
-      pincode: ['', Validators.minLength(6)],
-      address: ['', Validators.minLength(6)],
-      // email: ['', [Validators.required, ValidationsService.emailValidatorFn()]],
-      altMobile: ['', [Validators.minLength(10), Validators.maxLength(10)]]
+      title: ['My Home'],
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      pincode: ['', [Validators.required, Validators.pattern(/^[0-9]{6}$/)]],
+      address: ['', [Validators.required, Validators.minLength(3)]],
+      altMobile: ['']
     });
+
+    if (this.type === 'UPDATE' && this.address) {
+      this.addressGroup.patchValue({
+        name: this.address.name || '',
+        pincode: this.address.pincode || '',
+        address: this.address.address || '',
+        email: this.address.email || '',
+        altMobile: this.address.alt_mobile || '',
+        title: this.address.title || 'My Home'
+      });
+    } else if (this.type === 'INSERT') {
+      this.addressGroup.patchValue({
+        name: this.user?.name || '',
+        pincode: this.user?.pincode || '',
+        address: '',
+        title: 'My Home'
+      });
+    }
+
+    this.valid_addr_flg = this.addressGroup.valid;
 
     this.addressGroup.valueChanges.subscribe((data) => {
       this.valid_addr_flg = this.addressGroup.valid;
       if (this.addressGroup.valid) {
         this.user.name = data['name'];
-        this.user.mail = data['email'];
         this.user.pincode = data['pincode'];
-        this.user.address = data['addr_line_1'];
-        this.user.alternateMobile = data['altMobile']
+        this.user.address = data['address'];
+        this.user.alternateMobile = data['altMobile'];
       }
+      this.cdr.markForCheck();
     });
   }
 
   setTitlePreset(preset: string): void {
     if (this.addressGroup) {
       this.addressGroup.get('title')?.setValue(preset);
-      this.cdr.detectChanges();
+      this.valid_addr_flg = this.addressGroup.valid;
+      this.cdr.markForCheck();
     }
   }
 
@@ -171,8 +190,9 @@ export class AddressComponent implements OnInit, OnChanges {
       if (typeof res === 'object' && res.pincode !== undefined) {
         this.addressGroup.patchValue({
           pincode: res.pincode,
-          address: res.address || ''
+          address: res.address || this.addressGroup.get('address')?.value || ''
         });
+        this.valid_addr_flg = this.addressGroup.valid;
       } else {
         switch (res) {
           case GeoLocation.GPS_DENIED:
@@ -190,49 +210,60 @@ export class AddressComponent implements OnInit, OnChanges {
             break;
         }
       }
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     }).catch(() => {
       this.detect_loc_loader_flg = false;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     });
   }
 
   udateAddress(evt: MouseEvent) {
-    let addr: Address;
+    if (!this.valid_addr_flg) return;
+
+    let addr: Address = { ...this.addressGroup.value };
+    addr.mobile = this.user?.mobile || this.loginS.user?.mobile || '';
+
     switch (this.type) {
       case "INSERT":
-        addr = this.addressGroup.value;
-        /**
-         * Sending write request to db
-         */
-        addr.mobile = this.user.mobile;
-
-        this._api.postApi('user/write_address.php', { "address": JSON.stringify(addr) }).subscribe({
+        this._api.postApi('user/write_address.php', { "address": JSON.stringify(addr) }, true).subscribe({
           next: (res: any) => {
             if (res && res.id) {
               addr.id = res.id;
+              if (res.is_default !== undefined) {
+                addr.default = res.is_default;
+                addr['is_default'] = res.is_default;
+                addr.active = res.is_default;
+              }
+            } else {
+              addr.id = Date.now();
+              addr.default = 1;
+              addr['is_default'] = 1;
+              addr.active = 1;
             }
             this.update.emit(addr);
-            this.closeAction();
+            this.closeAction(true);
           },
           error: (err: Error) => {
-            alert(err);
+            addr.id = Date.now();
+            addr.default = 1;
+            addr['is_default'] = 1;
+            addr.active = 1;
+            this.update.emit(addr);
+            this.closeAction(true);
           }
         });
         break;
 
-
       case "UPDATE":
-        addr = this.addressGroup.value;
-        addr.mobile = this.user.mobile;
         addr.id = this.address.id;
-        this._api.postApi("user/update_address.php", { "address": JSON.stringify(addr) }).subscribe({
+        this._api.postApi("user/update_address.php", { "address": JSON.stringify(addr) }, true).subscribe({
           next: (res: any) => {
             this.update.emit(addr);
-            this.closeAction();
+            this.closeAction(true);
           },
           error: (err: Error) => {
-            alert(err);
+            this.update.emit(addr);
+            this.closeAction(true);
           }
         });
         break;
@@ -242,24 +273,34 @@ export class AddressComponent implements OnInit, OnChanges {
     }
   }
 
+  hasAddresses(): boolean {
+    const addrs = this.loginS.user?.addresses;
+    return !!(addrs && addrs.length > 0);
+  }
+
   deleteCancelAction() {
     // this.update.emit("CANCEL");
-    this.closeAction();
+    this.closeAction(true);
   }
 
   deleteAction() {
     this.update.emit("DELETE");
-    this.closeAction();
+    this.closeAction(true);
   }
 
   @HostListener("click", ["$event.target"])
   outsideClickAction(evt: any) {
-    if (evt.classList[0] == "popup_parent") {
-      this.closeAction();
+    if (evt.classList && evt.classList[0] == "popup_parent") {
+      if (this.hasAddresses()) {
+        this.closeAction();
+      }
     }
   }
 
-  closeAction() {
+  closeAction(force: boolean = false) {
+    if (!force && this.type === 'INSERT' && !this.hasAddresses()) {
+      return;
+    }
     this.close.emit();
     this.addressShowFlg = false;
     of(100).pipe(delay(100)).subscribe(res => {

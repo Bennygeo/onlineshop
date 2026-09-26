@@ -14,13 +14,14 @@
 
                 <div style="display: flex; flex-direction: row;">
                     <mat-form-field class="" style="margin-top: 21px; width: 140px;">
-                        <input matInput placeholder="Pincode" type="number"
-                            onKeyPress="if(this.value.length==6) return false;" [formControl]="pincodeFormControl"
+                        <input matInput placeholder="Pincode" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                            [formControl]="pincodeFormControl"
                             [errorStateMatcher]="matcher"
                             style="font-size:18px; letter-spacing:1.3px; text-align: center; position: relative; top:-3px; line-height: 28px;">
 
                         <mat-error
-                            *ngIf="pincodeFormControl.hasError('checkLimit') && !pincodeFormControl.hasError('required')">
+                            *ngIf="(pincodeFormControl.hasError('checkLimit') || pincodeFormControl.hasError('pattern') || pincodeFormControl.hasError('range')) && !pincodeFormControl.hasError('required')">
+                            Enter a valid 6-digit pincode
                         </mat-error>
                         <mat-error *ngIf="pincodeFormControl.hasError('required')" class="info-3">
                             Pincode is <strong>required</strong>
@@ -52,6 +53,44 @@
             </div>
         </div>
 
+
+        <!-- Unserviceable Location Alert Modal -->
+        <div class="popup_cont unserviceable-popup" *ngIf="unserviceableModalFlg" [@translateEffect] (click)="contClickAction($event)">
+            <div class="container-center unserviceable-container">
+                <div class="unserviceable-icon-box">
+                    <span class="material-icons unserviceable-icon">location_off</span>
+                </div>
+                <h3 class="unserviceable-title">We're Not in Your Area Yet!</h3>
+                <p class="unserviceable-desc">
+                    We currently don't deliver to pincode <strong>{{ enteredPincode }}</strong>. We are rapidly expanding our delivery network to your neighborhood soon!
+                </p>
+
+                <div class="serviceable-zones-info">
+                    <div class="zones-label">
+                        <span class="material-icons">check_circle</span>
+                        <span>Currently Delivering In:</span>
+                    </div>
+                    <div class="zone-pill-box">
+                        <button type="button" class="serviceable-pill" (click)="useServiceablePincode('400071')">
+                            <span class="material-icons">place</span>
+                            <span><strong>400071</strong> - Chembur, Mumbai</span>
+                            <span class="pill-tap-hint">Tap to use</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="unserviceable-actions">
+                    <button type="button" class="tnkspt_primary_btn retry-pin-btn" (click)="retryPincode()">
+                        <span class="material-icons">edit_location</span>
+                        <span>Try Another Pincode</span>
+                    </button>
+                    <button type="button" class="explore-anyway-btn" (click)="exploreAnyway()">
+                        <span>Explore Catalog Anyway</span>
+                        <span class="material-icons">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- ----------------Login please------------- -->
         <div class="popup_cont" *ngIf="mobilePageFlg" [@translateEffect]>
@@ -106,40 +145,48 @@
 
                 <form class="login-form" #otpForm="ngForm" (ngSubmit)="otpSubmit()">
                     <div id="otpBox" class="otpSection" [ngClass]="{'otpSectionDisabled':validOTPFlg}">
-                        <input type="number" maxlength="1"
-                            [ngClass]="(this.otpStatus == 'Invalid') ? 'otpInput-error' : 'otpInput'" #otp1
-                            (input)="onOtpChange($event)" (keyup)="onKeyUpHandler($event,otp2)" id="otp_1"
-                            onKeyDown="if(this.value.length==1 && event.keyCode!=8 && event.keyCode!=46) return false;"
-                            (paste)="onPasteAction($event)" (keydown)="onKeydown($event)"
-                            (focus)="focusFunction($event)" />
+                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                            autocomplete="one-time-code" name="otp_1" [value]="otpValues[0]"
+                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp1
+                            (input)="onOtpInput($event, 1, otp2)" (change)="onOtpInput($event, 1, otp2)" (keyup)="onKeyUpHandler($event, otp2, 1)" id="otp_1"
+                            (paste)="onPasteAction($event)" />
 
-                        <input type="number" maxlength="1"
-                            [ngClass]="(this.otpStatus == 'Invalid') ? 'otpInput-error' : 'otpInput'" #otp2
-                            (input)="onOtpChange($event)" (keyup)="onKeyUpHandler($event,otp3)" id="otp_2"
-                            onKeyDown="if(this.value.length==1 && event.keyCode!=8) return false;"
-                            (paste)="onPasteAction($event)" (keydown)="onKeydown($event)"
-                            (focus)="focusFunction($event)" />
+                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                            autocomplete="one-time-code" name="otp_2" [value]="otpValues[1]"
+                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp2
+                            (input)="onOtpInput($event, 2, otp3)" (change)="onOtpInput($event, 2, otp3)" (keyup)="onKeyUpHandler($event, otp3, 2)" id="otp_2"
+                            (paste)="onPasteAction($event)" />
 
-                        <input type="number" maxlength="1"
-                            [ngClass]="(this.otpStatus == 'Invalid') ? 'otpInput-error' : 'otpInput'" #otp3
-                            (input)="onOtpChange($event)" (keyup)="onKeyUpHandler($event,otp4)" id="otp_3"
-                            onKeyDown="if(this.value.length==1 && event.keyCode!=8) return false;"
-                            (paste)="onPasteAction($event)" (keydown)="onKeydown($event)"
-                            (focus)="focusFunction($event)" />
+                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                            autocomplete="one-time-code" name="otp_3" [value]="otpValues[2]"
+                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp3
+                            (input)="onOtpInput($event, 3, otp4)" (change)="onOtpInput($event, 3, otp4)" (keyup)="onKeyUpHandler($event, otp4, 3)" id="otp_3"
+                            (paste)="onPasteAction($event)" />
 
-                        <input type="number" maxlength="1"
-                            [ngClass]="(this.otpStatus == 'Invalid') ? 'otpInput-error' : 'otpInput'" #otp4
-                            (input)="onOtpChange($event)" (keyup)="onKeyUpHandler($event,false)" id="otp_4"
-                            onKeyDown="if(this.value.length==1 && event.keyCode!=8) return false;"
-                            (paste)="onPasteAction($event)" (keydown)="onKeydown($event)"
-                            (focus)="focusFunction($event)" />
+                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                            autocomplete="one-time-code" name="otp_4" [value]="otpValues[3]"
+                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp4
+                            (input)="onOtpInput($event, 4, otp5)" (change)="onOtpInput($event, 4, otp5)" (keyup)="onKeyUpHandler($event, otp5, 4)" id="otp_4"
+                            (paste)="onPasteAction($event)" />
+
+                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                            autocomplete="one-time-code" name="otp_5" [value]="otpValues[4]"
+                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp5
+                            (input)="onOtpInput($event, 5, otp6)" (change)="onOtpInput($event, 5, otp6)" (keyup)="onKeyUpHandler($event, otp6, 5)" id="otp_5"
+                            (paste)="onPasteAction($event)" />
+
+                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+                            autocomplete="one-time-code" name="otp_6" [value]="otpValues[5]"
+                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp6
+                            (input)="onOtpInput($event, 6, null)" (change)="onOtpInput($event, 6, null)" (keyup)="onKeyUpHandler($event, false, 6)" id="otp_6"
+                            (paste)="onPasteAction($event)" />
                     </div>
 
-                    <button [disabled]="otpFlag" class="tnkspt_primary_btn" style="margin-top: 96px;"
+                    <button [disabled]="otpFlag" class="tnkspt_primary_btn" style="margin-top: 32px;"
                         (click)="otpSubmit()">
                         {{btnName}}</button>
 
-                    <div class="info-3">{{otpStatus}}</div>
+                    <div class="info-3" style="margin-top: 14px; font-weight: 600; color: #ef4444;" *ngIf="otpStatus && otpStatus !== 'Validating...' && otpStatus !== 'Valid'">{{otpStatus}}</div>
                 </form>
             </div>
         </div>
@@ -161,7 +208,7 @@
                     <div style="display: flex; justify-content: center;">
                         <mat-form-field style="margin-top: 12px; width: 200px;">
                             <input matInput placeholder="Referral Code" [formControl]="referralFormControl"
-                                [errorStateMatcher]="matcher" [maxlength]="10"
+                                [errorStateMatcher]="matcher" [maxlength]="20"
                                 style="font-size:18px; letter-spacing:1.5px; text-align: center; text-transform: uppercase;">
                         </mat-form-field>
                     </div>

@@ -59,15 +59,49 @@
           <span>Sales Dashboard</span>
         </a>
 
+        <a routerLink="/admin/reports" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+          <span class="material-icons">analytics</span>
+          <span>Reports & Analytics</span>
+        </a>
+
+        <a routerLink="/admin/banners" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+          <span class="material-icons">view_carousel</span>
+          <span>Banners & Promos</span>
+        </a>
+
         <a routerLink="/admin/users" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
           <span class="material-icons">people</span>
           <span>Customers & Users</span>
         </a>
 
-        <a routerLink="/admin/products" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
-          <span class="material-icons">inventory_2</span>
-          <span>Products Catalog</span>
-        </a>
+        <div class="nav-group" [class.open]="isProductsNavOpen">
+          <div class="nav-item has-sub" (click)="toggleProductsNav()" [class.active]="router.url.includes('/admin/products')">
+            <div class="nav-label-box">
+              <span class="material-icons">inventory_2</span>
+              <span>Products Catalog</span>
+            </div>
+            <span class="material-icons sub-arrow">{{ isProductsNavOpen ? 'expand_less' : 'expand_more' }}</span>
+          </div>
+
+          <div class="sub-nav-menu" *ngIf="isProductsNavOpen">
+            <a routerLink="/admin/products/list" routerLinkActive="sub-active" class="sub-nav-item" (click)="closeMobileMenu()">
+              <span class="material-icons">list_alt</span>
+              <span>All Products</span>
+            </a>
+            <a routerLink="/admin/products/add" routerLinkActive="sub-active" class="sub-nav-item" (click)="closeMobileMenu()">
+              <span class="material-icons">add_circle_outline</span>
+              <span>Add Product</span>
+            </a>
+            <a routerLink="/admin/products/categories" routerLinkActive="sub-active" class="sub-nav-item" (click)="closeMobileMenu()">
+              <span class="material-icons">category</span>
+              <span>Manage Categories</span>
+            </a>
+            <a routerLink="/admin/products/bulk" routerLinkActive="sub-active" class="sub-nav-item" (click)="closeMobileMenu()">
+              <span class="material-icons">upload_file</span>
+              <span>Bulk Upload / Update</span>
+            </a>
+          </div>
+        </div>
 
         <a routerLink="/admin/orders" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
           <span class="material-icons">local_shipping</span>
@@ -77,6 +111,11 @@
         <a routerLink="/admin/delivery" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
           <span class="material-icons">two_wheeler</span>
           <span>Delivery Console</span>
+        </a>
+
+        <a routerLink="/admin/zones" routerLinkActive="active" class="nav-item" (click)="closeMobileMenu()">
+          <span class="material-icons">pin_drop</span>
+          <span>Delivery Zones</span>
         </a>
       </nav>
 
@@ -104,9 +143,9 @@
       <span class="nav-label">Dashboard</span>
     </a>
 
-    <a routerLink="/admin/users" routerLinkActive="active" class="bottom-nav-item">
-      <span class="material-icons">people</span>
-      <span class="nav-label">Customers</span>
+    <a routerLink="/admin/reports" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-icons">analytics</span>
+      <span class="nav-label">Reports</span>
     </a>
 
     <a routerLink="/admin/products" routerLinkActive="active" class="bottom-nav-item">
@@ -119,9 +158,9 @@
       <span class="nav-label">Orders</span>
     </a>
 
-    <a routerLink="/admin/delivery" routerLinkActive="active" class="bottom-nav-item">
-      <span class="material-icons">two_wheeler</span>
-      <span class="nav-label">Delivery</span>
+    <a routerLink="/admin/zones" routerLinkActive="active" class="bottom-nav-item">
+      <span class="material-icons">pin_drop</span>
+      <span class="nav-label">Zones</span>
     </a>
   </nav>
 </div>

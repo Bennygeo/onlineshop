@@ -15,19 +15,7 @@ if (!$pdo) {
     sendJson(['live' => [], 'outOfStock' => [], 'cart' => []]);
 }
 
-// Ensure schema columns exist on all tables
-$allTables = ['products', 'zone1_products_new_1', 'zone2_products_new_1'];
-if (!in_array($table_name, $allTables)) {
-    $allTables[] = $table_name;
-}
-foreach ($allTables as $t) {
-    try {
-        $pdo->exec("ALTER TABLE {$t} ADD COLUMN in_stock INT DEFAULT 1");
-        $pdo->exec("ALTER TABLE {$t} ADD COLUMN stock_qty DECIMAL(10,2) DEFAULT 0.00");
-        $pdo->exec("ALTER TABLE {$t} ADD COLUMN gst_percent DECIMAL(5,2) DEFAULT 5.00");
-        $pdo->exec("ALTER TABLE {$t} ADD COLUMN stock_price DECIMAL(10,2) DEFAULT 0.00");
-    } catch (Exception $colEx) {}
-}
+
 
 try {
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
@@ -101,16 +89,22 @@ try {
 
     $cart = [];
     if ($orderId) {
-        $stmtCart = $pdo->prepare("SELECT oi.order_id AS orderID, oi.product_id AS productID, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, 'CART' AS status FROM order_items oi WHERE oi.order_id = ?");
-        $stmtCart->execute([$orderId]);
-        $cart = $stmtCart->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        try {
+            $stmtCart = $pdo->prepare("SELECT oi.order_id AS orderID, oi.product_id AS id, oi.product_id AS productID, COALESCE(NULLIF(oi.product_name, ''), p.name, 'Product Item') AS name, COALESCE(p.img_url, 'assets/categories/Thinkspot_veggiesIcon.png') AS img_url, COALESCE(p.unit_name, '') AS unit_name, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, 'CART' AS status FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
+            $stmtCart->execute([$orderId]);
+            $cart = $stmtCart->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (Exception $eCart) {
+            $stmtCart = $pdo->prepare("SELECT oi.order_id AS orderID, oi.product_id AS id, oi.product_id AS productID, COALESCE(p.name, 'Product Item') AS name, COALESCE(p.img_url, 'assets/categories/Thinkspot_veggiesIcon.png') AS img_url, COALESCE(p.unit_name, '') AS unit_name, oi.quantity, oi.price, oi.weight, oi.rangeDates, oi.subscribedDates, oi.subscriptionType, oi.subsStatus, oi.pausedDates, 'CART' AS status FROM order_items oi LEFT JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?");
+            $stmtCart->execute([$orderId]);
+            $cart = $stmtCart->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        }
     }
 
     sendJson([
         'live' => $products ?: [],
         'outOfStock' => [],
         'cart' => $cart
-    ]);
+    ], 200, 60);
 } catch (Exception $e) {
     sendJson(['live' => [], 'outOfStock' => [], 'cart' => []]);
 }

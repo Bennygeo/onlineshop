@@ -76,8 +76,29 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   onImgError(event: any) {
-    if (event && event.target) {
-      event.target.src = 'assets/orders/orders_veg.png';
+    if (event?.target) {
+      event.target.onerror = null;
+      event.target.src = 'assets/general/product_placeholder.svg';
+    }
+  }
+
+  onThumbnailError(th: any, event: any) {
+    if (th) {
+      th.img = 'assets/general/product_placeholder.svg';
+    }
+    if (event?.target) {
+      event.target.onerror = null;
+      event.target.src = 'assets/general/product_placeholder.svg';
+    }
+  }
+
+  onProImgError(pro: any, event: any) {
+    if (pro) {
+      pro.img_url = 'assets/general/product_placeholder.svg';
+    }
+    if (event?.target) {
+      event.target.onerror = null;
+      event.target.src = 'assets/general/product_placeholder.svg';
     }
   }
 
@@ -97,6 +118,18 @@ export class OrdersComponent implements OnInit, OnDestroy {
   shopNow() {
     const cat = this.cartService.lastSelectedCategory || 'Vegetables';
     this.cartService.router.navigate(['/products/category', cat]);
+  }
+
+  isReferralOrder(item: any): boolean {
+    if (!item) return false;
+    const c = String(item.coupon || '').toUpperCase();
+    const r = String(item.referral_code || '').toUpperCase();
+    return c === 'WELCOME25' || r.length > 0 || !!item.referred_by;
+  }
+
+  getReferralCode(item: any): string {
+    if (!item) return '';
+    return item.referral_code || (String(item.coupon || '').toUpperCase() === 'WELCOME25' ? 'WELCOME25' : (item.coupon || ''));
   }
 
   getDeliveryModeText(mode: any): string {
@@ -219,30 +252,37 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   getOrderThumbnails(order: any): Array<{ img: string, name: string }> {
     if (!order) return [];
+    if (order.thumbnails && Array.isArray(order.thumbnails)) {
+      return order.thumbnails;
+    }
+    let thumbs: Array<{ img: string, name: string }> = [];
     if (order.products && Array.isArray(order.products) && order.products.length > 0) {
-      return order.products.slice(0, 4).map(p => ({
-        img: p.img_url || 'assets/orders/orders_veg.png',
+      thumbs = order.products.slice(0, 4).map(p => ({
+        img: p.img_url || 'assets/general/product_placeholder.svg',
         name: p.name || p.product_name || 'Product'
       }));
-    }
-    if (order.itemsList && Array.isArray(order.itemsList) && order.itemsList.length > 0) {
-      return order.itemsList.slice(0, 4).map(p => ({
-        img: p.img_url || 'assets/orders/orders_veg.png',
+    } else if (order.itemsList && Array.isArray(order.itemsList) && order.itemsList.length > 0) {
+      thumbs = order.itemsList.slice(0, 4).map(p => ({
+        img: p.img_url || 'assets/general/product_placeholder.svg',
         name: p.product_name || p.name || 'Product'
       }));
-    }
-    if (order.items) {
+    } else if (order.items) {
       try {
         const raw = typeof order.items === 'string' ? JSON.parse(order.items) : order.items;
         if (Array.isArray(raw) && raw.length > 0) {
-          return raw.slice(0, 4).map((p: any) => ({
-            img: p.img_url || 'assets/orders/orders_veg.png',
+          thumbs = raw.slice(0, 4).map((p: any) => ({
+            img: p.img_url || 'assets/general/product_placeholder.svg',
             name: p.product_name || p.name || 'Product'
           }));
         }
       } catch (e) {}
     }
-    return [];
+    order.thumbnails = thumbs;
+    return thumbs;
+  }
+
+  trackByThumbName(index: number, item: any): string {
+    return item?.name ? `${index}_${item.name}` : `${index}`;
   }
 
   getOrderItemsCount(order: any): number {
@@ -377,6 +417,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
             } catch (e) {
               item.address = '';
             }
+
+            item.coupon = item.coupon || '';
+            item.coupon_discount = Number(item.coupon_discount || 0);
+            item.referral_code = item.referral_code || '';
+            item.referred_by = item.referred_by || '';
             item.processed = true;
           }
         });
@@ -437,9 +482,10 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   openTab(evt: any, target: "Daily" | "Subscribed") {
     this.activeTab = target;
-    document.querySelector("#Daily")['style'].display = "none";
-    document.querySelector("#Subscribed")['style'].display = "none";
-    document.querySelector("#" + target)['style'].display = "block";
+    const daily = document.querySelector("#Daily") as HTMLElement;
+    const subs = document.querySelector("#Subscribed") as HTMLElement;
+    if (daily) daily.style.display = target === "Daily" ? "block" : "none";
+    if (subs) subs.style.display = target === "Subscribed" ? "block" : "none";
   }
 
   orderCancelAction(order: any) {

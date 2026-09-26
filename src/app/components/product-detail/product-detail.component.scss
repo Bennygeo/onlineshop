@@ -99,9 +99,17 @@
 }
 
 @keyframes badgePop {
-    0% { transform: scale(0.6); }
-    70% { transform: scale(1.2); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(0.6);
+    }
+
+    70% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* 2. CONTAINER & LAYOUT */
@@ -530,7 +538,10 @@
         border-bottom: 1px solid #e2e8f0;
         overflow-x: auto;
         scrollbar-width: none;
-        &::-webkit-scrollbar { display: none; }
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
 
         .tab-nav-btn {
             background: none;
@@ -615,7 +626,8 @@
                 margin-bottom: 8px;
             }
 
-            &.storage-list, &.culinary-list {
+            &.storage-list,
+            &.culinary-list {
                 list-style: none;
                 padding-left: 0;
 
@@ -856,10 +868,26 @@
                 background: #e2e8f0;
                 border-radius: 6px;
 
-                &.line-lg { height: 32px; width: 70%; }
-                &.line-md { height: 20px; width: 40%; }
-                &.line-sm { height: 48px; width: 50%; }
-                &.line-btn { height: 44px; width: 140px; border-radius: 8px; }
+                &.line-lg {
+                    height: 32px;
+                    width: 70%;
+                }
+
+                &.line-md {
+                    height: 20px;
+                    width: 40%;
+                }
+
+                &.line-sm {
+                    height: 48px;
+                    width: 50%;
+                }
+
+                &.line-btn {
+                    height: 44px;
+                    width: 140px;
+                    border-radius: 8px;
+                }
             }
         }
     }
@@ -872,8 +900,13 @@
 }
 
 @keyframes shimmerAnim {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
 }
 
 .error-wrap {

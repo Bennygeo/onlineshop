@@ -15,6 +15,68 @@ $payment_type = isset($details['payment_type']) ? $details['payment_type'] : 'Wa
 $address_json = isset($details['address']) ? (is_string($details['address']) ? $details['address'] : json_encode($details['address'])) : '';
 $order_id = isset($details['order_id']) && !empty($details['order_id']) ? $details['order_id'] : ('ORD_' . date('YmdHis') . '_' . rand(100, 999));
 
+$coupon = isset($details['coupon']) ? trim($details['coupon']) : '';
+$coupon_discount = isset($details['coupon_discount']) ? round((float)$details['coupon_discount'], 2) : 0.00;
+$referral_code = isset($details['referral_code']) ? trim($details['referral_code']) : '';
+$referred_by = isset($details['referred_by']) ? trim($details['referred_by']) : '';
+
+if ($referral_code === 'xxxx') {
+    $referral_code = '';
+}
+if ($referred_by === 'xxxx') {
+    $referred_by = '';
+}
+
+// Resolve user referral code if not explicitly passed
+if (empty($referral_code) && $pdo && $mobile) {
+    try {
+        $uRefStmt = $pdo->prepare("SELECT referred_by FROM users WHERE mobile = ? LIMIT 1");
+        $uRefStmt->execute([$mobile]);
+        $uRefRow = $uRefStmt->fetch();
+        if ($uRefRow && !empty($uRefRow['referred_by']) && $uRefRow['referred_by'] !== 'xxxx') {
+            $referral_code = $uRefRow['referred_by'];
+        }
+    } catch (Exception $e) {}
+}
+
+if ($coupon === 'WELCOME25' && empty($referral_code)) {
+    if ($pdo && $mobile) {
+        try {
+            $uRefStmt = $pdo->prepare("SELECT referred_by FROM users WHERE mobile = ? LIMIT 1");
+            $uRefStmt->execute([$mobile]);
+            $uRefRow = $uRefStmt->fetch();
+            if ($uRefRow && !empty($uRefRow['referred_by']) && $uRefRow['referred_by'] !== 'xxxx') {
+                $referral_code = $uRefRow['referred_by'];
+            }
+        } catch (Exception $e) {}
+    }
+}
+
+// Resolve referrer mobile from referral_code
+if (!empty($referral_code) && $referral_code !== 'WELCOME25' && $pdo) {
+    try {
+        $cleanRefCode = strtoupper(trim($referral_code));
+        $d = preg_replace('/[^0-9]/', '', $cleanRefCode);
+        $l4 = strlen($d) >= 4 ? substr($d, -4) : $d;
+        $l6 = strlen($d) >= 6 ? substr($d, -6) : $d;
+        $stRef = $pdo->prepare("
+            SELECT mobile, name FROM users 
+            WHERE referral_id = :code 
+               OR UPPER(referral_id) = :code 
+               OR mobile = :raw 
+               OR (:l4 != '' AND RIGHT(mobile, 4) = :l4)
+               OR (:l6 != '' AND RIGHT(mobile, 6) = :l6)
+               OR (:l4 != '' AND mobile LIKE CONCAT('%', :l4))
+            LIMIT 1
+        ");
+        $stRef->execute([':code' => $cleanRefCode, ':raw' => $referral_code, ':l4' => $l4, ':l6' => $l6]);
+        $rRow = $stRef->fetch(PDO::FETCH_ASSOC);
+        if ($rRow && !empty($rRow['mobile'])) {
+            $referred_by = $rRow['mobile'];
+        }
+    } catch (Exception $e) {}
+}
+
 // Delivery Option & Scheduling (Strictly Asia/Kolkata IST)
 $delivery_option = isset($details['delivery_option']) ? trim($details['delivery_option']) : 'NEXT_DAY_7AM';
 $delivery_cutoff_ist = '12:00 Midnight IST';
@@ -93,9 +155,17 @@ try {
             cgst DECIMAL(10,2) DEFAULT 0.00,
             sgst DECIMAL(10,2) DEFAULT 0.00,
             gst_percent DECIMAL(5,2) DEFAULT 5.00,
+            coupon VARCHAR(50) DEFAULT NULL,
+            coupon_discount DECIMAL(10,2) DEFAULT 0.00,
+            referral_code VARCHAR(50) DEFAULT NULL,
+            referred_by VARCHAR(100) DEFAULT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ");
+    $pdo->exec("ALTER TABLE orders ADD COLUMN coupon VARCHAR(50) DEFAULT NULL");
+    $pdo->exec("ALTER TABLE orders ADD COLUMN coupon_discount DECIMAL(10,2) DEFAULT 0.00");
+    $pdo->exec("ALTER TABLE orders ADD COLUMN referral_code VARCHAR(50) DEFAULT NULL");
+    $pdo->exec("ALTER TABLE orders ADD COLUMN referred_by VARCHAR(100) DEFAULT NULL");
 } catch (Exception $e) {}
 
 try {
@@ -118,6 +188,23 @@ try {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ");
+} catch (Exception $e) {}
+
+try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS `serviceable_pincodes` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `pincode` VARCHAR(10) NOT NULL UNIQUE,
+            `zone` VARCHAR(50) NOT NULL DEFAULT 'zone1',
+            `area_name` VARCHAR(100) DEFAULT '',
+            `is_active` TINYINT(1) DEFAULT 1,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+    $pCount = $pdo->query("SELECT COUNT(*) FROM `serviceable_pincodes`")->fetchColumn();
+    if ($pCount == 0) {
+        $pdo->exec("INSERT IGNORE INTO `serviceable_pincodes` (`pincode`, `zone`, `area_name`, `is_active`) VALUES ('400071', 'zone1', 'Chembur, Mumbai', 1)");
+    }
 } catch (Exception $e) {}
 
 $alterCols = [
@@ -243,7 +330,20 @@ function calculateNextPreferredDeliveryDate($preferredDays, $defaultDeliveryDate
 }
 
 if ($delivery_option === 'NEXT_DAY_7AM') {
-    $delivery_date = adjustDeliveryDateForWeeklyOff($delivery_date, $weeklyOffDay);
+    // Strictly server-enforced cutoff: 10:00 PM (22:00 IST).
+    // If current server time is >= 22:00, next morning (7 AM) cutoff has passed -> earliest delivery is +2 days.
+    // Otherwise earliest delivery is +1 day.
+    $serverIstHour = (int)date('G');
+    $minDaysAhead = ($serverIstHour >= 22) ? 2 : 1;
+    $earliestAllowedDate = date('Y-m-d', strtotime("+{$minDaysAhead} days"));
+    $earliestAllowedDate = adjustDeliveryDateForWeeklyOff($earliestAllowedDate, $weeklyOffDay);
+
+    // If client supplied a past date or date earlier than earliestAllowedDate (e.g. altered machine time), enforce earliest allowed date!
+    if (empty($delivery_date) || $delivery_date < $earliestAllowedDate) {
+        $delivery_date = $earliestAllowedDate;
+    } else {
+        $delivery_date = adjustDeliveryDateForWeeklyOff($delivery_date, $weeklyOffDay);
+    }
     $delivery_expected_at = $delivery_date . ' 07:00:00';
 }
 
@@ -390,27 +490,62 @@ if ($mobile && $payment_type !== 'COD' && !$isOffline) {
     }
 }
 
+// If address is empty or not provided, fallback to default address in user_addresses or in-store counter address
+if (empty($address_json) || $address_json === '{}' || $address_json === 'null' || $address_json === '""' || $address_json === '[]') {
+    try {
+        $addrStmt = $pdo->prepare("SELECT * FROM user_addresses WHERE mobile = ? ORDER BY is_default DESC, id DESC LIMIT 1");
+        $addrStmt->execute([$mobile]);
+        $defaultAddr = $addrStmt->fetch(PDO::FETCH_ASSOC);
+        if ($defaultAddr) {
+            $address_json = json_encode($defaultAddr);
+        } else {
+            $address_json = json_encode([
+                'name' => 'Store Customer',
+                'mobile' => $mobile,
+                'address' => $isOffline ? 'Store Counter / In-Store Direct Sale' : 'Store Pickup',
+                'pincode' => '400071'
+            ]);
+        }
+    } catch (Exception $addrEx) {}
+}
+
+// Validate delivery pincode against serviceable delivery zones BEFORE starting transaction
+if (!$isOffline) {
+    $orderPincode = '';
+    if (!empty($address_json)) {
+        $addrParsed = json_decode($address_json, true);
+        if (is_array($addrParsed) && !empty($addrParsed['pincode'])) {
+            $orderPincode = trim($addrParsed['pincode']);
+        }
+    }
+    if (empty($orderPincode) && !empty($details['pincode'])) {
+        $orderPincode = trim($details['pincode']);
+    }
+
+    if (empty($orderPincode)) {
+        sendJson([
+            'error' => 'Delivery pincode is required. Please update your delivery address with a valid pincode.',
+            'code' => 'MISSING_PINCODE'
+        ], 400);
+        exit;
+    }
+
+    $stPinCheck = $pdo->prepare("SELECT pincode, zone FROM `serviceable_pincodes` WHERE pincode = ? AND is_active = 1 LIMIT 1");
+    $stPinCheck->execute([$orderPincode]);
+    $srvPin = $stPinCheck->fetch();
+
+    if (!$srvPin) {
+        sendJson([
+            'error' => "Delivery is not available in your area (Pincode: {$orderPincode}). We are not yet in your area.",
+            'code' => 'UNSERVICEABLE_PINCODE',
+            'pincode' => $orderPincode
+        ], 400);
+        exit;
+    }
+}
+
 try {
     $pdo->beginTransaction();
-
-    // If address is empty or not provided, fallback to default address in user_addresses or in-store counter address
-    if (empty($address_json) || $address_json === '{}' || $address_json === 'null' || $address_json === '""' || $address_json === '[]') {
-        try {
-            $addrStmt = $pdo->prepare("SELECT * FROM user_addresses WHERE mobile = ? ORDER BY is_default DESC, id DESC LIMIT 1");
-            $addrStmt->execute([$mobile]);
-            $defaultAddr = $addrStmt->fetch(PDO::FETCH_ASSOC);
-            if ($defaultAddr) {
-                $address_json = json_encode($defaultAddr);
-            } else {
-                $address_json = json_encode([
-                    'name' => 'Store Customer',
-                    'mobile' => $mobile,
-                    'address' => $isOffline ? 'Store Counter / In-Store Direct Sale' : 'Store Pickup',
-                    'pincode' => '600095'
-                ]);
-            }
-        } catch (Exception $addrEx) {}
-    }
 
     $delivery_inst = isset($details['delivery_inst']) ? $details['delivery_inst'] : (isset($details['instructions']) ? $details['instructions'] : '');
     $delivery_mode = isset($details['delivery_mode']) ? (string)$details['delivery_mode'] : '0';
@@ -498,7 +633,8 @@ try {
                     order_source = ?, created_by = ?,
                     status = 'PLACED', delivery_date = ?, delivery_inst = ?, delivery_mode = ?, 
                     delivery_option = ?, delivery_expected_at = ?, delivery_cutoff_ist = ?,
-                    gst_amount = ?, cgst = ?, sgst = ?, gst_percent = ? 
+                    gst_amount = ?, cgst = ?, sgst = ?, gst_percent = ?,
+                    coupon = ?, coupon_discount = ?, referral_code = ?, referred_by = ?
                 WHERE order_id = ?
             ");
             $stmtUpd->execute([
@@ -506,20 +642,22 @@ try {
                 $order_source, $created_by,
                 $grpDate, $delivery_inst, $delivery_mode, 
                 $delivery_option, $grpExpectedAt, $delivery_cutoff_ist,
-                $gst_amount, $cgst, $sgst, $gst_percent, $currOrderId
+                $gst_amount, $cgst, $sgst, $gst_percent,
+                $coupon, $coupon_discount, $referral_code, $referred_by, $currOrderId
             ]);
         } else {
             $stmtIns = $pdo->prepare("
                 INSERT INTO orders 
-                (order_id, mobile, address_json, total_amount, payment_type, order_source, created_by, status, delivery_date, delivery_inst, delivery_mode, delivery_option, delivery_expected_at, delivery_cutoff_ist, gst_amount, cgst, sgst, gst_percent) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'PLACED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (order_id, mobile, address_json, total_amount, payment_type, order_source, created_by, status, delivery_date, delivery_inst, delivery_mode, delivery_option, delivery_expected_at, delivery_cutoff_ist, gst_amount, cgst, sgst, gst_percent, coupon, coupon_discount, referral_code, referred_by) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'PLACED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmtIns->execute([
                 $currOrderId, $mobile, $address_json, $grpTotal, $payment_type, 
                 $order_source, $created_by,
                 $grpDate, $delivery_inst, $delivery_mode, 
                 $delivery_option, $grpExpectedAt, $delivery_cutoff_ist,
-                $gst_amount, $cgst, $sgst, $gst_percent
+                $gst_amount, $cgst, $sgst, $gst_percent,
+                $coupon, $coupon_discount, $referral_code, $referred_by
             ]);
         }
 
@@ -615,9 +753,23 @@ try {
         $walletId = $pdo->lastInsertId();
     }
 
-    if ($pdo->inTransaction()) {
-        $pdo->commit();
+    // If a coupon was used, record its usage in user_coupons
+    if ($coupon && $mobile) {
+        try {
+            $ucUpd = $pdo->prepare("UPDATE user_coupons SET used = used + 1 WHERE mobile = ? AND coupon_code = ?");
+            $ucUpd->execute([$mobile, $coupon]);
+            if ($ucUpd->rowCount() === 0) {
+                $ucIns = $pdo->prepare("INSERT INTO user_coupons (mobile, coupon_code, used) VALUES (?, ?, 1)");
+                $ucIns->execute([$mobile, $coupon]);
+            }
+        } catch (Exception $e) {}
     }
+
+    try {
+        if ($pdo && $pdo->inTransaction()) {
+            $pdo->commit();
+        }
+    } catch (Exception $cEx) {}
 
     // Query updated stock levels for ordered items to return to client
     $updatedStocks = [];
@@ -674,8 +826,10 @@ try {
         'updated_stocks' => $updatedStocks
     ]);
 } catch (Exception $e) {
-    if ($pdo && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
+    try {
+        if ($pdo && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+    } catch (Exception $rbEx) {}
     sendJson(['error' => $e->getMessage()], 500);
 }

@@ -21,22 +21,23 @@ if (!$pdo) {
 try {
     try {
         $pdo->exec("ALTER TABLE users ADD COLUMN referral_id VARCHAR(50) DEFAULT NULL");
+        $pdo->exec("ALTER TABLE users ADD COLUMN referred_by VARCHAR(50) DEFAULT NULL");
     } catch (Exception $e) {}
 
-    $stmt = $pdo->prepare("SELECT mobile, name, email, referral_id FROM users WHERE mobile = ?");
+    $stmt = $pdo->prepare("SELECT mobile, name, email, referral_id, referred_by FROM users WHERE mobile = ?");
     $stmt->execute([$mobile]);
     $user = $stmt->fetch();
 
     if ($user) {
         if (empty($user['referral_id'])) {
-            $refId = 'THINK' . substr($mobile, -6);
+            $refId = 'THINK' . substr($mobile, -4);
             $upStmt = $pdo->prepare("UPDATE users SET referral_id = ? WHERE mobile = ?");
             $upStmt->execute([$refId, $mobile]);
             $user['referral_id'] = $refId;
         }
         sendJson([$user]);
     } else {
-        $refId = 'THINK' . substr($mobile, -6);
+        $refId = 'THINK' . substr($mobile, -4);
         $insStmt = $pdo->prepare("INSERT INTO users (mobile, name, email, referral_id) VALUES (?, 'TomorrowNeeds User', '', ?)");
         $insStmt->execute([$mobile, $refId]);
         sendJson([

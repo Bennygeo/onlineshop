@@ -10,7 +10,7 @@
             <p class="sheetSubTitle">Choose where you want your fresh orders delivered</p>
         </div>
         
-        <button class="modalCloseBtn" (click)="popupClose()" *ngIf="!closebtnFlg" title="Close">
+        <button class="modalCloseBtn" (click)="popupClose()" *ngIf="!closebtnFlg && hasAddresses()" title="Close">
             <span class="material-icons-round">close</span>
         </button>
     </div>
@@ -55,9 +55,10 @@
 
                         <div class="addrStreet">{{ address.address }}</div>
                         
-                        <div class="addrPincodePill">
-                            <span class="material-icons-round pinMiniIcon">pin_drop</span>
+                        <div class="addrPincodePill" [class.unserviceable-pill]="!isPincodeServiceable(address.pincode)">
+                            <span class="material-icons-round pinMiniIcon">{{ isPincodeServiceable(address.pincode) ? 'pin_drop' : 'location_off' }}</span>
                             <span>{{ address.pincode }}</span>
+                            <span class="unserviceable-text" *ngIf="!isPincodeServiceable(address.pincode)">&bull; Outside Delivery Zone</span>
                         </div>
                     </div>
 

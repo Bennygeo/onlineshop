@@ -1,30 +1,30 @@
 <app-login *ngIf="loginFlg"></app-login>
 
 <div *ngIf="addressFlg" class="popup_parent" [@fadeOut] (click)="addressOutsideClickAction($event)">
-    <div class="popup_cont" (click)="addressOutsideClickAction($event)" [@translateEffect]>
+    <div class="popup_cont" (click)="$event.stopPropagation()" [@translateEffect]>
         <app-addresses></app-addresses>
     </div>
 </div>
 
 
 <div class="main-header-bar"
-    style="z-index: 100; padding: 13px 23px 9px 12px; height: 52px; background-color: #097e63; position: sticky; top: 0;"
+    style="z-index: 100; padding: 6px 14px; height: 52px; background-color: #097e63; position: sticky; top: 0;"
     *ngIf="type==='type1'">
-    <div>
-        <div (click)="homeBtnClick()" class="headerItems">
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto;">
+        <div (click)="homeBtnClick()" class="headerItems" style="cursor: pointer; display: flex; align-items: center;">
             <div class="logoCont">
-                <img src="assets/home/logo_main.png" class="logoImg" />
+                <img src="assets/home/logo_main.png" class="logoImg" style="top: 0; max-height: 38px;" />
             </div>
         </div>
 
-        <div class="headerItems rightMenu">
-            <div style="position: relative; right: 15px; top:6px;" (click)="addressSelection()">
-                <div style="line-height: 12px;">Deliver to&nbsp;&nbsp;<span class="down-arrow">▼</span></div>
-                <div class="addressTitle">{{addressName}}</div>
+        <div class="headerItems rightMenu" style="display: flex; align-items: center; gap: 10px; float: none; top: 0;">
+            <div style="text-align: right; cursor: pointer;" (click)="addressSelection()">
+                <div style="line-height: 12px; font-size: 11px; opacity: 0.9;">Deliver to&nbsp;&nbsp;<span class="down-arrow">▼</span></div>
+                <div class="addressTitle" style="font-size: 13px; font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">{{addressName}}</div>
             </div>
-            <div style="width: 40px; height: 40px; background-color: #FFC529; border-radius: 12px;"
+            <div style="width: 36px; height: 36px; background-color: #FFC529; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;"
                 (click)="profileAction()">
-                <img src="assets/home/profile_icon.png" alt="user" style="margin-top: 3px; margin-right: 9px;" />
+                <img src="assets/home/profile_icon.png" alt="user" style="width: 22px; height: 22px; margin: 0;" />
             </div>
         </div>
     </div>
@@ -112,25 +112,21 @@ font-size: 20px; font-weight: bolder;">
 
 
 <div class="main-header-bar"
-    style="z-index: 1000; padding: 13px 23px 9px 12px; height: 52px; background-color: #ffffff; position: sticky; top: 0;"
+    style="z-index: 1000; padding: 6px 14px; height: 52px; background-color: #ffffff; position: sticky; top: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06);"
     *ngIf="type==='type5'">
-    <div>
-        <div class="backBtn" (click)="backBtnAction()">
-            <div style="position: relative; float: left; min-width:40px; text-align: right; text-align: center; top:0">
-                <span class="material-icons" style="position: relative;
-top: 12px;
-left: 0px;
-font-size: 20px; font-weight: bolder;">
-                    keyboard_arrow_left
-                </span>
-            </div>
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto;">
+        <div class="backBtn" (click)="backBtnAction()" style="cursor: pointer; display: flex; align-items: center; gap: 6px; float: none;">
+            <span class="material-icons" style="font-size: 26px; color: #0f172a; font-weight: bold; line-height: 1;">
+                keyboard_arrow_left
+            </span>
+            <span style="font-size: 17px; font-weight: 700; color: #0f172a;">My Orders</span>
         </div>
-    </div>
 
-    <div class="headerItems rightMenu">
-        <div style="width: 40px; height: 40px; background-color: #FFC529; border-radius: 12px;"
-            (click)="profileAction()">
-            <img src="assets/home/profile_icon.png" alt="user" style="margin-top: 2px; " />
+        <div class="headerItems rightMenu" style="display: flex; align-items: center; float: none; top: 0;">
+            <div style="width: 36px; height: 36px; background-color: #FFC529; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;"
+                (click)="profileAction()">
+                <img src="assets/home/profile_icon.png" alt="user" style="width: 22px; height: 22px; margin: 0;" />
+            </div>
         </div>
     </div>
 </div>

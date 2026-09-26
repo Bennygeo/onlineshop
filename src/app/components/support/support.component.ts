@@ -8,11 +8,11 @@ import { CartService } from 'src/app/services/cart.service';
 })
 export class SupportComponent implements OnInit {
 
-  mobile: string = "+919876543210";
-  displayMobile: string = "+91 98765 43210";
+  mobile: string = "+919384450877";
+  displayMobile: string = "+91 93844 50877";
   message: string = 'Hi TomorrowNeeds Team! I need some assistance regarding my order / account.';
   whatsappLink: string;
-  email: string = "hey@tomorrowneeds.in";
+  email: string = "support@tomorrowneeds.in";
   mailto: string;
   callLink: string;
 

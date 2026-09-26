@@ -267,9 +267,14 @@ try {
             }
         }
 
+        // Process referral reward for referrer (User 1) on delivery of User 2's order
+        require_once __DIR__ . '/../referral/process_referral_reward.php';
+        $rewardResult = processReferralOnDelivery($pdo, $orderId);
+
         sendJson([
             'status' => 'SUCCESS',
-            'message' => "Order #$orderId marked as Delivered successfully"
+            'message' => "Order #$orderId marked as Delivered successfully",
+            'referral_reward' => $rewardResult
         ]);
     }
 

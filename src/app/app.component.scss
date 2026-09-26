@@ -14,6 +14,60 @@
     width: auto;
 }
 
+/* ----------------------------------------------------
+   CUSTOMER DESKTOP VIEW SHELL (maxWidth 1200px)
+   Applied ONLY to customer view, leaving admin untouched
+---------------------------------------------------- */
+.customer-app-root {
+    width: 100%;
+    min-height: 100vh;
+
+    &.desktop-customer-mode {
+        background: #f1f5f9;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        .customer-desktop-frame {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+
+            .customer-desktop-content-area {
+                flex: 1;
+                width: 100%;
+                max-width: 1200px;
+                margin: 0 auto;
+                box-sizing: border-box;
+            }
+
+            .customer-desktop-cart-bar {
+                left: 0;
+                right: 0;
+                width: 100%;
+                max-width: 580px;
+                margin: 0 auto;
+                bottom: 24px;
+                box-shadow: 0 12px 32px rgba(9, 126, 99, 0.4), 0 2px 8px rgba(0, 0, 0, 0.12);
+                border-radius: 20px;
+                height: 56px;
+                padding: 0 18px;
+            }
+        }
+    }
+
+    .customer-mobile-frame {
+        width: 100%;
+        min-height: 100vh;
+    }
+}
+
 #bottom_cart_view {
     position: fixed;
     bottom: max(14px, env(safe-area-inset-bottom, 14px));
@@ -131,9 +185,32 @@
 }
 
 .popup_parent {
-    .popup_cont {
-        top: 75%;
-        height: calc(100% - 75%);
+    @media (max-width: 768px) {
+        .popup_cont {
+            top: 75%;
+            height: calc(100% - 75%);
+        }
+    }
+
+    @media (min-width: 769px) {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        .popup_cont {
+            position: relative !important;
+            top: auto !important;
+            bottom: auto !important;
+            left: auto !important;
+            right: auto !important;
+            width: 100% !important;
+            max-width: 540px !important;
+            height: auto !important;
+            max-height: 85vh !important;
+            border-radius: 24px !important;
+            margin: 0 auto !important;
+            overflow-y: auto !important;
+        }
     }
 }
 

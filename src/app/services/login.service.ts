@@ -35,7 +35,7 @@ export class LoginService {
 
     userStatus: LoginStatus;
 
-    defaultPincode: string = "600095";
+    defaultPincode: string = "400071";
 
     //to show popup from the app component by triggering from home module
     popupEvent: BehaviorSubject<PopupType> = new BehaviorSubject<PopupType>({ flag: false, msg: "" });
@@ -45,9 +45,9 @@ export class LoginService {
     queryParams: any = {};
 
     referrrarinfo: Referrer = {
-        coupon_desc: "xxx",
-        referrer: 'xxxx',
-        referrer_name: 'xxxx',
+        coupon_desc: "",
+        referrer: '',
+        referrer_name: '',
         status: 0
     };
 
@@ -55,6 +55,16 @@ export class LoginService {
         private apiService: ApiService,
         private storageS: StorageService
     ) {
+        const savedRef = this.storageS.getItem('user_referral_info');
+        if (savedRef) {
+            try {
+                const parsed = JSON.parse(savedRef);
+                if (parsed && parsed.referrer && parsed.referrer !== 'xxxx') {
+                    this.referrrarinfo = parsed;
+                }
+            } catch (e) {}
+        }
+
         let localVal = atob(this.storageS.getItem('login') || "");
         if (localVal.length === 10) {
             this.userStatus = "LOGIN";
@@ -64,7 +74,20 @@ export class LoginService {
 
             this.readWallet();
             this.readAddress();
-            // this.readUser();
+            this.readUser().subscribe({
+                next: (res: any) => {
+                    if (res && res.length > 0 && res[0].referred_by && res[0].referred_by !== 'xxxx') {
+                        if (!this.referrrarinfo || !this.referrrarinfo.referrer || this.referrrarinfo.referrer === 'xxxx') {
+                            this.setReferralInfo({
+                                referrer: res[0].referred_by,
+                                referrer_name: 'Partner ' + res[0].referred_by,
+                                coupon_desc: '25% OFF applied to your account!',
+                                status: 1
+                            });
+                        }
+                    }
+                }
+            });
 
         } else {
             this.userStatus = "LOGOUT";
@@ -98,6 +121,14 @@ export class LoginService {
         console.log(message); // Replace with actual logging mechanism (e.g., sending to server)
     }
 
+    setReferralInfo(info: Referrer) {
+        if (!info) return;
+        this.referrrarinfo = info;
+        try {
+            this.storageS.setItem('user_referral_info', JSON.stringify(info));
+        } catch (e) {}
+    }
+
     referralValidation(params: any): Observable<any> {
         return this.apiService.postApi("referral/referral_validation.php", { mobile: params.mobile, referralCode: params.referralCode });
     }
@@ -123,29 +154,55 @@ export class LoginService {
 
     readAddress() {
         if (this.userStatus === Common.loginStatus.LOGIN) {
-            this.apiService.postApi("user/read_address.php", { id: this.user.mobile }).subscribe((res: Array<Address>) => {
-                if (res && res.length > 0) {
-                    let hasActive = false;
-                    res.forEach((item) => {
-                        if (item.default == 1 || item['is_default'] == 1 || item.active == 1) {
-                            item.active = 1;
-                            this.user.address = item;
-                            this.user.pincode = item.pincode;
-                            hasActive = true;
-                        } else {
-                            item.active = 0;
+            const cachedKey = 'tnk_user_addrs_' + this.user.mobile;
+            const cachedRaw = this.storageS.getItem(cachedKey);
+            let cachedList: Array<Address> = [];
+            if (cachedRaw) {
+                try { cachedList = JSON.parse(cachedRaw); } catch (e) {}
+            }
+
+            this.apiService.postApi("user/read_address.php", { id: this.user.mobile }, true).subscribe({
+                next: (res: Array<Address>) => {
+                    const addresses = (res && Array.isArray(res) && res.length > 0) ? res : cachedList;
+                    if (addresses && addresses.length > 0) {
+                        let hasActive = false;
+                        addresses.forEach((item) => {
+                            if (item.default == 1 || item['is_default'] == 1 || item.active == 1) {
+                                item.active = 1;
+                                this.user.address = item;
+                                this.user.pincode = item.pincode;
+                                hasActive = true;
+                            } else {
+                                item.active = 0;
+                            }
+                        });
+                        if (!hasActive && addresses.length > 0) {
+                            addresses[0].active = 1;
+                            this.user.address = addresses[0];
+                            this.user.pincode = addresses[0].pincode;
                         }
-                    });
-                    if (!hasActive && res.length > 0) {
-                        res[0].active = 1;
-                        this.user.address = res[0];
-                        this.user.pincode = res[0].pincode;
+                        this.user.addresses = addresses;
+                        this.storageS.setItem(cachedKey, JSON.stringify(addresses));
+                        this.noAddressEvent.next(false);
+                        this.addressChangeEvent.next(AddressAction.READ);
+                    } else {
+                        this.user.addresses = [];
+                        this.user.address = null;
+                        this.noAddressEvent.next(true);
                     }
-                    this.user.addresses = res;
-                    this.addressChangeEvent.next(AddressAction.READ);
-                } else {
-                    //For no address user
-                    this.noAddressEvent.next(true);
+                },
+                error: () => {
+                    if (cachedList && cachedList.length > 0) {
+                        this.user.addresses = cachedList;
+                        this.user.address = cachedList[0];
+                        this.user.pincode = cachedList[0].pincode;
+                        this.noAddressEvent.next(false);
+                        this.addressChangeEvent.next(AddressAction.READ);
+                    } else {
+                        this.user.addresses = [];
+                        this.user.address = null;
+                        this.noAddressEvent.next(true);
+                    }
                 }
             });
         }

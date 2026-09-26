@@ -46,3 +46,8 @@ backend/logs/*.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# Local development and scratch
+*.sqlite
+.schema_ensured
+scratch/

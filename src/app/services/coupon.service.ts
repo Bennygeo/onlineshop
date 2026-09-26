@@ -95,6 +95,7 @@ export type UserCoupon = {
   categories?: string;
   min_order_amount?: number;
   discount_percent?: number;
+  max_discount?: number;
 }
 
 

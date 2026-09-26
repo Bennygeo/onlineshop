@@ -1,0 +1,344 @@
+<div class="zones-dashboard">
+  <!-- Toast Notification -->
+  <div class="toast-notification" *ngIf="showToast" [ngClass]="toastType">
+    <span class="material-icons toast-icon">
+      {{ toastType === 'success' ? 'check_circle' : toastType === 'error' ? 'error' : 'info' }}
+    </span>
+    <span class="toast-text">{{ toastMessage }}</span>
+    <button class="toast-close" (click)="showToast = false">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+
+  <!-- Page Header -->
+  <header class="zones-header">
+    <div class="header-left">
+      <div class="icon-badge">
+        <span class="material-icons">pin_drop</span>
+      </div>
+      <div>
+        <h1 class="page-title">Delivery Zones & Pincodes</h1>
+        <p class="page-subtitle">Control serviceable delivery areas, assign zone catalogs, and manage customer access.</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="refresh-btn" (click)="loadPincodes()" [disabled]="loading" title="Refresh Pincodes List">
+        <span class="material-icons" [class.spinning]="loading">refresh</span>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Metric Summary Cards -->
+  <section class="metrics-grid">
+    <div class="metric-card card-total">
+      <div class="metric-icon-wrap">
+        <span class="material-icons">location_on</span>
+      </div>
+      <div class="metric-content">
+        <div class="metric-label">Total Pincodes</div>
+        <div class="metric-value">{{ totalCount }}</div>
+        <div class="metric-subtext">Configured in system</div>
+      </div>
+    </div>
+
+    <div class="metric-card card-active">
+      <div class="metric-icon-wrap">
+        <span class="material-icons">verified</span>
+      </div>
+      <div class="metric-content">
+        <div class="metric-label">Active & Serviceable</div>
+        <div class="metric-value">{{ activeCount }}</div>
+        <div class="metric-subtext">{{ activeCount }} accepting orders</div>
+      </div>
+    </div>
+
+    <div class="metric-card card-zone1">
+      <div class="metric-icon-wrap">
+        <span class="material-icons">local_mall</span>
+      </div>
+      <div class="metric-content">
+        <div class="metric-label">Zone 1 (Active Catalog)</div>
+        <div class="metric-value">{{ zone1Count }}</div>
+        <div class="metric-subtext">Includes 400071 & main hub</div>
+      </div>
+    </div>
+
+    <div class="metric-card card-zone2">
+      <div class="metric-icon-wrap">
+        <span class="material-icons">layers</span>
+      </div>
+      <div class="metric-content">
+        <div class="metric-label">Zone 2 (Zero Products)</div>
+        <div class="metric-value">{{ zone2Count }}</div>
+        <div class="metric-subtext">Restricted / standby zones</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Add New Pincode Form Card -->
+  <section class="card add-pincode-card">
+    <div class="card-header">
+      <div class="card-title-group">
+        <span class="material-icons title-icon">add_location_alt</span>
+        <h2 class="card-title">Add Serviceable Delivery Pincode</h2>
+      </div>
+      <span class="rule-hint">Orders will ONLY be accepted from active pincodes listed here.</span>
+    </div>
+
+    <form class="pincode-form" (ngSubmit)="addPincode()">
+      <div class="form-row">
+        <!-- Pincode Input -->
+        <div class="form-group form-group-sm">
+          <label for="newPinInput">Pincode <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <span class="material-icons input-icon">tag</span>
+            <input
+              type="text"
+              id="newPinInput"
+              name="pincode"
+              [(ngModel)]="newPincode.pincode"
+              maxlength="6"
+              placeholder="e.g. 400071"
+              autocomplete="off"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Zone Selector -->
+        <div class="form-group form-group-sm">
+          <label for="zoneSelect">Zone Catalog <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <span class="material-icons input-icon">map</span>
+            <select id="zoneSelect" name="zone" [(ngModel)]="newPincode.zone" required>
+              <option value="zone1">Zone 1 (Full Products Catalog)</option>
+              <option value="zone2">Zone 2 (Restricted / 0 Products)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Area Name -->
+        <div class="form-group form-group-md">
+          <label for="areaInput">Area / Locality Name</label>
+          <div class="input-with-icon">
+            <span class="material-icons input-icon">apartment</span>
+            <input
+              type="text"
+              id="areaInput"
+              name="area_name"
+              [(ngModel)]="newPincode.area_name"
+              placeholder="e.g. Chembur, Mumbai"
+            />
+          </div>
+        </div>
+
+        <!-- Notes / Remarks -->
+        <div class="form-group form-group-md">
+          <label for="notesInput">Notes / Hub Info</label>
+          <div class="input-with-icon">
+            <span class="material-icons input-icon">description</span>
+            <input
+              type="text"
+              id="notesInput"
+              name="notes"
+              [(ngModel)]="newPincode.notes"
+              placeholder="e.g. Primary delivery hub"
+            />
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="form-actions">
+          <button type="submit" class="submit-btn" [disabled]="submitting || !newPincode.pincode">
+            <span class="material-icons" *ngIf="!submitting">add_circle</span>
+            <span class="material-icons spinning" *ngIf="submitting">sync</span>
+            <span>{{ submitting ? 'Adding...' : 'Add Pincode' }}</span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- Pincodes List & Management Card -->
+  <section class="card table-card">
+    <div class="table-toolbar">
+      <!-- Search Box -->
+      <div class="search-box">
+        <span class="material-icons search-icon">search</span>
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          (input)="onSearchChange()"
+          placeholder="Search by pincode, locality, or zone..."
+        />
+        <button class="clear-search-btn" *ngIf="searchQuery" (click)="searchQuery = ''; onSearchChange()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- Filter Tabs -->
+      <div class="filter-tabs">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedFilter === 'ALL'"
+          (click)="onFilterChange('ALL')">
+          All ({{ pincodes.length }})
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedFilter === 'ACTIVE'"
+          (click)="onFilterChange('ACTIVE')">
+          Active ({{ activeCount }})
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedFilter === 'INACTIVE'"
+          (click)="onFilterChange('INACTIVE')">
+          Inactive ({{ totalCount - activeCount }})
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedFilter === 'ZONE1'"
+          (click)="onFilterChange('ZONE1')">
+          Zone 1 ({{ zone1Count }})
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedFilter === 'ZONE2'"
+          (click)="onFilterChange('ZONE2')">
+          Zone 2 ({{ zone2Count }})
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Content -->
+    <div class="table-responsive">
+      <table class="zones-table" *ngIf="!loading && filteredPincodes.length > 0">
+        <thead>
+          <tr>
+            <th>Pincode</th>
+            <th>Zone</th>
+            <th>Area / Locality</th>
+            <th>Status</th>
+            <th>Notes</th>
+            <th>Created</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of filteredPincodes">
+            <!-- Pincode -->
+            <td>
+              <div class="pincode-cell">
+                <span class="pin-pill">{{ p.pincode }}</span>
+                <span class="star-badge" *ngIf="p.pincode === '400071'" title="Primary Active Pincode">
+                  <span class="material-icons">star</span>
+                </span>
+              </div>
+            </td>
+
+            <!-- Zone Badge -->
+            <td>
+              <span class="zone-badge" [ngClass]="p.zone.toLowerCase()">
+                {{ p.zone === 'zone1' ? 'Zone 1 (Catalog)' : p.zone === 'zone2' ? 'Zone 2 (0 Products)' : p.zone }}
+              </span>
+            </td>
+
+            <!-- Area -->
+            <td>
+              <span class="area-text">{{ p.area_name || '—' }}</span>
+            </td>
+
+            <!-- Status Toggle -->
+            <td>
+              <button
+                type="button"
+                class="status-toggle-btn"
+                [class.active]="+p.is_active === 1"
+                (click)="toggleActive(p)"
+                [title]="+p.is_active === 1 ? 'Click to deactivate' : 'Click to activate'">
+                <span class="status-indicator"></span>
+                <span class="status-text">{{ +p.is_active === 1 ? 'Active' : 'Disabled' }}</span>
+              </button>
+            </td>
+
+            <!-- Notes -->
+            <td>
+              <span class="notes-text">{{ p.notes || '—' }}</span>
+            </td>
+
+            <!-- Created -->
+            <td>
+              <span class="date-text">{{ p.created_at ? (p.created_at | date:'shortDate') : '—' }}</span>
+            </td>
+
+            <!-- Actions -->
+            <td class="text-right">
+              <button
+                type="button"
+                class="delete-btn"
+                (click)="promptDelete(p)"
+                title="Remove Pincode">
+                <span class="material-icons">delete_outline</span>
+                <span>Remove</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!loading && filteredPincodes.length === 0">
+        <span class="material-icons empty-icon">location_off</span>
+        <h3>No Pincodes Found</h3>
+        <p *ngIf="searchQuery || selectedFilter !== 'ALL'">
+          No pincodes matched your current search or filter criteria.
+        </p>
+        <p *ngIf="!searchQuery && selectedFilter === 'ALL'">
+          No serviceable pincodes are registered yet. Add "400071" above to start taking orders.
+        </p>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="loading">
+        <span class="material-icons spinning">sync</span>
+        <p>Loading serviceable pincodes...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-backdrop" *ngIf="showDeleteConfirm" (click)="cancelDelete()">
+    <div class="confirm-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="warning-icon-wrap">
+          <span class="material-icons">warning_amber</span>
+        </div>
+        <h3 class="modal-title">Remove Pincode</h3>
+      </div>
+      <div class="modal-body">
+        <p>
+          Are you sure you want to remove pincode
+          <strong>{{ itemToDelete?.pincode }}</strong>
+          <span *ngIf="itemToDelete?.area_name"> ({{ itemToDelete?.area_name }})</span>?
+        </p>
+        <p class="modal-subtext">
+          Once removed, customers with this pincode will no longer be able to place orders and will see the unserviceable alert.
+        </p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" (click)="cancelDelete()">Cancel</button>
+        <button type="button" class="btn-confirm-delete" (click)="confirmDelete()">
+          <span class="material-icons">delete</span>
+          <span>Yes, Remove</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

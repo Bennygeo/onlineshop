@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, debounceTime, distinctUntilChanged, fromEvent, map, Observable, Observer, ReplaySubject, Subject, throwError, of } from 'rxjs';
+import { BehaviorSubject, debounceTime, distinctUntilChanged, fromEvent, map, Observable, Observer, ReplaySubject, Subject, throwError, of, tap, shareReplay, catchError, finalize } from 'rxjs';
 import { DateE } from '../utils/custom-classes';
-import { AddressAction, CartAndTarget, CartDateWise, CartDetails, CartProductTable, CartType, OrderInfo, OrderMainTable, Product, StoreSettings, SubProductType, Wallet, WindowSize } from '../utils/types';
+import { AddressAction, CartAndTarget, CartDateWise, CartDetails, CartProductTable, CartType, HeroBanner, OrderInfo, OrderMainTable, Product, StoreSettings, SubProductType, Wallet, WindowSize } from '../utils/types';
 import { ApiService } from './api.service';
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { LoginService } from './login.service';
@@ -16,6 +16,75 @@ export const STD_DELIVERY_CHARGES_ZONE2: number = 50;
 
 export const STD_GST_PERCENT: number = 5;
 export const STD_TAX_FEE: number = 0;
+
+export const DEFAULT_HERO_BANNERS: HeroBanner[] = [
+  {
+    id: 'veg',
+    title: 'Farm Fresh Vegetables',
+    desc: '100% Organic & handpicked daily from local farms',
+    badge: 'Farm Fresh',
+    category: 'Vegetables',
+    routerLink: '/products/category/Vegetables',
+    bgGradient: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    imgUrl: 'assets/categories/Thinkspot_veggiesIcon.png',
+    btnText: 'Shop Vegetables',
+    active: true,
+    order: 1
+  },
+  {
+    id: 'fruits',
+    title: 'Juicy & Fresh Fruits',
+    desc: 'Naturally ripened, nutrient-rich seasonal fruits',
+    badge: 'Fresh Harvest',
+    category: 'Fruits',
+    routerLink: '/products/category/Fruits',
+    bgGradient: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+    imgUrl: 'assets/categories/fruitsIcons.png',
+    btnText: 'Shop Fruits',
+    active: true,
+    order: 2
+  },
+  {
+    id: 'greens',
+    title: 'Nutritious Fresh Greens',
+    desc: 'Crisp, healthy & rich in essential vitamins',
+    badge: 'Healthy Greens',
+    category: 'Greens',
+    routerLink: '/products/category/Greens',
+    bgGradient: 'linear-gradient(135deg, #15803d 0%, #166534 100%)',
+    imgUrl: 'assets/categories/Thinkspot_greensIcon.png',
+    btnText: 'Shop Greens',
+    active: true,
+    order: 3
+  },
+  {
+    id: 'flowers',
+    title: 'Aromatic & Fresh Flowers',
+    desc: 'Pooja flowers, garlands and floral arrangements',
+    badge: 'Fresh Blooms',
+    category: 'Flowers',
+    routerLink: '/products/category/Flowers',
+    bgGradient: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+    imgUrl: 'assets/categories/Thinkspot_flowers.png',
+    btnText: 'Shop Flowers',
+    active: true,
+    order: 4
+  },
+  {
+    id: 'oils',
+    title: 'Pure Woodpressed Oils',
+    desc: 'Traditional cold-pressed oils packed with natural nutrients',
+    badge: 'Cold Pressed',
+    category: 'Oils',
+    routerLink: '/products/category/Oils',
+    bgGradient: 'linear-gradient(135deg, #b45309 0%, #92400e 100%)',
+    imgUrl: 'assets/categories/oil.png',
+    btnText: 'Shop Oils',
+    active: true,
+    order: 5
+  }
+];
+
 
 @Injectable({
   providedIn: 'root'
@@ -33,10 +102,34 @@ export class CartService {
     return this.loginS?.user?.mobile || adminCustomerMobile || this.userID || this.storageS?.getItem("tnkspt_user")?.mobile || '';
   }
 
-  categoryPriorityIndex: Array<string> = ["Vegetables", "Naturalhydrants", "Fruits", "Greenssprouts", "Flowers", "Honeyspices", "Woodpressed", "Dairyeggs", "Naturalsugars", "Lentilspulses", "Breakfast", "Quickmeals", "Traditionalsnacks", "Skinhair"];
+  categoryPriorityIndex: Array<string> = ["Vegetables", "Fruits", "Greens", "Flowers", "Oils"];
 
+  cachedCategories: any[] = null;
   loadCategories(): Observable<any[]> {
-    return this.apiS.getApi('products/get_categories.php', undefined, true);
+    if (this.cachedCategories && this.cachedCategories.length > 0) {
+      return of(this.cachedCategories);
+    }
+    try {
+      const stored = localStorage.getItem('tnkspt_categories_cache');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          this.cachedCategories = parsed;
+          return of(this.cachedCategories);
+        }
+      }
+    } catch (e) { }
+
+    return this.apiS.getApi('products/get_categories.php', undefined, true).pipe(
+      tap((cats: any[]) => {
+        if (Array.isArray(cats) && cats.length > 0) {
+          this.cachedCategories = cats;
+          try {
+            localStorage.setItem('tnkspt_categories_cache', JSON.stringify(cats));
+          } catch (e) { }
+        }
+      })
+    );
   }
 
   //Header might be differs when page changes
@@ -75,8 +168,22 @@ export class CartService {
   private isCartVisible = new BehaviorSubject<boolean>(false);
   isCart$ = this.isCartVisible.asObservable();
 
+  // Debounced backend synchronization stream for cart items
+  private cartBackendSync$: Subject<CartAndTarget> = new Subject<CartAndTarget>();
+
+  // Hero Banners Management
+  heroBanners: HeroBanner[] = [...DEFAULT_HERO_BANNERS];
+  heroBannersUpdateEvent: BehaviorSubject<HeroBanner[]> = new BehaviorSubject<HeroBanner[]>(this.heroBanners);
+
   //contains all products list
   productsList: Array<Product> = [];
+  allProductsLoaded: boolean = false;
+  loadedProductsZone: string = '';
+  private productsFetchObservable$: Observable<Product[]> | null = null;
+  readonly PRODUCTS_CACHE_TTL_MS: number = 60 * 60 * 1000; // 1 hour
+  lastProductsFetchTime: number = 0;
+  private productsRefreshIntervalId: any = null;
+
 
   //contains all cart products
   cartProducts: CartType = {};
@@ -103,12 +210,82 @@ export class CartService {
       this.lastSelectedCategory = category.trim();
       try {
         localStorage.setItem('tnkspt_last_category', this.lastSelectedCategory);
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
-  //to keep server time
-  serverTime: Date = new DateE();
+  private serverEpochMs: number = 0;
+  private serverSyncPerfMs: number = 0;
+  private _serverTimeFallback: DateE = new DateE();
+
+  /**
+   * Returns current synchronized server time.
+   * Driven by monotonic performance.now() elapsed since last server time sync.
+   * Completely immune to user modifying local machine/system clock.
+   */
+  get serverTime(): DateE {
+    if (this.serverEpochMs > 0 && this.serverSyncPerfMs > 0) {
+      const elapsed = performance.now() - this.serverSyncPerfMs;
+      return new DateE(new Date(this.serverEpochMs + elapsed));
+    }
+    return this._serverTimeFallback;
+  }
+
+  set serverTime(val: any) {
+    if (val) {
+      this.syncServerTime(val);
+    }
+  }
+
+  syncServerTime(timeInput: any): void {
+    let epoch: number = 0;
+    if (typeof timeInput === 'string') {
+      const trimmed = timeInput.trim();
+      const iso = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T') + '+05:30';
+      const parsed = new Date(iso).getTime();
+      epoch = isNaN(parsed) ? Date.parse(trimmed) : parsed;
+    } else if (typeof timeInput === 'object' && timeInput !== null) {
+      if (timeInput.server_time_iso) {
+        epoch = new Date(timeInput.server_time_iso).getTime();
+      } else if (timeInput.server_epoch_ms) {
+        epoch = Number(timeInput.server_epoch_ms);
+      } else if (timeInput.server_time) {
+        const trimmed = String(timeInput.server_time).trim();
+        const iso = trimmed.includes('T') ? trimmed : trimmed.replace(' ', 'T') + '+05:30';
+        epoch = new Date(iso).getTime();
+      } else if (timeInput instanceof Date) {
+        epoch = timeInput.getTime();
+      }
+    } else if (typeof timeInput === 'number') {
+      epoch = timeInput;
+    }
+
+    if (epoch > 0) {
+      this.serverEpochMs = epoch;
+      this.serverSyncPerfMs = performance.now();
+      this._serverTimeFallback = new DateE(new Date(epoch));
+      this.recalculateDeliveryDate();
+    }
+  }
+
+  /**
+   * Extracts Indian Standard Time (IST, UTC+5:30) date parts from server time.
+   * 100% independent of client browser timezone and local machine clock adjustments.
+   */
+  getIstParts(date: Date = this.serverTime): { hours: number; minutes: number; day: number; date: number; month: number; year: number } {
+    const epoch = (date instanceof Date ? date.getTime() : Number(date)) || Date.now();
+    const istEpoch = epoch + (5.5 * 60 * 60 * 1000);
+    const d = new Date(istEpoch);
+    return {
+      hours: d.getUTCHours(),
+      minutes: d.getUTCMinutes(),
+      day: d.getUTCDay(),
+      date: d.getUTCDate(),
+      month: d.getUTCMonth(),
+      year: d.getUTCFullYear()
+    };
+  }
+
   //to keep the todays date
   todaysDate: Date = new DateE();
   //to keep the delivery date
@@ -157,11 +334,8 @@ export class CartService {
 
   // Operating hours for 10, 30, and 60 mins instant deliveries: Morning 8:00 AM to Evening 8:00 PM IST (20:00)
   isImmediateDeliveryOperatingHour(): boolean {
-    const now = new Date();
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const istTime = new Date(utcTime + (3600000 * 5.5));
-    const istHours = istTime.getHours();
-    return (istHours >= 8 && istHours < 20);
+    const ist = this.getIstParts(this.serverTime);
+    return (ist.hours >= 8 && ist.hours < 20);
   }
 
   getCartDeliveryEligibility(): {
@@ -229,13 +403,9 @@ export class CartService {
     immediate30EstimateStr: string;
     immediate60EstimateStr: string;
   } {
-    const now = new Date();
-    // Calculate current IST timestamp accurately (UTC + 5.5 hours)
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const istTime = new Date(utcTime + (3600000 * 5.5));
-
-    const istHours = istTime.getHours();
-    const istMinutes = istTime.getMinutes();
+    const ist = this.getIstParts(this.serverTime);
+    const istHours = ist.hours;
+    const istMinutes = ist.minutes;
 
     // Time remaining until 12:00 Midnight IST (24:00)
     const totalMinsUntilMidnight = (24 * 60) - (istHours * 60 + istMinutes);
@@ -243,9 +413,7 @@ export class CartService {
     const remainingMins = totalMinsUntilMidnight % 60;
 
     // Delivery date calculation: Next day 7:00 AM IST (adjusted for store weekly off day)
-    const baseNextDay = new Date(istTime);
-    baseNextDay.setDate(baseNextDay.getDate() + 1);
-    const scheduledDate = DateE.getNextOperatingDeliveryDate(baseNextDay, this.storeSettings?.weekly_off_day);
+    const scheduledDate = this.deliveryDate;
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -253,18 +421,19 @@ export class CartService {
     const nextDayDeliveryDateStr = `${dayNames[scheduledDate.getDay()]}, ${scheduledDate.getDate()} ${monthNames[scheduledDate.getMonth()]} at 7:00 AM IST`;
 
     const formatTime = (d: Date) => {
-      let h = d.getHours();
-      const m = String(d.getMinutes()).padStart(2, '0');
+      const p = this.getIstParts(d);
+      let h = p.hours;
+      const m = String(p.minutes).padStart(2, '0');
       const ampm = h >= 12 ? 'PM' : 'AM';
       h = h % 12 || 12;
       return `${h}:${m} ${ampm} IST`;
     };
 
-    const currentIstTimeStr = formatTime(istTime);
+    const currentIstTimeStr = formatTime(this.serverTime);
 
-    const est10 = new Date(istTime.getTime() + 10 * 60000);
-    const est30 = new Date(istTime.getTime() + 30 * 60000);
-    const est60 = new Date(istTime.getTime() + 60 * 60000);
+    const est10 = new Date(this.serverTime.getTime() + 10 * 60000);
+    const est30 = new Date(this.serverTime.getTime() + 30 * 60000);
+    const est60 = new Date(this.serverTime.getTime() + 60 * 60000);
 
     return {
       currentIstTimeStr,
@@ -360,7 +529,7 @@ export class CartService {
           }
         });
         if (minDate) {
-          const now = new Date();
+          const now = this.serverTime;
           const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           const target = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
           const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -479,18 +648,27 @@ export class CartService {
 
     // Initialize store settings, cart, and delivery dates immediately on service creation
     this.init();
+    this.loadHeroBanners();
+    this.startHourlyProductsRefresh();
+
 
     this.loginS.loginChangeEvent.subscribe((result: string) => {
       if (result === Common.loginStatus.LOGIN) {
         this.userID = this.loginS.user.mobile;
         this.orderID = undefined;
         this.init();
+      } else if (result === Common.loginStatus.LOGOUT) {
+        this.clearRecentPurchasesCache();
       }
     });
 
     this.loginS.addressChangeEvent.subscribe((res: AddressAction) => {
       if (res === AddressAction.SWITCH) {
         this.productsList = [];
+        this.allProductsLoaded = false;
+        this.loadedProductsZone = '';
+        this.productsFetchObservable$ = null;
+        this.lastProductsFetchTime = 0;
         this.cartDetails = {
           total: 0,
           totalItems: 0
@@ -505,9 +683,9 @@ export class CartService {
         // Do NOT show full-screen loader when navigating to cart page or products pages (products pages have shimmer effect)
         const targetUrl = (event.url || '').toLowerCase();
         const skipLoaderPages = targetUrl.includes('cart') ||
-                                targetUrl.includes('products') ||
-                                targetUrl.includes('/product') ||
-                                targetUrl.includes('/p/');
+          targetUrl.includes('products') ||
+          targetUrl.includes('/product') ||
+          targetUrl.includes('/p/');
         if (!skipLoaderPages) {
           this.loaderS.show();
         } else {
@@ -526,6 +704,80 @@ export class CartService {
       }
     });
 
+    // Debounced backend synchronization to avoid flooding network on rapid +/- clicks
+    this.cartBackendSync$.pipe(
+      debounceTime(300)
+    ).subscribe((cartAndTarget: CartAndTarget) => {
+      let order_info: OrderMainTable = {
+        orderID: this.orderID,
+        address: "undefined",
+        assignedTo: "undefined",
+        createdAt: new DateE(this.serverTime).getTime(),
+        modifiedAt: new DateE(this.serverTime).getTime(),
+        deliveredBy: "undefined",
+        packedBy: "undefined",
+        status: "CART",
+        deliveredAt: Date.now(),
+        mobile: this.currentUserID,
+        orderTotal: this.cartDetails.total,
+        procuredTotal: 0,
+        paymentID: "undefined",
+        paymentStatus: "pending"
+      };
+
+      this.apiS.postApi('orders/orders.php', { ordersDetails: JSON.stringify(order_info) }, true).subscribe((status: any) => {
+        let _target = cartAndTarget.product;
+        if (!_target) return;
+        let selectedDays = undefined;
+        let rangeDays = undefined;
+        if (_target.subs_options) {
+          if (_target.subs_options.type == "range") {
+            _target.units = _target.subs_options.units;
+            rangeDays = (_target.subs_options.rangeSelected.length > 0) ? JSON.stringify(_target.subs_options.rangeSelected) : undefined;
+          }
+
+          if (_target.subs_options.type == "multi_day") {
+            _target.units = _target.subs_options.units;
+            selectedDays = (_target.subs_options.multiDaySelected.length > 0) ? JSON.stringify(_target.subs_options.multiDaySelected) : undefined;
+          }
+        }
+
+        const pid = String(_target.id || (_target as any).productID || (_target as any).product_id || '');
+        const targetUnits = (cartAndTarget.unit !== undefined && cartAndTarget.unit <= 0) ? 0 : (_target.units || 0);
+
+        let targetData: any = {
+          orderID: this.orderID,
+          deliveredBy: "undefined",
+          modifiedAt: Date.now(),
+          modifiedBy: "undefined",
+          oferPrice: _target.offer,
+          originalPrice: Number(_target.original_price),
+          packedBy: "undefined",
+          price: Number(_target.price),
+          productID: pid,
+          quantity: targetUnits,
+          refundDesc: "undefined",
+          resheduleDesc: "undefined",
+          status: "CART",
+          weight: _target.weight,
+          unitName: _target.original_unit_name,
+          mobile: this.currentUserID || this.userID || this.loginS?.user?.mobile || '',
+          subscribedQuantity: _target?.subs_options?.units || 0,
+          subscribedDates: (selectedDays) ? selectedDays : "undefined",
+          rangeDates: (rangeDays) ? rangeDays : "undefined",
+          deliveryDate: _target.delivery_date,
+          startDate: (_target.subs_options) ? _target.subs_options.startDate : "undefined",
+          endDate: (_target.subs_options) ? _target.subs_options.endDate : "undefined",
+          subscriptionType: (_target.subs_options) ? _target.subs_options.type : "undefined",
+          subsStatus: "active",
+          pausedDates: JSON.stringify([])
+        };
+
+        this.apiS.postApi('orders/product_orders.php', { targetProduct: JSON.stringify(targetData) }, true).subscribe((status: any) => {
+        });
+      });
+    });
+
     this.cartUpdateEvent.subscribe((cartAndTarget: CartAndTarget) => {
 
       if (cartAndTarget.product) {
@@ -539,82 +791,58 @@ export class CartService {
         this.updateCartVisibility();
 
         if (cartAndTarget.info != "clear") {
-          let order_info: OrderMainTable = {
-            orderID: this.orderID,
-            address: "undefined",
-            assignedTo: "undefined",
-            createdAt: new DateE(this.serverTime).getTime(),
-            modifiedAt: new DateE(this.serverTime).getTime(),
-            deliveredBy: "undefined",
-            packedBy: "undefined",
-            status: "CART",
-            deliveredAt: Date.now(),
-            mobile: this.currentUserID,
-            orderTotal: this.cartDetails.total,
-            procuredTotal: 0,
-            paymentID: "undefined",
-            paymentStatus: "pending"
+          if (cartAndTarget.unit <= 0) {
+            this.deleteBackendCartItem(cartAndTarget.product);
+          } else {
+            this.cartBackendSync$.next(cartAndTarget);
           }
-
-          //write in sql table
-          this.apiS.postApi('orders/orders.php', { ordersDetails: JSON.stringify(order_info) }).subscribe((status: any) => {
-            let _target = cartAndTarget.product;
-            let selectedDays = undefined;
-            let rangeDays = undefined;
-            if (_target.subs_options) {
-              if (_target.subs_options.type == "range") {
-                _target.units = _target.subs_options.units;
-                rangeDays = (_target.subs_options.rangeSelected.length > 0) ? JSON.stringify(_target.subs_options.rangeSelected) : undefined;
-              }
-
-              if (_target.subs_options.type == "multi_day") {
-                _target.units = _target.subs_options.units;
-                selectedDays = (_target.subs_options.multiDaySelected.length > 0) ? JSON.stringify(_target.subs_options.multiDaySelected) : undefined;
-              }
-            }
-
-            let targetData: CartProductTable = {
-              orderID: this.orderID,
-              deliveredBy: "undefined",
-              modifiedAt: Date.now(),
-              modifiedBy: "undefined",
-              oferPrice: _target.offer,
-              originalPrice: Number(_target.original_price),
-              packedBy: "undefined",
-              price: Number(_target.price),
-              productID: _target.id,
-              quantity: _target.units,
-              refundDesc: "undefined",
-              resheduleDesc: "undefined",
-              status: "CART",
-              weight: _target.weight,
-              unitName: _target.original_unit_name,
-              subscribedQuantity: _target?.subs_options?.units || 0,
-              subscribedDates: (selectedDays) ? selectedDays : "undefined",
-              rangeDates: (rangeDays) ? rangeDays : "undefined",
-              deliveryDate: _target.delivery_date,
-              startDate: (_target.subs_options) ? _target.subs_options.startDate : "undefined",
-              endDate: (_target.subs_options) ? _target.subs_options.endDate : "undefined",
-              subscriptionType: (_target.subs_options) ? _target.subs_options.type : "undefined",
-              subsStatus: "active",
-              pausedDates: JSON.stringify([])
-            }
-
-            this.apiS.postApi('orders/product_orders.php', { targetProduct: JSON.stringify(targetData) }).subscribe((status: any) => {
-            });
-          });
         }
       }
     });
   }
 
+  deleteBackendCartItem(product: Product) {
+    const pid = String(product?.id || (product as any)?.productID || (product as any)?.product_id || '');
+    if (!pid) return;
+
+    const payload = {
+      orderID: this.orderID,
+      productID: pid,
+      quantity: 0,
+      mobile: this.currentUserID || this.userID || this.loginS?.user?.mobile || ''
+    };
+
+    this.apiS.postApi('orders/product_orders.php', { targetProduct: JSON.stringify(payload) }, true).subscribe({
+      next: () => {
+        let order_info: OrderMainTable = {
+          orderID: this.orderID,
+          address: "undefined",
+          assignedTo: "undefined",
+          createdAt: new DateE(this.serverTime).getTime(),
+          modifiedAt: new DateE(this.serverTime).getTime(),
+          deliveredBy: "undefined",
+          packedBy: "undefined",
+          status: "CART",
+          deliveredAt: Date.now(),
+          mobile: this.currentUserID || this.userID || this.loginS?.user?.mobile || '',
+          orderTotal: this.cartDetails.total,
+          procuredTotal: 0,
+          paymentID: "undefined",
+          paymentStatus: "pending"
+        };
+        this.apiS.postApi('orders/orders.php', { ordersDetails: JSON.stringify(order_info) }, true).subscribe();
+      },
+      error: () => { }
+    });
+  }
+
   recalculateDeliveryDate() {
-    const base = new DateE(this.serverTime || new Date());
+    const ist = this.getIstParts(this.serverTime);
+    const base = new DateE(new Date(ist.year, ist.month, ist.date, ist.hours, ist.minutes));
     this.todaysDate = new DateE(base);
     this.deliveryDate = new DateE(base);
 
-    let _hrs = this.todaysDate.getHours();
-    if (_hrs > this.timeLimit) {
+    if (ist.hours >= this.timeLimit) {
       this.deliveryDate['addDays'](2);
     } else {
       this.deliveryDate['addDays'](1);
@@ -634,6 +862,89 @@ export class CartService {
       this.updateCartVisibility();
     }
 
+    const savedSettings = this.storageS.getItem("tnkspt_store_settings");
+    if (savedSettings) {
+      this.storeSettings = savedSettings;
+      this.enableRazorpay = savedSettings.enable_razorpay !== '0' && savedSettings.enable_razorpay !== false;
+      this.enableCod = savedSettings.enable_cod !== '0' && savedSettings.enable_cod !== false;
+      this.recalculateDeliveryDate();
+    }
+
+    // Consolidated single bootstrap endpoint
+    const pincode = this.loginS?.user?.pincode || this.loginS?.defaultPincode || '400071';
+    const customerID = this.userID || this.loginS?.user?.mobile || '';
+
+    this.apiS.getApi('com/bootstrap.php', { pincode, customerID }, true).subscribe({
+      next: (boot: any) => {
+        if (!boot) {
+          this.legacyInit();
+          return;
+        }
+
+        // 1. Server time (sync monotonic clock)
+        if (boot.server_time || boot.server_time_iso || boot.server_epoch_ms) {
+          this.syncServerTime(boot.server_time_iso || boot.server_epoch_ms || boot.server_time);
+        }
+
+        // 2. Store settings
+        if (boot.store_settings) {
+          const s = boot.store_settings;
+          const offDay = s?.weekly_off_day || 'None';
+          const rzp = s?.enable_razorpay !== undefined ? (s.enable_razorpay !== '0' && s.enable_razorpay !== false) : true;
+          const cod = s?.enable_cod !== undefined ? (s.enable_cod !== '0' && s.enable_cod !== false) : true;
+
+          this.enableRazorpay = rzp;
+          this.enableCod = cod;
+          this.storeSettings = {
+            weekly_off_day: offDay,
+            enable_razorpay: rzp ? '1' : '0',
+            enable_cod: cod ? '1' : '0'
+          };
+          this.storageS.setItem("tnkspt_store_settings", this.storeSettings);
+          this.storeSettingsUpdateEvent.next(this.storeSettings);
+        }
+
+        this.recalculateDeliveryDate();
+
+        // 3. Categories cache
+        if (Array.isArray(boot.categories) && boot.categories.length > 0) {
+          this.cachedCategories = boot.categories;
+          try {
+            localStorage.setItem('tnkspt_categories_cache', JSON.stringify(boot.categories));
+          } catch (e) { }
+        }
+
+        // 4. Zone
+        if (boot.zone) {
+          this.loginS.user.zone = boot.zone.toLocaleLowerCase();
+        } else {
+          this.loginS.user.zone = 'zone1';
+        }
+        this.zoneChangeEvent.next(this.loginS.user.zone);
+
+        // 5. Active Order ID & Cart items
+        if (boot.active_order_id) {
+          this.orderID = boot.active_order_id;
+          if (this.loginS?.user) {
+            this.loginS.user.orderID = this.orderID;
+          }
+        }
+
+        if (Array.isArray(boot.cart) && boot.cart.length > 0) {
+          this.processCartItems(boot.cart);
+        }
+
+        // 6. Download catalog products (single deduplicated call)
+        this.read_products(this.loginS.user.zone, "all");
+        this.notifyCartEvent.next();
+      },
+      error: () => {
+        this.legacyInit();
+      }
+    });
+  }
+
+  legacyInit() {
     const onSettingsLoaded = (res: any) => {
       const s = res?.settings || res;
       const offDay = s?.weekly_off_day || this.storeSettings?.weekly_off_day || 'None';
@@ -661,33 +972,19 @@ export class CartService {
       }
     });
 
-    //Recieve time from the server
-    this.apiS.getApi('com/get_time.php').subscribe((time: Date) => {
-      this.serverTime = new DateE(time);
-      this.recalculateDeliveryDate();
-
-      /**
-       * if customer id exist 
-       * check wether any existing OrderID with CART status
-       * if fetch the cart data
-       * OR create a new OrderID
-       * 
-       * then download the products based on category
-       * 
-       * then update the downloaded products with cart.
-       */
+    this.apiS.getApi('com/get_time.php').subscribe((time: any) => {
+      this.syncServerTime(time);
 
       let ngScope = this;
       const _getOrderID = new Observable(this.fetchOrderID.bind(this));
       _getOrderID.subscribe({
-        next(res) {
-        },
+        next(res) { },
         complete() {
           ngScope.getZone(ngScope.loginS.user.pincode).subscribe((res: any) => {
             if (res.length > 0) {
               ngScope.loginS.user.zone = res[0].zone.toLocaleLowerCase();
             } else {
-              ngScope.loginS.user.zone = "zone2";
+              ngScope.loginS.user.zone = "zone1";
             }
             ngScope.zoneChangeEvent.next(ngScope.loginS.user.zone);
             getCart();
@@ -700,14 +997,13 @@ export class CartService {
       const get_cart = new Observable(this.read_cart_products.bind(this));
       let ngScope = this;
       get_cart.subscribe({
-        next(res) {
-        },
+        next(res) { },
         complete() {
-          ngScope.read_products(ngScope.loginS.user.zone, "Vegetables");
+          ngScope.read_products(ngScope.loginS.user.zone, "all");
           ngScope.notifyCartEvent.next();
         }
       });
-    }
+    };
   }
   ensureOrderID(): string {
     if (!this.orderID) {
@@ -748,6 +1044,56 @@ export class CartService {
     return { unsubscribe() { } };
   }
 
+  loadHeroBanners(): void {
+    const cached = this.storageS.getItem('tnkspt_hero_banners');
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      this.heroBanners = cached;
+      this.heroBannersUpdateEvent.next(this.heroBanners);
+    }
+    // Also try to fetch from store settings if available
+    this.apiS.getApi('admin/store_settings.php', undefined, true).subscribe({
+      next: (res: any) => {
+        const s = res?.settings || res;
+        if (s && s.hero_banners) {
+          try {
+            const parsed = typeof s.hero_banners === 'string' ? JSON.parse(s.hero_banners) : s.hero_banners;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              this.heroBanners = parsed;
+              this.storageS.setItem('tnkspt_hero_banners', this.heroBanners);
+              this.heroBannersUpdateEvent.next(this.heroBanners);
+            }
+          } catch (e) {
+            console.error('Error parsing hero banners from backend', e);
+          }
+        }
+      },
+      error: () => {
+        // Fallback already loaded from cache or default
+      }
+    });
+  }
+
+  getHeroBanners(): Observable<HeroBanner[]> {
+    return this.heroBannersUpdateEvent.asObservable();
+  }
+
+  saveHeroBanners(banners: HeroBanner[]): Observable<any> {
+    this.heroBanners = [...banners];
+    this.storageS.setItem('tnkspt_hero_banners', this.heroBanners);
+    this.heroBannersUpdateEvent.next(this.heroBanners);
+
+    const bannersJson = JSON.stringify(this.heroBanners);
+    return this.apiS.postApi('admin/store_settings.php', {
+      key: 'hero_banners',
+      value: bannersJson,
+      hero_banners: bannersJson
+    });
+  }
+
+  resetHeroBanners(): Observable<any> {
+    return this.saveHeroBanners(DEFAULT_HERO_BANNERS);
+  }
+
   readBanners(filename, tableName): Observable<any> {
     if (filename === 'products/download_table_sql.php') {
       return of([
@@ -765,12 +1111,50 @@ export class CartService {
     return this.apiS.postApi('home/recommended_products.php', { table_name: tableName }, true);
   }
 
-  readRecentPurchases(mobile: string): Observable<any> {
-    return this.apiS.postApi('home/recent_purchases.php', { mobile: mobile }, true);
+  private recentPurchasesCache: { [mobile: string]: any[] } = {};
+  private recentPurchasesInFlight$: { [mobile: string]: Observable<any> } = {};
+
+  clearRecentPurchasesCache(mobile?: string): void {
+    if (mobile) {
+      delete this.recentPurchasesCache[mobile];
+      delete this.recentPurchasesInFlight$[mobile];
+    } else {
+      this.recentPurchasesCache = {};
+      this.recentPurchasesInFlight$ = {};
+    }
+  }
+
+  readRecentPurchases(mobile: string, forceRefresh: boolean = false): Observable<any> {
+    if (!mobile) return of([]);
+    if (!forceRefresh && this.recentPurchasesCache[mobile]) {
+      return of(this.recentPurchasesCache[mobile]);
+    }
+    if (!forceRefresh && this.recentPurchasesInFlight$[mobile]) {
+      return this.recentPurchasesInFlight$[mobile];
+    }
+    const req$ = this.apiS.postApi('home/recent_purchases.php', { mobile: mobile }, true).pipe(
+      tap((data: any) => {
+        if (Array.isArray(data)) {
+          this.recentPurchasesCache[mobile] = data;
+        }
+      }),
+      finalize(() => {
+        delete this.recentPurchasesInFlight$[mobile];
+      }),
+      shareReplay(1)
+    );
+    this.recentPurchasesInFlight$[mobile] = req$;
+    return req$;
   }
 
   readBatterProducts(tableName?: string): Observable<any> {
-    return this.apiS.postApi('products/download_products_sql.php', { table_name: tableName || 'products', cat: 'Batter' }, true);
+    if (this.allProductsLoaded && this.productsList && this.productsList.length > 0) {
+      const batterProds = this.productsList.filter(p => (p.cat || '').toLowerCase() === 'batter');
+      return of(batterProds);
+    }
+    return this.read_products().pipe(
+      map(products => (products || []).filter(p => (p.cat || '').toLowerCase() === 'batter'))
+    );
   }
 
 
@@ -778,6 +1162,11 @@ export class CartService {
   //Triggers when plus minus buttons clicked
   //Product component and cart component
   updateProduct(product: Product, val: number): void {
+    if (!product) return;
+    const pid = String(product.id || (product as any).productID || (product as any).product_id || '');
+    if (!product.id && pid) {
+      product.id = pid;
+    }
 
     if (val > 0) {
       const isUnlimited = (product.is_unlimited === 1 || product.is_unlimited === true || String(product.is_unlimited) === '1');
@@ -788,7 +1177,8 @@ export class CartService {
       let _quantity = Math.min(val || 1, maxStock);
       if (_quantity <= 0) {
         _quantity = 0;
-        delete this.cartProducts[product.id];
+        if (pid) delete this.cartProducts[pid];
+        if (product.id) delete this.cartProducts[product.id];
         return;
       }
       product["units"] = _quantity;
@@ -823,8 +1213,14 @@ export class CartService {
       product['delivery_date'] = this.getNextDeliveryDate(product);
 
       //write in the cart object
-      this.cartProducts[product.id] = Object.assign({}, product);
-      delete this.cartProducts[product.id].changeInProduct;
+      if (pid) {
+        this.cartProducts[pid] = Object.assign({}, product);
+        delete this.cartProducts[pid].changeInProduct;
+      }
+      if (product.id && product.id !== pid) {
+        this.cartProducts[product.id] = Object.assign({}, product);
+        delete this.cartProducts[product.id].changeInProduct;
+      }
 
       if (!product.subscribe) {
         product.subs_options = {
@@ -849,26 +1245,37 @@ export class CartService {
       }
 
       for (var i = 0; i < this.productsList.length; i++) {
-        if (this.productsList[i].id === product.id) {
+        if (pid && (this.productsList[i].id === pid || this.productsList[i].id === product.id)) {
           this.productsList[i] = { ...this.productsList[i], ...product };
           break;
         }
       }
     } else {
       //Remove from the cart object
+      const targetId = pid || String(product?.id || '');
+      let cnt = 0;
       for (var i = 0; i < this.productsList.length; i++) {
-        if (product.id)
-          if (product.id == this.productsList[i].id) {
-            if (this.cartLiveProducts[product.id]) {
-              this.productsList[i] = this.cartLiveProducts[product.id];
-            } else {
-              this.productsList[i].units = val;
-            }
-            break;
+        if (targetId && (targetId == this.productsList[i].id)) {
+          cnt++;
+          if (this.cartLiveProducts[targetId]) {
+            this.productsList[i] = this.cartLiveProducts[targetId];
+          } else {
+            this.productsList[i].units = val;
           }
+          break;
+        }
       }
-      product.units = val;
-      delete this.cartProducts[product.id];
+      if (cnt == 0)
+        product.units = val;
+      if (targetId) {
+        if (this.cartProducts['undefined']) delete this.cartProducts['undefined'];
+        delete this.cartProducts[targetId];
+        delete this.cartLiveProducts[targetId];
+      }
+      if (product?.id) {
+        delete this.cartProducts[product.id];
+        delete this.cartLiveProducts[product.id];
+      }
     }
   }
 
@@ -899,26 +1306,50 @@ export class CartService {
   }
 
   zoneTablePicker(zone: string): string {
-    zone = zone.toLocaleLowerCase();
+    zone = (zone || '').toLocaleLowerCase();
     if (zone == "zone1") {
       zone = "zone1_products_new_1";
     } else if (zone == "zone2") {
       zone = "zone2_products_new_1";
     } else {
-      zone = "out_of_range_new";
+      zone = "zone1_products_new_1";
     }
     return zone;
   }
 
-  read_products(zone: string, cat: string) {
-    zone = this.zoneTablePicker(zone);
+  read_products(zone?: string, cat: string = 'all', forceRefresh: boolean = false): Observable<Product[]> {
+    const now = Date.now();
+    const isCacheExpired = (this.lastProductsFetchTime === 0 || (now - this.lastProductsFetchTime) >= this.PRODUCTS_CACHE_TTL_MS);
 
-    // Fetch freshest products data from backend (skipLoader = true so inline shimmer effect displays)
+    // 1. If all products are already downloaded, cache is fresh (< 1 hr), and not force refreshing, reuse in-memory data
+    if (!forceRefresh && !isCacheExpired && this.allProductsLoaded && this.productsList && this.productsList.length > 0) {
+      this.productsLoadingFlg = false;
+      this.productsDownloadedEvent.next(this.productsList);
+      return of(this.productsList);
+    }
+
+    // 2. If an API request is already in-flight, reuse it (guarantees exactly one network call)
+    if (this.productsFetchObservable$) {
+      return this.productsFetchObservable$;
+    }
+
+    // 3. Initiate single API call for all products
     this.productsLoadingFlg = true;
-    this.apiS.postApi('products/download_products_sql.php', { table_name: zone, cat: cat }, true).subscribe({
-      next: (data: any) => {
+    const targetZone = this.zoneTablePicker(zone || this.loginS.user?.zone || 'zone1');
+
+    this.productsFetchObservable$ = this.apiS.postApi('products/download_products_sql.php', {
+      table_name: targetZone || 'zone1_products_new_1',
+      cat: 'all'
+    }, true).pipe(
+      map((data: any) => {
         this.productsLoadingFlg = false;
-        if (Array.isArray(data)) {
+        this.allProductsLoaded = true;
+        this.loadedProductsZone = targetZone;
+        this.lastProductsFetchTime = Date.now();
+        this.productsFetchObservable$ = null;
+
+        if (Array.isArray(data) && data.length > 0) {
+          let cartPriceUpdated = false;
           for (let i = 0; i < data.length; i++) {
             const incoming = data[i];
             const existingIdx = this.productsList.findIndex(p => p.id === incoming.id || (p.name && incoming.name && p.name.toLowerCase() === incoming.name.toLowerCase()));
@@ -928,133 +1359,215 @@ export class CartService {
               if (this.cartProducts[incoming.id]) {
                 this.cartProducts[incoming.id] = { ...this.cartProducts[incoming.id], ...incoming, units: curUnits };
                 this.updateProduct(this.cartProducts[incoming.id], curUnits);
+                cartPriceUpdated = true;
               }
             } else {
               if (this.cartProducts[incoming.id]) {
                 incoming.units = this.cartProducts[incoming.id].units;
                 this.cartProducts[incoming.id] = { ...this.cartProducts[incoming.id], ...incoming };
+                this.updateProduct(this.cartProducts[incoming.id], incoming.units);
+                cartPriceUpdated = true;
               }
               this.productsList.push(incoming);
             }
           }
+          if (cartPriceUpdated) {
+            this.calculateCart(this.cartProducts);
+            this.storageS.setItem("tnkspt_cart_products", this.cartProducts);
+          }
         }
         this.productsDownloadedEvent.next(this.productsList);
-      },
-      error: () => {
+        this.notifyCartEvent.next();
+        return this.productsList;
+      }),
+      catchError((err: any) => {
         this.productsLoadingFlg = false;
+        this.productsFetchObservable$ = null; // allow retry on network failure
         this.productsExistEvent.next("EXIST");
+        return of(this.productsList);
+      }),
+      shareReplay(1)
+    );
+
+    // Eagerly trigger subscription so network request fires
+    this.productsFetchObservable$.subscribe();
+    return this.productsFetchObservable$;
+  }
+
+  startHourlyProductsRefresh(): void {
+    if (this.productsRefreshIntervalId) {
+      clearInterval(this.productsRefreshIntervalId);
+    }
+    // Check every 5 minutes if 1 hour has elapsed since last fetch
+    this.productsRefreshIntervalId = setInterval(() => {
+      const now = Date.now();
+      if (this.lastProductsFetchTime > 0 && (now - this.lastProductsFetchTime) >= this.PRODUCTS_CACHE_TTL_MS) {
+        this.refreshProducts().subscribe();
+      }
+    }, 5 * 60 * 1000);
+
+    // Also auto-refresh when tab gains focus / visibility after being idle or sleeping > 1 hr
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          const now = Date.now();
+          if (this.lastProductsFetchTime > 0 && (now - this.lastProductsFetchTime) >= this.PRODUCTS_CACHE_TTL_MS) {
+            this.refreshProducts().subscribe();
+          }
+        }
+      });
+    }
+  }
+
+  refreshProducts(): Observable<Product[]> {
+    this.allProductsLoaded = false;
+    this.productsFetchObservable$ = null;
+    return this.read_products(this.loginS.user?.zone || this.loadedProductsZone || 'zone1', 'all', true);
+  }
+
+  applyCartData(cartProducts: any, observer?: Observer<string>) {
+    if (cartProducts?.live && cartProducts.live.length > 0) {
+      let result: Array<string> = this.cartBarRestrictedPages.filter((val) => val == this.currentPage);
+      if (result.length == 0) this.isCartVisible.next(true);
+    }
+
+    (cartProducts?.live || []).forEach((_product: any) => {
+      this.cartLiveProducts[_product.id] = _product;
+      const pIdx = this.productsList.findIndex(p => p.id === _product.id);
+      if (pIdx !== -1) {
+        this.productsList[pIdx] = { ...this.productsList[pIdx], ..._product };
+      }
+      if (this.cartProducts[_product.id]) {
+        const curUnits = this.cartProducts[_product.id].units || (this.cartProducts[_product.id] as any).quantity || 1;
+        this.cartProducts[_product.id] = { ...this.cartProducts[_product.id], ..._product };
+        this.updateProduct(this.cartProducts[_product.id], curUnits);
       }
     });
+
+    (cartProducts?.cart || []).forEach((_product: any) => {
+      _product.subscribe = false;
+      const rawPid = _product.productID || _product.product_id || _product.id;
+      const pId = String(rawPid);
+      const existingLocal: any = this.cartProducts[pId] || this.cartProducts[rawPid] || {};
+      const liveInfo: any = this.cartLiveProducts[pId] || this.cartLiveProducts[rawPid] || {};
+
+      this.cartProducts[pId] = {
+        ...existingLocal,
+        ..._product,
+        ...liveInfo,
+        id: pId,
+        productID: pId,
+        units: _product.quantity !== undefined ? _product.quantity : (existingLocal.units || 1),
+        name: liveInfo.name || existingLocal.name || _product.name || _product.product_name || 'Product Item',
+        img_url: liveInfo.img_url || existingLocal.img_url || _product.img_url || 'assets/categories/Thinkspot_veggiesIcon.png',
+        price: liveInfo.price !== undefined ? liveInfo.price : (existingLocal.price !== undefined ? existingLocal.price : _product.price),
+        weight: liveInfo.weight || existingLocal.weight || _product.weight || '',
+        unit_name: liveInfo.unit_name || existingLocal.unit_name || _product.unit_name || ''
+      };
+      _product = this.cartProducts[pId];
+
+      if ((_product.rangeDates && _product.rangeDates != 'undefined') || (_product.subscribedDates && _product.subscribedDates != 'undefined')) {
+        _product.subscribe = true;
+        if (_product.subscriptionType == "range") {
+          _product.rangeDates = (typeof _product.rangeDates === 'string') ? JSON.parse(_product.rangeDates) : _product.rangeDates;
+          let startDate = new Date(_product.rangeDates[0]);
+          let diff = DateE.dateDiff(this.deliveryDate, startDate);
+          if (diff < 0) {
+            for (var i = 1; i < _product.rangeDates.length + 1; i++) {
+              let date = new Date(this.serverTime);
+              _product.rangeDates[i - 1] = new Date(date.setDate(date.getDate() + (i))).toDateString();
+            }
+          }
+
+          _product.subs_options = {
+            startDate: new DateE(new Date(_product.rangeDates[0])),
+            endDate: new DateE(new Date(_product.rangeDates[_product.rangeDates.length - 1])),
+            type: _product.subscriptionType,
+            units: _product.quantity
+          };
+          _product.subs_options.rangeSelected = _product.rangeDates;
+        }
+
+        if (_product.subscriptionType == "multi_day") {
+          _product.subscribedDates = (typeof _product.subscribedDates === 'string') ? JSON.parse(_product.subscribedDates) : _product.subscribedDates;
+          _product.subs_options = {
+            type: _product.subscriptionType,
+            units: _product.quantity
+          };
+          _product.subs_options.multiDaySelected = _product.subscribedDates;
+          let startDate = new Date(_product.subs_options.multiDaySelected[0]);
+          let diff = DateE.dateDiff(this.deliveryDate, startDate);
+
+          if (diff < 0) {
+            for (var i = 1; i < _product.subscribedDates.length + 1; i++) {
+              let date = new Date(this.serverTime);
+              let postponeCnt = DateE.dateDiff(this.deliveryDate, new Date(_product.subscribedDates[i - 1]));
+              let actualDiff = postponeCnt - (diff - 1);
+
+              _product.subscribedDates[i - 1] = new Date(date.setDate(date.getDate() + (actualDiff))).toDateString();
+            }
+          }
+        }
+      }
+      this.updateProduct(_product, _product.quantity);
+    });
+    this.updateRecommendedProducts();
+    this.calculateCart(this.cartProducts);
+    this.storageS.setItem("tnkspt_cart_products", this.cartProducts);
+    this.notifyCartEvent.next();
+
+    if (observer) {
+      observer.complete();
+    }
+  }
+
+  processCartItems(products: Array<CartProductTable>, observer?: Observer<string>) {
+    const sqlProductIds = (typeof products != "string" && products && products.length > 0)
+      ? products.map((item: any) => item.productID || item.product_id || item.id)
+      : [];
+    const localCartIds = Object.keys(this.cartProducts || {});
+    const allProductIds = Array.from(new Set([...sqlProductIds, ...localCartIds]));
+
+    if (allProductIds.length > 0) {
+      // Instant in-memory resolution if all products are already loaded
+      if (this.allProductsLoaded && this.productsList && this.productsList.length > 0) {
+        const allFoundInList = allProductIds.every(id => this.productsList.some(p => p.id === id));
+        if (allFoundInList) {
+          const live = allProductIds.map(id => this.productsList.find(p => p.id === id)).filter(Boolean);
+          const cart = Array.isArray(products) ? products : [];
+          this.applyCartData({ live, cart }, observer);
+          return;
+        }
+      }
+
+      const tableName = this.zoneTablePicker(this.loginS.user?.zone || 'zone1');
+      this.apiS.postApi("products/download_multiple_products.php", {
+        "data": JSON.stringify(allProductIds),
+        "orderId": this.orderID,
+        "table_name": tableName
+      }, true).subscribe({
+        next: (cartProducts: any) => {
+          this.applyCartData(cartProducts, observer);
+        },
+        error: (err: Error) => {
+          if (observer) {
+            observer.complete();
+          }
+        }
+      });
+    } else {
+      this.notifyCartEvent.next();
+      if (observer) {
+        observer.complete();
+      }
+    }
   }
 
   read_cart_products(observer?: Observer<string>) {
     //get the items in the cart based on customer_id
     this.apiS.postApi('products/get_cart.php', { customerID: this.userID, status: "CART" }, true).subscribe({
       next: (products: Array<CartProductTable>) => {
-        const sqlProductIds = (typeof products != "string" && products && products.length > 0)
-          ? products.map((item: any) => item.productID || item.product_id || item.id)
-          : [];
-        const localCartIds = Object.keys(this.cartProducts || {});
-        const allProductIds = Array.from(new Set([...sqlProductIds, ...localCartIds]));
-
-        if (allProductIds.length > 0) {
-          const tableName = this.zoneTablePicker(this.loginS.user?.zone || 'zone1');
-          this.apiS.postApi("products/download_multiple_products.php", {
-            "data": JSON.stringify(allProductIds),
-            "orderId": this.orderID,
-            "table_name": tableName
-          }, true).subscribe({
-            next: (cartProducts: any) => {
-              if (cartProducts?.live && cartProducts.live.length > 0) {
-                let result: Array<string> = this.cartBarRestrictedPages.filter((val) => val == this.currentPage);
-                if (result.length == 0) this.isCartVisible.next(true);
-              }
-
-              (cartProducts?.live || []).forEach((_product: any) => {
-                this.cartLiveProducts[_product.id] = _product;
-                const pIdx = this.productsList.findIndex(p => p.id === _product.id);
-                if (pIdx !== -1) {
-                  this.productsList[pIdx] = { ...this.productsList[pIdx], ..._product };
-                }
-                if (this.cartProducts[_product.id]) {
-                  const curUnits = this.cartProducts[_product.id].units || (this.cartProducts[_product.id] as any).quantity || 1;
-                  this.cartProducts[_product.id] = { ...this.cartProducts[_product.id], ..._product };
-                  this.updateProduct(this.cartProducts[_product.id], curUnits);
-                }
-              });
-
-              (cartProducts?.cart || []).forEach((_product: any) => {
-                _product.subscribe = false;
-                //extending with cart and live products
-                this.cartProducts[_product.productID] = { ..._product, ...this.cartLiveProducts[_product.productID] };
-                _product = this.cartProducts[_product.productID];
-
-                if ((_product.rangeDates && _product.rangeDates != 'undefined') || (_product.subscribedDates && _product.subscribedDates != 'undefined')) {
-                  _product.subscribe = true;
-                  if (_product.subscriptionType == "range") {
-                    _product.rangeDates = (typeof _product.rangeDates === 'string') ? JSON.parse(_product.rangeDates) : _product.rangeDates;
-                    let startDate = new Date(_product.rangeDates[0]);
-                    let diff = DateE.dateDiff(this.deliveryDate, startDate);
-                    if (diff < 0) {
-                      for (var i = 1; i < _product.rangeDates.length + 1; i++) {
-                        let date = new Date();
-                        _product.rangeDates[i - 1] = new Date(date.setDate(date.getDate() + (i))).toDateString();
-                      }
-                    }
-
-                    _product.subs_options = {
-                      startDate: new DateE(new Date(_product.rangeDates[0])),
-                      endDate: new DateE(new Date(_product.rangeDates[_product.rangeDates.length - 1])),
-                      type: _product.subscriptionType,
-                      units: _product.quantity
-                    };
-                    _product.subs_options.rangeSelected = _product.rangeDates;
-                  }
-
-                  if (_product.subscriptionType == "multi_day") {
-                    _product.subscribedDates = (typeof _product.subscribedDates === 'string') ? JSON.parse(_product.subscribedDates) : _product.subscribedDates;
-                    _product.subs_options = {
-                      type: _product.subscriptionType,
-                      units: _product.quantity
-                    };
-                    _product.subs_options.multiDaySelected = _product.subscribedDates;
-                    let startDate = new Date(_product.subs_options.multiDaySelected[0]);
-                    let diff = DateE.dateDiff(this.deliveryDate, startDate);
-
-                    if (diff < 0) {
-                      for (var i = 1; i < _product.subscribedDates.length + 1; i++) {
-                        let date = new Date();
-                        let postponeCnt = DateE.dateDiff(this.deliveryDate, new Date(_product.subscribedDates[i - 1]));
-                        let actualDiff = postponeCnt - (diff - 1);
-
-                        _product.subscribedDates[i - 1] = new Date(date.setDate(date.getDate() + (actualDiff))).toDateString();
-                      }
-                    }
-                  }
-                }
-                this.updateProduct(_product, _product.quantity);
-              });
-              this.updateRecommendedProducts();
-              this.calculateCart(this.cartProducts);
-              this.storageS.setItem("tnkspt_cart_products", this.cartProducts);
-              this.notifyCartEvent.next();
-
-              if (observer) {
-                observer.complete();
-              }
-            },
-            error: (err: Error) => {
-              if (observer) {
-                observer.complete();
-              }
-            }
-          });
-        } else {
-          this.notifyCartEvent.next();
-          if (observer) {
-            observer.complete();
-          }
-        }
+        this.processCartItems(products, observer);
       },
       error: () => {
         this.notifyCartEvent.next();
@@ -1104,6 +1617,30 @@ export class CartService {
 
 
     let couponDiscount = 0;
+    // Auto-select WELCOME25 (25% referral discount) for first order of referred users
+    if (!this.couponS.selectedCoupon && this.loginS?.referrrarinfo?.referrer && this.loginS.referrrarinfo.referrer !== 'xxxx') {
+      const userCoupons = this.couponS.coupons?.users || [];
+      const usedWelcome = userCoupons.some(u => String(u.code).toUpperCase() === 'WELCOME25' && (u.used_count || 0) >= 1);
+      if (!usedWelcome) {
+        const existingWelcome = userCoupons.find(u => String(u.code).toUpperCase() === 'WELCOME25' && (u.used_count || 0) < 1);
+        if (existingWelcome) {
+          this.couponS.selectedCoupon = existingWelcome;
+        } else {
+          this.couponS.selectedCoupon = {
+            mobile: this.loginS.user.mobile,
+            code: 'WELCOME25',
+            count: 1,
+            used_count: 0,
+            description: '25% OFF on first order (Referral Discount)',
+            offer: '25% OFF',
+            discount_percent: 25,
+            categories: 'all',
+            min_order_amount: 0
+          };
+        }
+      }
+    }
+
     if (this.couponS.selectedCoupon) {
       const selected = this.couponS.selectedCoupon;
       const code = String(selected.code).toUpperCase();
@@ -1125,6 +1662,9 @@ export class CartService {
       } else if (selected.discount_percent || selected.offer) {
         const pct = Number(selected.discount_percent || parseFloat(selected.offer) || 10);
         couponDiscount = (this.cartDetails.total * (pct / 100));
+        if (selected.max_discount && couponDiscount > Number(selected.max_discount)) {
+          couponDiscount = Number(selected.max_discount);
+        }
       } else {
         couponDiscount = 50;
       }
@@ -1172,6 +1712,8 @@ export class CartService {
   }
 
   placeOrder(callback, paymentType: 'Wallet' | 'COD' | 'OFFLINE' = 'Wallet', errorCallback?: Function) {
+    console.log("Place order");
+
     const adminMode = this.loginS.getAdminMode();
     const isOffline = (paymentType === 'OFFLINE' || (adminMode && adminMode.active));
     const orderSource = isOffline ? 'ADMIN_OFFLINE' : 'CLIENT_WEB';
@@ -1273,7 +1815,7 @@ export class CartService {
 
     const activeAddress = this.loginS.user?.address ||
       (this.loginS.user?.addresses && this.loginS.user.addresses[0]) ||
-      (isOffline ? { name: this.loginS.user?.name || 'Walk-in Customer', address: 'Store Counter / In-Store Direct Sale', pincode: '600095' } : {});
+      (isOffline ? { name: this.loginS.user?.name || 'Walk-in Customer', address: 'Store Counter / In-Store Direct Sale', pincode: '400071' } : {});
 
     this.apiS.postApi("orders/place_order.php", {
       "ordersDetails": JSON.stringify({
@@ -1301,8 +1843,11 @@ export class CartService {
         "items_count": this.cartDetails.totalItems,
         "delivery_date": this.deliveryDate ? `${this.deliveryDate.getFullYear()}-${String(this.deliveryDate.getMonth() + 1).padStart(2, '0')}-${String(this.deliveryDate.getDate()).padStart(2, '0')}` : '',
         "delivery_option": this.selectedDeliveryOption || "NEXT_DAY_7AM",
-        "coupon": this.orderInformation.selectedCoupon?.code || "",
-        "coupon_offer": this.orderInformation.selectedCoupon?.offer || "",
+        "coupon": this.orderInformation.selectedCoupon?.code || ((this.loginS?.referrrarinfo?.referrer && this.loginS.referrrarinfo.referrer !== 'xxxx') ? 'WELCOME25' : ''),
+        "coupon_offer": this.orderInformation.selectedCoupon?.offer || '',
+        "coupon_discount": this.orderInformation.couponDiscount || 0,
+        "referral_code": (this.loginS?.referrrarinfo?.referrer && this.loginS.referrrarinfo.referrer !== 'xxxx') ? this.loginS.referrrarinfo.referrer : (this.orderInformation.selectedCoupon?.code === 'WELCOME25' ? 'WELCOME25' : ''),
+        "referred_by": (this.loginS?.referrrarinfo?.referrer_name && this.loginS.referrrarinfo.referrer_name !== 'xxxx') ? this.loginS.referrrarinfo.referrer_name : '',
         "items": itemsList
       })
     }).subscribe({
@@ -1333,6 +1878,8 @@ export class CartService {
         }
 
         this.clearCart();
+        this.orderPlacedFlag = true;
+        this.notifyCartEvent.next();
         if (this.loginS?.user) {
           this.loginS.user.orderID = undefined;
           if (res && res.total !== undefined) {
@@ -1345,11 +1892,12 @@ export class CartService {
         }
       },
       error: (err: any) => {
-        const errorMsg = err?.error?.error || "Unable to place order. Please check your wallet balance and try again.";
-        alert(errorMsg);
         this.payAndCheckoutFlg = false;
         if (errorCallback) {
           errorCallback(err);
+        } else {
+          const errorMsg = err?.message || err?.error?.error || "Unable to place order. Please check your delivery pincode or wallet balance.";
+          alert(errorMsg);
         }
       }
     });
@@ -1419,7 +1967,6 @@ export class CartService {
       Object.keys(this.cartLiveProducts).forEach(id => resetProd(this.cartLiveProducts[id]));
     }
 
-    this.productsList = [];
     this.cartProducts = {};
     this.cartLiveProducts = {};
     this.deliveryInst = "";

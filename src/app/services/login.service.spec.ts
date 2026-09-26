@@ -216,7 +216,7 @@ describe('LoginService', () => {
     it('should emit noAddressEvent=true when user has no saved addresses', fakeAsync(() => {
       service.userStatus = 'LOGIN';
       service.user.mobile = '9876543210';
-      let noAddr = false;
+      let noAddr: boolean = undefined;
       service.noAddressEvent.subscribe(v => (noAddr = v));
 
       service.readAddress();
@@ -224,6 +224,19 @@ describe('LoginService', () => {
       req.flush([]);
       tick();
       expect(noAddr).toBeTrue();
+    }));
+
+    it('should emit noAddressEvent=false when user has saved addresses', fakeAsync(() => {
+      service.userStatus = 'LOGIN';
+      service.user.mobile = '9876543210';
+      let noAddr: boolean = undefined;
+      service.noAddressEvent.subscribe(v => (noAddr = v));
+
+      service.readAddress();
+      const req = httpMock.expectOne(`${BASE}user/read_address.php`);
+      req.flush([{ id: 1, address: '10 MG Road', pincode: '600001', is_default: 1, default: 1, active: 1 }]);
+      tick();
+      expect(noAddr).toBeFalse();
     }));
   });
 

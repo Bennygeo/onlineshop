@@ -80,6 +80,14 @@ export class CartComponent {
   }
 
   plusMinusAction(val) {
+    if (!this.product) return;
+    const pid = String(this.product.id || (this.product as any).productID || (this.product as any).product_id || '');
+    if (!this.product.id && pid) {
+      this.product.id = pid;
+    }
+    if (val <= 0) {
+      this.product.units = 0;
+    }
     if (this.product.subscribe) {
       this.product.subs_options = {
         units: 0,

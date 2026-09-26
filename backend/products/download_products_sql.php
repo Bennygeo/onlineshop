@@ -69,15 +69,19 @@ try {
 
     try {
         $products = $fetchFromTable($targetTable);
-        if (empty($products) && $targetTable !== 'products') {
-            // If zone table was empty, fallback to master products table
+        if (empty($products) && $targetTable !== 'products' && $targetTable !== 'zone2_products_new_1') {
+            // If zone table was empty, fallback to master products table (except zone2 which has 0 products)
             $products = $fetchFromTable('products');
         }
     } catch (Exception $exTable) {
-        try {
-            $products = $fetchFromTable('products');
-        } catch (Exception $exM) {
+        if ($targetTable === 'zone2_products_new_1') {
             $products = [];
+        } else {
+            try {
+                $products = $fetchFromTable('products');
+            } catch (Exception $exM) {
+                $products = [];
+            }
         }
     }
 
@@ -164,7 +168,7 @@ try {
         }
     }
 
-    sendJson($products);
+    sendJson($products, 200, 120);
 } catch (Exception $e) {
     sendJson(['error' => $e->getMessage()], 500);
 }

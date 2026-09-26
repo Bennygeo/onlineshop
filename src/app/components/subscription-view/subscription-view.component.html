@@ -16,7 +16,7 @@
         <!-- Body: Product Info & Image -->
         <div class="subs-body">
             <div class="product-thumb-cont">
-                <img [src]="subs['img_url'] || 'assets/orders/orders_veg.png'" (error)="onImgError($event)" class="product-thumb" [alt]="subs['name']">
+                <img [src]="subs['img_url'] || 'assets/general/product_placeholder.svg'" (error)="onImgError($event)" class="product-thumb" [alt]="subs['name'] || 'Product'">
             </div>
             <div class="product-details">
                 <div class="product-title">{{subs.name}}</div>

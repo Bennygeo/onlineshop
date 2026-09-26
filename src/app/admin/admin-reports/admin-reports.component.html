@@ -1,0 +1,522 @@
+<div class="reports-container">
+  <!-- Top Bar / Breadcrumb / Actions -->
+  <header class="reports-header no-print">
+    <div class="header-titles">
+      <div class="subtitle-badge">
+        <span class="material-icons">analytics</span>
+        <span>Store Intelligence</span>
+      </div>
+      <h1 class="main-title">Reports & Business Analytics</h1>
+      <p class="desc">Track sales trends, product margins, delivery partner metrics, and settlement breakdowns across custom date ranges.</p>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="loadReports()" [disabled]="loading" title="Refresh metrics">
+        <span class="material-icons" [class.spinning]="loading">refresh</span>
+        <span>Refresh</span>
+      </button>
+
+      <button class="btn btn-outline" (click)="exportToCsv()" [disabled]="loading" title="Download CSV spreadsheet">
+        <span class="material-icons">file_download</span>
+        <span>Export CSV</span>
+      </button>
+
+      <button class="btn btn-primary" (click)="printReport()" [disabled]="loading" title="Print-ready view">
+        <span class="material-icons">print</span>
+        <span>Print Summary</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Filter & Date Range Control Bar -->
+  <section class="controls-panel no-print">
+    <!-- Presets Row -->
+    <div class="presets-row">
+      <span class="control-label">Quick Presets:</span>
+      <div class="preset-pills">
+        <button type="button" class="preset-pill" [class.active]="selectedPreset === 'today'" (click)="selectPreset('today')">Today</button>
+        <button type="button" class="preset-pill" [class.active]="selectedPreset === 'yesterday'" (click)="selectPreset('yesterday')">Yesterday</button>
+        <button type="button" class="preset-pill" [class.active]="selectedPreset === 'week'" (click)="selectPreset('week')">Last 7 Days</button>
+        <button type="button" class="preset-pill" [class.active]="selectedPreset === 'month'" (click)="selectPreset('month')">This Month (MTD)</button>
+        <button type="button" class="preset-pill" [class.active]="selectedPreset === '30days'" (click)="selectPreset('30days')">Last 30 Days</button>
+      </div>
+    </div>
+
+    <!-- Date Range & Secondary Filters Row -->
+    <div class="filters-grid">
+      <!-- From Date -->
+      <div class="field-group">
+        <label for="fromDateInput">From Date</label>
+        <div class="input-with-icon">
+          <span class="material-icons">calendar_today</span>
+          <input 
+            type="date" 
+            id="fromDateInput" 
+            [(ngModel)]="fromDate" 
+            (change)="onCustomDateChange()" 
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <!-- To Date -->
+      <div class="field-group">
+        <label for="toDateInput">To Date</label>
+        <div class="input-with-icon">
+          <span class="material-icons">event</span>
+          <input 
+            type="date" 
+            id="toDateInput" 
+            [(ngModel)]="toDate" 
+            (change)="onCustomDateChange()" 
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <!-- Order Status Filter -->
+      <div class="field-group">
+        <label for="statusSelect">Order Status</label>
+        <div class="input-with-icon select-wrapper">
+          <span class="material-icons">tune</span>
+          <select id="statusSelect" [(ngModel)]="statusFilter" class="form-control">
+            <option value="ALL">All Statuses</option>
+            <option value="DELIVERED">Delivered Only</option>
+            <option value="PLACED">Placed / Processing</option>
+            <option value="PACKED">Packed</option>
+            <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Order Type Filter -->
+      <div class="field-group">
+        <label for="typeSelect">Order Type</label>
+        <div class="input-with-icon select-wrapper">
+          <span class="material-icons">category</span>
+          <select id="typeSelect" [(ngModel)]="orderTypeFilter" class="form-control">
+            <option value="ALL">All Types</option>
+            <option value="regular">Regular Orders</option>
+            <option value="subscription">Subscription Orders</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Search Input -->
+      <div class="field-group search-group">
+        <label for="searchInput">Search Data</label>
+        <div class="input-with-icon">
+          <span class="material-icons">search</span>
+          <input 
+            type="text" 
+            id="searchInput" 
+            [(ngModel)]="searchQuery" 
+            placeholder="Search product, order ID, phone..." 
+            class="form-control"
+          />
+        </div>
+      </div>
+
+      <!-- Apply Action -->
+      <div class="apply-group">
+        <button class="btn btn-apply" (click)="applyFilters()" [disabled]="loading">
+          <span class="material-icons">filter_alt</span>
+          <span>Apply Filter</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Print Header Visible only in print view -->
+  <div class="print-only print-header">
+    <h2>BAGAVATHI STORE - PERFORMANCE & AUDIT REPORT</h2>
+    <p>Range: {{ fromDate }} to {{ toDate }} | Generated on: {{ summary.toDate }}</p>
+  </div>
+
+  <!-- KPI Metric Summary Cards -->
+  <section class="kpi-grid">
+    <!-- Revenue -->
+    <div class="kpi-card card-revenue">
+      <div class="kpi-header">
+        <span class="kpi-title">Gross Revenue</span>
+        <div class="kpi-icon-bubble revenue-bubble">
+          <span class="material-icons">payments</span>
+        </div>
+      </div>
+      <div class="kpi-value">₹{{ summary.totalRevenue | number:'1.2-2' }}</div>
+      <div class="kpi-meta">
+        <span class="meta-highlight">Active orders</span>
+        <span class="meta-label">excluding cancellations</span>
+      </div>
+    </div>
+
+    <!-- Orders Count -->
+    <div class="kpi-card card-orders">
+      <div class="kpi-header">
+        <span class="kpi-title">Total Orders</span>
+        <div class="kpi-icon-bubble orders-bubble">
+          <span class="material-icons">shopping_bag</span>
+        </div>
+      </div>
+      <div class="kpi-value">{{ summary.totalOrders }}</div>
+      <div class="kpi-meta">
+        <span class="badge-success">{{ summary.deliveredOrders }} Delivered</span>
+        <span class="badge-danger" *ngIf="summary.cancelledOrders > 0">{{ summary.cancelledOrders }} Cancelled</span>
+      </div>
+    </div>
+
+    <!-- Avg Order Value -->
+    <div class="kpi-card card-aov">
+      <div class="kpi-header">
+        <span class="kpi-title">Average Order Value</span>
+        <div class="kpi-icon-bubble aov-bubble">
+          <span class="material-icons">trending_up</span>
+        </div>
+      </div>
+      <div class="kpi-value">₹{{ summary.avgOrderValue | number:'1.2-2' }}</div>
+      <div class="kpi-meta">
+        <span class="meta-sub">Per completed basket</span>
+      </div>
+    </div>
+
+    <!-- Estimated Margin -->
+    <div class="kpi-card card-margin">
+      <div class="kpi-header">
+        <span class="kpi-title">Est. Gross Margin</span>
+        <div class="kpi-icon-bubble margin-bubble">
+          <span class="material-icons">pie_chart</span>
+        </div>
+      </div>
+      <div class="kpi-value">₹{{ summary.estimatedMargin | number:'1.2-2' }}</div>
+      <div class="kpi-meta">
+        <span class="badge-rate">{{ summary.marginPercentage }}% Margin Rate</span>
+        <span class="meta-label">Est. Cost: ₹{{ summary.totalCost | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Report View Tabs -->
+  <nav class="report-tabs-nav no-print">
+    <button class="tab-btn" [class.active]="activeTab === 'sales'" (click)="activeTab = 'sales'">
+      <span class="material-icons">calendar_view_day</span>
+      <span>Sales & Daily Trends</span>
+      <span class="count-pill">{{ salesTrend.length }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab === 'products'" (click)="activeTab = 'products'">
+      <span class="material-icons">inventory</span>
+      <span>Product Margins & Units</span>
+      <span class="count-pill">{{ filteredProducts.length }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab === 'delivery'" (click)="activeTab = 'delivery'">
+      <span class="material-icons">moped</span>
+      <span>Delivery Partner Metrics</span>
+      <span class="count-pill">{{ deliveryPartners.length }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab === 'payments'" (click)="activeTab = 'payments'">
+      <span class="material-icons">account_balance_wallet</span>
+      <span>Payment Modes</span>
+      <span class="count-pill">{{ paymentMethods.length }}</span>
+    </button>
+
+    <button class="tab-btn" [class.active]="activeTab === 'orders'" (click)="activeTab = 'orders'">
+      <span class="material-icons">receipt_long</span>
+      <span>Orders Audit Log</span>
+      <span class="count-pill">{{ filteredOrders.length }}</span>
+    </button>
+  </nav>
+
+  <!-- Loading State -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Calculating reports for {{ fromDate }} to {{ toDate }}...</p>
+  </div>
+
+  <!-- TAB 1: Sales & Daily Trends -->
+  <div class="tab-content" *ngIf="!loading && activeTab === 'sales'">
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="title-with-badge">
+          <h3>Daily Sales Performance</h3>
+          <span class="badge-info">{{ salesTrend.length }} Day(s) recorded</span>
+        </div>
+        <span class="text-muted">Breakdown by calendar date</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th class="text-center">Total Orders</th>
+              <th class="text-center">Regular / Subs</th>
+              <th class="text-center">Delivered</th>
+              <th class="text-center">Cancelled</th>
+              <th class="text-right">Gross Revenue</th>
+              <th class="text-right">Est. Cost</th>
+              <th class="text-right">Est. Margin</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let day of salesTrend">
+              <td class="font-medium">{{ day.date }}</td>
+              <td class="text-center"><span class="badge-neutral">{{ day.ordersCount }}</span></td>
+              <td class="text-center text-muted">{{ day.regularOrders }} / {{ day.subscriptionOrders }}</td>
+              <td class="text-center"><span class="badge-success">{{ day.deliveredCount }}</span></td>
+              <td class="text-center"><span class="badge-danger" *ngIf="day.cancelledCount > 0">{{ day.cancelledCount }}</span><span *ngIf="day.cancelledCount === 0" class="text-muted">-</span></td>
+              <td class="text-right font-semibold">₹{{ day.revenue | number:'1.2-2' }}</td>
+              <td class="text-right text-muted">₹{{ day.cost | number:'1.2-2' }}</td>
+              <td class="text-right font-semibold text-success">₹{{ day.margin | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="salesTrend.length === 0">
+              <td colspan="8" class="empty-cell">
+                <span class="material-icons">info</span>
+                <p>No orders found for the selected date range.</p>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot *ngIf="salesTrend.length > 0">
+            <tr>
+              <th>Total / Summary</th>
+              <th class="text-center">{{ summary.totalOrders }}</th>
+              <th class="text-center">-</th>
+              <th class="text-center">{{ summary.deliveredOrders }}</th>
+              <th class="text-center">{{ summary.cancelledOrders }}</th>
+              <th class="text-right">₹{{ summary.totalRevenue | number:'1.2-2' }}</th>
+              <th class="text-right">₹{{ summary.totalCost | number:'1.2-2' }}</th>
+              <th class="text-right text-success">₹{{ summary.estimatedMargin | number:'1.2-2' }}</th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: Product Performance & Margins -->
+  <div class="tab-content" *ngIf="!loading && activeTab === 'products'">
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="title-with-badge">
+          <h3>Product Sales & Margin Analysis</h3>
+          <span class="badge-info">{{ filteredProducts.length }} Product(s)</span>
+        </div>
+        <span class="text-muted">Sorted by Gross Revenue</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th class="text-center">Units Sold</th>
+              <th class="text-center">Orders Count</th>
+              <th class="text-right">Avg Unit Price</th>
+              <th class="text-right">Total Revenue</th>
+              <th class="text-right">Est. Cost</th>
+              <th class="text-right">Est. Margin</th>
+              <th class="text-center">Margin %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of filteredProducts">
+              <td class="font-medium">
+                <div class="product-info-cell">
+                  <span class="product-name">{{ p.name }}</span>
+                  <span class="product-id">#{{ p.id }}</span>
+                </div>
+              </td>
+              <td><span class="category-chip">{{ p.category }}</span></td>
+              <td class="text-center font-semibold">{{ p.unitsSold }}</td>
+              <td class="text-center text-muted">{{ p.ordersCount }}</td>
+              <td class="text-right">₹{{ p.avgPrice | number:'1.2-2' }}</td>
+              <td class="text-right font-semibold">₹{{ p.revenue | number:'1.2-2' }}</td>
+              <td class="text-right text-muted">₹{{ p.cost | number:'1.2-2' }}</td>
+              <td class="text-right font-semibold text-success">₹{{ p.margin | number:'1.2-2' }}</td>
+              <td class="text-center">
+                <span class="rate-pill" [class.high-rate]="p.marginPercentage >= 30" [class.low-rate]="p.marginPercentage < 15">
+                  {{ p.marginPercentage }}%
+                </span>
+              </td>
+            </tr>
+            <tr *ngIf="filteredProducts.length === 0">
+              <td colspan="9" class="empty-cell">
+                <span class="material-icons">inventory_2</span>
+                <p>No products sold in this period or matching your query.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Delivery Partner Metrics -->
+  <div class="tab-content" *ngIf="!loading && activeTab === 'delivery'">
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="title-with-badge">
+          <h3>Delivery Personnel Dispatch & Completion</h3>
+          <span class="badge-info">{{ deliveryPartners.length }} Agent(s)</span>
+        </div>
+        <span class="text-muted">Performance tracking per delivery personnel</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Delivery Partner</th>
+              <th class="text-center">Assigned Orders</th>
+              <th class="text-center">Delivered</th>
+              <th class="text-center">Pending / In-Transit</th>
+              <th class="text-center">Cancelled</th>
+              <th class="text-center">Completion Rate</th>
+              <th class="text-right">Total Order Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let dp of deliveryPartners">
+              <td class="font-medium">
+                <div class="partner-cell">
+                  <span class="material-icons dp-icon">two_wheeler</span>
+                  <span>{{ dp.partnerName }}</span>
+                </div>
+              </td>
+              <td class="text-center font-semibold">{{ dp.totalAssigned }}</td>
+              <td class="text-center"><span class="badge-success">{{ dp.delivered }}</span></td>
+              <td class="text-center"><span class="badge-warning" *ngIf="dp.pending > 0">{{ dp.pending }}</span><span *ngIf="dp.pending === 0" class="text-muted">0</span></td>
+              <td class="text-center"><span class="badge-danger" *ngIf="dp.cancelled > 0">{{ dp.cancelled }}</span><span *ngIf="dp.cancelled === 0" class="text-muted">0</span></td>
+              <td class="text-center">
+                <div class="progress-cell">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" [style.width.%]="dp.completionRate"></div>
+                  </div>
+                  <span class="progress-label">{{ dp.completionRate }}%</span>
+                </div>
+              </td>
+              <td class="text-right font-semibold">₹{{ dp.totalValue | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="deliveryPartners.length === 0">
+              <td colspan="7" class="empty-cell">
+                <span class="material-icons">moped</span>
+                <p>No delivery partner assignments recorded in this period.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Payment Breakdown -->
+  <div class="tab-content" *ngIf="!loading && activeTab === 'payments'">
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="title-with-badge">
+          <h3>Payment Method Breakdown</h3>
+          <span class="badge-info">Collection channels</span>
+        </div>
+        <span class="text-muted">Revenue share across payment channels</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Payment Channel</th>
+              <th class="text-center">Order Count</th>
+              <th class="text-right">Collected Amount</th>
+              <th class="text-right">Channel Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pm of paymentMethods">
+              <td class="font-medium">
+                <div class="payment-method-cell">
+                  <span class="material-icons" [ngSwitch]="pm.method">
+                    <ng-container *ngSwitchCase="'Cash on Delivery'">payments</ng-container>
+                    <ng-container *ngSwitchCase="'Online / UPI'">qr_code_2</ng-container>
+                    <ng-container *ngSwitchCase="'Wallet'">account_balance_wallet</ng-container>
+                    <ng-container *ngSwitchDefault>credit_card</ng-container>
+                  </span>
+                  <span>{{ pm.method }}</span>
+                </div>
+              </td>
+              <td class="text-center font-semibold">{{ pm.count }}</td>
+              <td class="text-right font-semibold">₹{{ pm.amount | number:'1.2-2' }}</td>
+              <td class="text-right text-muted">
+                {{ summary.totalRevenue > 0 ? ((pm.amount / summary.totalRevenue) * 100 | number:'1.1-1') : 0 }}%
+              </td>
+            </tr>
+            <tr *ngIf="paymentMethods.length === 0">
+              <td colspan="4" class="empty-cell">
+                <span class="material-icons">receipt</span>
+                <p>No payment records available.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: Orders Audit Log -->
+  <div class="tab-content" *ngIf="!loading && activeTab === 'orders'">
+    <div class="table-card">
+      <div class="table-card-header">
+        <div class="title-with-badge">
+          <h3>Detailed Orders Log</h3>
+          <span class="badge-info">{{ filteredOrders.length }} Order(s)</span>
+        </div>
+        <span class="text-muted">All filtered records</span>
+      </div>
+
+      <div class="table-responsive">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Date / Time</th>
+              <th>Customer</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Payment</th>
+              <th>Assigned Partner</th>
+              <th class="text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let ord of filteredOrders">
+              <td class="font-medium font-mono">#{{ ord.order_id }}</td>
+              <td class="text-muted text-sm">{{ ord.created_at || ord.delivery_date }}</td>
+              <td>{{ ord.mobile || ord.customer_name || 'Customer' }}</td>
+              <td>
+                <span class="badge-type" [class.badge-sub]="ord.order_type === 'subscription'">
+                  {{ ord.order_type || 'regular' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge-status" [ngClass]="(ord.status || 'placed') | lowercase">
+                  {{ ord.status || 'PLACED' }}
+                </span>
+              </td>
+              <td>{{ ord.payment_mode || 'Cash on Delivery' }}</td>
+              <td>{{ ord.assigned_to || 'Unassigned' }}</td>
+              <td class="text-right font-semibold">₹{{ ord.amount | number:'1.2-2' }}</td>
+            </tr>
+            <tr *ngIf="filteredOrders.length === 0">
+              <td colspan="8" class="empty-cell">
+                <span class="material-icons">inbox</span>
+                <p>No orders matching your criteria.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

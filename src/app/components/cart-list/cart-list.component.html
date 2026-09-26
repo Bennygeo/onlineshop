@@ -12,8 +12,43 @@
         </div>
     </div>
 
-    <!-- 2. CART ACTIVE CONTENT -->
-    <div class="cart-content-container" *ngIf="orderInformation?.totalItemsCount > 0">
+    <!-- 2. ORDER PLACED SUCCESS VIEW -->
+    <div class="order-paced-cont" *ngIf="cartService.orderPlacedFlag" [@fadeInOut]>
+        <div class="item-cont-1">
+            <div class="order-success-icon-wrap">
+                <svg class="checkmark-svg" viewBox="0 0 52 52">
+                    <circle class="checkmark-circle-bg" cx="26" cy="26" r="23" fill="none"/>
+                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+            </div>
+            <p class="empty">Order placed successfully. Thank You!</p>
+            <p class="order-id">Order ID: {{cartService.lastPlacedOrderId || cartService.orderID}}</p>
+            <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'NEXT_DAY_7AM'">
+                Scheduled for <b>Tomorrow Delivery at 7:00 AM IST</b> ({{ istDetails?.nextDayDeliveryDateStr ||
+                (cartService.deliveryDate|date:'EEEE, d MMMM') }})
+            </p>
+            <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_10'">
+                ⚡ Scheduled for <b>10 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate10EstimateStr
+                    }}</b>
+            </p>
+            <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_30'">
+                ⚡ Scheduled for <b>30 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate30EstimateStr
+                    }}</b>
+            </p>
+            <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_60'">
+                ⚡ Scheduled for <b>60 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate60EstimateStr
+                    }}</b>
+            </p>
+            <div class="flex-box" style="top:20px;">
+                <div class="tnkspt_secondary_btn cancel-btn" routerLink="/home/orders"
+                    (click)="cartService.orderPlacedFlag = false">Goto my orders</div>
+                <div class="tnkspt_primary_btn view-btn" (click)="shopNowAction()">Browse products</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. CART ACTIVE CONTENT -->
+    <div class="cart-content-container" *ngIf="orderInformation?.totalItemsCount > 0 && !cartService.orderPlacedFlag">
 
         <!-- Multi-Delivery Schedule Notice -->
         <div class="cart-section-card multi-delivery-alert-card" *ngIf="hasMultipleDeliveries()" [@fadeInOut]>
@@ -29,7 +64,9 @@
                     </span>
                 </div>
                 <h4 class="alert-title">Multi-Day Delivery Forward Scheduling</h4>
-                <p class="alert-desc">Your cart contains items assigned to specific delivery weekdays. We have split your order into <strong>{{ deliveryGroupCount }} deliveries</strong> based on each item's valid schedule.</p>
+                <p class="alert-desc">Your cart contains items assigned to specific delivery weekdays. We have split
+                    your order into <strong>{{ deliveryGroupCount }} deliveries</strong> based on each item's valid
+                    schedule.</p>
             </div>
         </div>
 
@@ -37,7 +74,8 @@
         <div class="delivery-groups-wrap">
             <div *ngFor="let dte of cartProductsDateWise|keyvalue; let ind=index;" class="delivery-group-card">
                 <!-- Delivery Batch Header Card -->
-                <div class="delivery-batch-header" [class.scheduled-batch]="getGroupHeaderInfo(dte.key).isScheduled" [class.subscription-batch]="dte.key === 'Subscriptions'">
+                <div class="delivery-batch-header" [class.scheduled-batch]="getGroupHeaderInfo(dte.key).isScheduled"
+                    [class.subscription-batch]="dte.key === 'Subscriptions'">
                     <div class="batch-left">
                         <span class="material-icons batch-icon">{{ getGroupHeaderInfo(dte.key).icon }}</span>
                         <div class="batch-titles">
@@ -45,7 +83,8 @@
                             <span class="batch-sub-title">{{ getGroupHeaderInfo(dte.key).sub }}</span>
                         </div>
                     </div>
-                    <span class="batch-count-pill">{{ dte.value?.length }} {{ dte.value?.length === 1 ? 'item' : 'items' }}</span>
+                    <span class="batch-count-pill">{{ dte.value?.length }} {{ dte.value?.length === 1 ? 'item' : 'items'
+                        }}</span>
                 </div>
 
                 <!-- Group Items Body -->
@@ -70,7 +109,8 @@
         </div>
 
         <!-- Standard Delivery Speed Banner (when single delivery) -->
-        <div class="cart-section-card delivery-banner-card" *ngIf="fetchUserBagFlg && !hasMultiDayDelivery()" [@fadeInOut]>
+        <div class="cart-section-card delivery-banner-card" *ngIf="fetchUserBagFlg && !hasMultiDayDelivery()"
+            [@fadeInOut]>
             <div class="order-delivery-card" [class.express-mode]="orderDeliverySummary?.isImmediate">
                 <div class="delivery-icon-circle" [class.express-circle]="orderDeliverySummary?.isImmediate">
                     <span class="material-icons">{{ orderDeliverySummary?.icon }}</span>
@@ -105,9 +145,11 @@
                 [class.has-error]="couponForm.get('coupon')?.invalid && (couponForm.get('coupon')?.dirty || couponForm.get('coupon')?.touched)">
                 <div class="promo-input-wrap">
                     <span class="material-icons promo-input-icon">sell</span>
-                    <input class="promo-input-field" type="text" placeholder="ENTER PROMO CODE" formControlName="coupon" />
+                    <input class="promo-input-field" type="text" placeholder="ENTER PROMO CODE"
+                        formControlName="coupon" />
                 </div>
-                <button type="button" class="promo-apply-btn" (click)="couponApplyBtn()" [disabled]="couponForm.invalid">Apply</button>
+                <button type="button" class="promo-apply-btn" (click)="couponApplyBtn()"
+                    [disabled]="couponForm.invalid">Apply</button>
             </form>
 
             <!-- Error & Success Messages -->
@@ -137,11 +179,13 @@
                 <mat-radio-group class="coupons-radio-group" (change)="onCouponChange($event)">
                     <div *ngFor="let coupon of couponS.coupons.users" class="coupon-item-box"
                         [class.coupon-disabled]="coupon.count == coupon.used_count">
-                        <mat-radio-button [value]="coupon" [disabled]="coupon.count == coupon.used_count" class="coupon-radio">
+                        <mat-radio-button [value]="coupon" [disabled]="coupon.count == coupon.used_count"
+                            class="coupon-radio">
                             <div class="coupon-body">
                                 <div class="coupon-header-line">
                                     <span class="coupon-code-badge">{{ coupon.code }}</span>
-                                    <span class="coupon-rem-text">({{ coupon.count - coupon.used_count }} of {{ coupon.count }} remaining)</span>
+                                    <span class="coupon-rem-text">({{ coupon.count - coupon.used_count }} of {{
+                                        coupon.count }} remaining)</span>
                                 </div>
                                 <div class="coupon-desc-text">{{ coupon.description }}</div>
                             </div>
@@ -161,11 +205,10 @@
             </div>
 
             <div class="instructions-grid">
-                <div class="instruction-box" 
-                     *ngFor="let inst of deliveryInstructions; let i=index;"
-                     [class.box-active]="selectedInstructionIndex === i"
-                     (click)="setInstructionIndex(i)">
-                    <img [src]="selectedInstructionIndex === i ? inst.activeUrl : inst.url" [alt]="inst.txt" loading="lazy" />
+                <div class="instruction-box" *ngFor="let inst of deliveryInstructions; let i=index;"
+                    [class.box-active]="selectedInstructionIndex === i" (click)="setInstructionIndex(i)">
+                    <img [src]="selectedInstructionIndex === i ? inst.activeUrl : inst.url" [alt]="inst.txt"
+                        loading="lazy" />
                     <p>{{ inst.txt }}</p>
                 </div>
             </div>
@@ -175,7 +218,9 @@
                     <span class="material-icons size-16">chat_bubble_outline</span>
                     <span>Special requests (if any)</span>
                 </div>
-                <textarea class="special-request-textarea" placeholder="e.g. Leave with guard, don't ring doorbell, call before arrival..." rows="2" (input)="onTextChange($event)" [value]="cartService.deliveryInst"></textarea>
+                <textarea class="special-request-textarea"
+                    placeholder="e.g. Leave with guard, don't ring doorbell, call before arrival..." rows="2"
+                    (input)="onTextChange($event)" [value]="cartService.deliveryInst"></textarea>
             </div>
         </div>
 
@@ -190,10 +235,9 @@
 
             <div class="payment-method-options">
                 <!-- Online / Wallet Option -->
-                <div class="payment-card" 
-                     [class.active]="selectedPaymentMethod === 'ONLINE'" 
-                     [class.disabled-payment]="!cartService.enableRazorpay && cartService.remainingToPay > 0"
-                     (click)="selectPaymentMethod('ONLINE')">
+                <div class="payment-card" [class.active]="selectedPaymentMethod === 'ONLINE'"
+                    [class.disabled-payment]="!cartService.enableRazorpay && cartService.remainingToPay > 0"
+                    (click)="selectPaymentMethod('ONLINE')">
                     <div class="payment-radio">
                         <span class="radio-dot" *ngIf="selectedPaymentMethod === 'ONLINE'"></span>
                     </div>
@@ -204,17 +248,17 @@
                         <div class="payment-title">Wallet & Online Payment</div>
                         <div class="payment-sub">
                             <span>Pay via Wallet, UPI, Cards or NetBanking</span>
-                            <span class="wallet-pill" *ngIf="(loginS.user?.wallet || 0) > 0">₹{{(loginS.user?.wallet || 0) | number}} in Wallet</span>
+                            <span class="wallet-pill" *ngIf="(loginS.user?.wallet || 0) > 0">₹{{(loginS.user?.wallet ||
+                                0) | number}} in Wallet</span>
                         </div>
                     </div>
-                    <span class="payment-disabled-pill" *ngIf="!cartService.enableRazorpay && cartService.remainingToPay > 0">Disabled</span>
+                    <span class="payment-disabled-pill"
+                        *ngIf="!cartService.enableRazorpay && cartService.remainingToPay > 0">Disabled</span>
                 </div>
 
                 <!-- Cash on Delivery (COD) Option -->
-                <div class="payment-card" 
-                     [class.active]="selectedPaymentMethod === 'COD'" 
-                     [class.disabled-payment]="!cartService.enableCod"
-                     (click)="selectPaymentMethod('COD')">
+                <div class="payment-card" [class.active]="selectedPaymentMethod === 'COD'"
+                    [class.disabled-payment]="!cartService.enableCod" (click)="selectPaymentMethod('COD')">
                     <div class="payment-radio">
                         <span class="radio-dot" *ngIf="selectedPaymentMethod === 'COD'"></span>
                     </div>
@@ -230,7 +274,8 @@
                 </div>
 
                 <!-- Admin / Offline Order Option (Active in Admin Impersonation Mode) -->
-                <div class="payment-card offline-card" [class.active]="selectedPaymentMethod === 'OFFLINE'" (click)="selectPaymentMethod('OFFLINE')" *ngIf="loginS.getAdminMode()?.active">
+                <div class="payment-card offline-card" [class.active]="selectedPaymentMethod === 'OFFLINE'"
+                    (click)="selectPaymentMethod('OFFLINE')" *ngIf="loginS.getAdminMode()?.active">
                     <div class="payment-radio">
                         <span class="radio-dot" *ngIf="selectedPaymentMethod === 'OFFLINE'"></span>
                     </div>
@@ -245,9 +290,11 @@
                 </div>
 
                 <!-- Warning if both methods disabled -->
-                <div class="payment-both-disabled-notice" *ngIf="!cartService.enableRazorpay && !cartService.enableCod && !loginS.getAdminMode()?.active">
+                <div class="payment-both-disabled-notice"
+                    *ngIf="!cartService.enableRazorpay && !cartService.enableCod && !loginS.getAdminMode()?.active">
                     <span class="material-icons">info</span>
-                    <span>Checkout is currently unavailable as both online payments and Cash on Delivery are temporarily disabled by the store administration.</span>
+                    <span>Checkout is currently unavailable as both online payments and Cash on Delivery are temporarily
+                        disabled by the store administration.</span>
                 </div>
             </div>
         </div>
@@ -284,7 +331,9 @@
                             <span class="gst-tag">Tax</span>
                         </div>
                         <div class="gst-breakdown-sub" *ngIf="orderInformation.gst && orderInformation.gst > 0">
-                            CGST ({{(orderInformation.gstPercent || 5) / 2}}%): ₹{{orderInformation.cgst | number:'1.2-2'}} &bull; SGST ({{(orderInformation.gstPercent || 5) / 2}}%): ₹{{orderInformation.sgst | number:'1.2-2'}}
+                            CGST ({{(orderInformation.gstPercent || 5) / 2}}%): ₹{{orderInformation.cgst |
+                            number:'1.2-2'}} &bull; SGST ({{(orderInformation.gstPercent || 5) / 2}}%):
+                            ₹{{orderInformation.sgst | number:'1.2-2'}}
                         </div>
                     </td>
                     <td class="bill-col-value">₹{{orderInformation.gst | number:'1.2-2'}}</td>
@@ -298,10 +347,12 @@
                 <tr>
                     <td class="bill-col-label">
                         <span>Delivery Partner Fee</span>
-                        <span *ngIf="hasMultipleDeliveries()" class="shipment-count-tag">({{ deliveryGroupCount }} Shipments)</span>
+                        <span *ngIf="hasMultipleDeliveries()" class="shipment-count-tag">({{ deliveryGroupCount }}
+                            Shipments)</span>
                     </td>
                     <td class="bill-col-value">
-                        <span *ngIf="orderInformation.totalDeliveryCharges > 0">₹{{orderInformation.totalDeliveryCharges | number}}</span>
+                        <span *ngIf="orderInformation.totalDeliveryCharges > 0">₹{{orderInformation.totalDeliveryCharges
+                            | number}}</span>
                         <span *ngIf="orderInformation.totalDeliveryCharges === 0" class="text-free-delivery">FREE</span>
                     </td>
                 </tr>
@@ -309,7 +360,8 @@
                 <tr class="total-row">
                     <td class="bill-col-label font-bold">
                         <span>To Pay</span>
-                        <span class="total-items-sub">({{orderInformation.totalItemsCount}} {{orderInformation.totalItemsCount === 1 ? 'item' : 'items'}})</span>
+                        <span class="total-items-sub">({{orderInformation.totalItemsCount}}
+                            {{orderInformation.totalItemsCount === 1 ? 'item' : 'items'}})</span>
                     </td>
                     <td class="bill-col-value font-bold total-val">₹{{orderInformation.total | number}}</td>
                 </tr>
@@ -327,7 +379,8 @@
 
                     <tr class="final-pay-row">
                         <td class="bill-col-label font-bold">Amount to be Paid</td>
-                        <td class="bill-col-value font-bold final-amount">₹{{this.cartService.remainingToPay | number}}</td>
+                        <td class="bill-col-value font-bold final-amount">₹{{this.cartService.remainingToPay | number}}
+                        </td>
                     </tr>
                 </ng-container>
 
@@ -355,11 +408,52 @@
             </table>
         </div>
 
+        <!-- Active Delivery Address Bar & Serviceability Notice -->
+        <div class="cart-section-card delivery-address-summary-card" *ngIf="selectedPaymentMethod !== 'OFFLINE'">
+            <div class="address-summary-header">
+                <div class="addr-header-left">
+                    <span class="material-icons addr-summary-icon">place</span>
+                    <span class="addr-summary-title">Delivering To</span>
+                </div>
+                <button type="button" class="btn-change-addr-link" (click)="openAddressSelector()">
+                    <span>{{ activeDeliveryAddress ? 'Change' : 'Add Address' }}</span>
+                    <span class="material-icons size-16">chevron_right</span>
+                </button>
+            </div>
+
+            <div class="address-summary-body" *ngIf="activeDeliveryAddress">
+                <div class="addr-name-row">
+                    <span class="addr-user-name">{{ activeDeliveryAddress?.name || 'Customer' }}</span>
+                    <span class="addr-pin-badge" [class.unserviceable-pin]="!isAddressServiceable">
+                        <span class="material-icons size-14">{{ isAddressServiceable ? 'verified' : 'location_off'
+                            }}</span>
+                        {{ activeDeliveryAddress?.pincode }}
+                    </span>
+                </div>
+                <div class="addr-full-text">{{ activeDeliveryAddress?.address }}</div>
+            </div>
+
+            <!-- Warning Callout if Address is Unserviceable -->
+            <div class="unserviceable-inline-warning" *ngIf="!isAddressServiceable && activeDeliveryAddress"
+                [@fadeInOut]>
+                <div class="warning-icon-box">
+                    <span class="material-icons">warning_amber</span>
+                </div>
+                <div class="warning-text-box">
+                    <strong class="warning-title">Area Not Serviceable (Pincode: {{ activeDeliveryAddress?.pincode
+                        }})</strong>
+                    <p class="warning-msg">We are currently delivering only to select zones (Hub:
+                        <strong>400071</strong>). Tap "Change" above to choose a serviceable address.
+                    </p>
+                </div>
+            </div>
+        </div>
+
         <!-- Checkout / Place Order Action Section -->
         <div class="checkout-action-wrap" *ngIf="orderInformation.subTotal > 0">
             <!-- Offline / Admin Place Order Button -->
-            <button class="tnkspt_primary_btn checkout-main-btn offline-order-btn" *ngIf="selectedPaymentMethod === 'OFFLINE'"
-                (click)="payAction()" [disabled]="isProcessingPayment">
+            <button class="tnkspt_primary_btn checkout-main-btn offline-order-btn"
+                *ngIf="selectedPaymentMethod === 'OFFLINE'" (click)="payAction()" [disabled]="isProcessingPayment">
                 <span *ngIf="!isProcessingPayment" class="btn-inner-content">
                     <span class="material-icons">point_of_sale</span>
                     <span>Place Offline Order (₹{{orderInformation.total | number}})</span>
@@ -370,26 +464,23 @@
                 </span>
             </button>
 
-            <!-- COD Place Order Button -->
-            <button class="tnkspt_primary_btn checkout-main-btn cod-order-btn" *ngIf="selectedPaymentMethod === 'COD'"
-                (click)="payAction()" [disabled]="isProcessingPayment">
-                <span *ngIf="!isProcessingPayment" class="btn-inner-content">
-                    <span class="material-icons">local_shipping</span>
-                    <span>Place Order (Pay ₹{{orderInformation.total | number}} on Delivery)</span>
-                </span>
-                <span *ngIf="isProcessingPayment" class="btn-inner-content">
-                    <span class="spinner-border spinner-border-sm me-2"></span>
-                    <span>Placing Order...</span>
+            <!-- Disabled / Alert Button when Address is outside serviceable zone -->
+            <button class="tnkspt_primary_btn checkout-main-btn unserviceable-disabled-btn"
+                *ngIf="!isAddressServiceable && selectedPaymentMethod !== 'OFFLINE'" (click)="openUnserviceableModal()">
+                <span class="btn-inner-content">
+                    <span class="material-icons">location_off</span>
+                    <span>Delivery Unavailable in This Area &bull; Change Address</span>
                 </span>
             </button>
 
-            <!-- Online / Wallet Place Order Button -->
-            <ng-container *ngIf="selectedPaymentMethod === 'ONLINE'">
-                <button class="tnkspt_primary_btn checkout-main-btn wallet-full-btn" *ngIf="cartService.remainingToPay === 0; else deficit_btn"
-                    (click)="payAction()" [disabled]="isProcessingPayment">
+            <!-- Regular Order Buttons (only shown when address is serviceable) -->
+            <ng-container *ngIf="isAddressServiceable && selectedPaymentMethod !== 'OFFLINE'">
+                <!-- COD Place Order Button -->
+                <button class="tnkspt_primary_btn checkout-main-btn cod-order-btn"
+                    *ngIf="selectedPaymentMethod === 'COD'" (click)="payAction()" [disabled]="isProcessingPayment">
                     <span *ngIf="!isProcessingPayment" class="btn-inner-content">
-                        <span class="material-icons">check_circle</span>
-                        <span>Place Order (Pay ₹{{orderInformation?.walletDeduction | number}} via Wallet)</span>
+                        <span class="material-icons">local_shipping</span>
+                        <span>Place Order (Pay ₹{{orderInformation.total | number}} on Delivery)</span>
                     </span>
                     <span *ngIf="isProcessingPayment" class="btn-inner-content">
                         <span class="spinner-border spinner-border-sm me-2"></span>
@@ -397,24 +488,43 @@
                     </span>
                 </button>
 
-                <ng-template #deficit_btn>
-                    <button class="tnkspt_primary_btn checkout-main-btn online-pay-btn" *ngIf="cartService.enableRazorpay" (click)="payAction()" [disabled]="isProcessingPayment">
+                <!-- Online / Wallet Place Order Button -->
+                <ng-container *ngIf="selectedPaymentMethod === 'ONLINE'">
+                    <button class="tnkspt_primary_btn checkout-main-btn wallet-full-btn"
+                        *ngIf="cartService.remainingToPay === 0; else deficit_btn" (click)="payAction()"
+                        [disabled]="isProcessingPayment">
                         <span *ngIf="!isProcessingPayment" class="btn-inner-content">
-                            <span class="material-icons">lock</span>
-                            <span>Pay ₹{{cartService.remainingToPay | number}} & Place Order</span>
+                            <span class="material-icons">check_circle</span>
+                            <span>Place Order (Pay ₹{{orderInformation?.walletDeduction | number}} via Wallet)</span>
                         </span>
                         <span *ngIf="isProcessingPayment" class="btn-inner-content">
                             <span class="spinner-border spinner-border-sm me-2"></span>
-                            <span>Processing Payment...</span>
+                            <span>Placing Order...</span>
                         </span>
                     </button>
-                    <button class="tnkspt_primary_btn checkout-main-btn" *ngIf="!cartService.enableRazorpay" (click)="selectPaymentMethod('COD')" style="background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; cursor: pointer;">
-                        <span class="btn-inner-content">
-                            <span class="material-icons">payments</span>
-                            <span>Online Payment Disabled &bull; Click to Switch to COD</span>
-                        </span>
-                    </button>
-                </ng-template>
+
+                    <ng-template #deficit_btn>
+                        <button class="tnkspt_primary_btn checkout-main-btn online-pay-btn"
+                            *ngIf="cartService.enableRazorpay" (click)="payAction()" [disabled]="isProcessingPayment">
+                            <span *ngIf="!isProcessingPayment" class="btn-inner-content">
+                                <span class="material-icons">lock</span>
+                                <span>Pay ₹{{cartService.remainingToPay | number}} & Place Order</span>
+                            </span>
+                            <span *ngIf="isProcessingPayment" class="btn-inner-content">
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                                <span>Processing Payment...</span>
+                            </span>
+                        </button>
+                        <button class="tnkspt_primary_btn checkout-main-btn" *ngIf="!cartService.enableRazorpay"
+                            (click)="selectPaymentMethod('COD')"
+                            style="background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; cursor: pointer;">
+                            <span class="btn-inner-content">
+                                <span class="material-icons">payments</span>
+                                <span>Online Payment Disabled &bull; Click to Switch to COD</span>
+                            </span>
+                        </button>
+                    </ng-template>
+                </ng-container>
             </ng-container>
         </div>
 
@@ -425,46 +535,70 @@
 <div class="popup_parent" *ngIf="payFlg" [@fadeInOut]>
     <div class="popup_cont">
         <div class="head">Complete Payment</div>
-        <p>Wallet balance: <b>₹{{(loginS.user?.wallet || 0) | number}}</b>.<br>Pay <b>₹{{cartService.remainingToPay | number}}</b> to complete and place your order.</p>
+        <p>Wallet balance: <b>₹{{(loginS.user?.wallet || 0) | number}}</b>.<br>Pay <b>₹{{cartService.remainingToPay |
+                number}}</b> to complete and place your order.</p>
         <img [src]="'assets/cart/wallet.png'" alt="Wallet" />
-        
+
         <div class="flex-box" *ngIf="cartService.enableRazorpay">
             <div class="tnkspt_secondary_btn cancel-btn" (click)="addMoneyToWalletAction()">Add Custom Money</div>
-            <div class="tnkspt_primary_btn view-btn" (click)="payOnlineAction()">Pay ₹{{this.cartService.remainingToPay | number}} & Checkout</div>
+            <div class="tnkspt_primary_btn view-btn" (click)="payOnlineAction()">Pay ₹{{this.cartService.remainingToPay
+                | number}} & Checkout</div>
         </div>
 
-        <div class="online-disabled-alert" *ngIf="!cartService.enableRazorpay" style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin: 12px 0;">
-            <span>Online payment via Razorpay is temporarily disabled. Please choose Cash on Delivery below to place your order.</span>
+        <div class="online-disabled-alert" *ngIf="!cartService.enableRazorpay"
+            style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin: 12px 0;">
+            <span>Online payment via Razorpay is temporarily disabled. Please choose Cash on Delivery below to place
+                your order.</span>
         </div>
 
         <div class="modal-cod-option" (click)="payWithCODAction()" *ngIf="cartService.enableCod">
-            <span class="material-icons" style="font-size: 18px; color: #0d9488; vertical-align: middle;">payments</span>
+            <span class="material-icons"
+                style="font-size: 18px; color: #0d9488; vertical-align: middle;">payments</span>
             <span>Or choose <strong>COD</strong> to pay upon arrival &rarr;</span>
         </div>
     </div>
 </div>
 
-<!-- Order Placed Success View -->
-<div class="order-paced-cont" *ngIf="cartService.orderPlacedFlag">
-    <div class="item-cont-1">
-        <img [src]="'assets/general/order_placed.gif'" alt="Order Placed" />
-        <p class="empty">Order placed successfully. Thank You!</p>
-        <p class="order-id">Order ID: {{cartService.lastPlacedOrderId || cartService.orderID}}</p>
-        <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'NEXT_DAY_7AM'">
-            Scheduled for <b>Tomorrow Delivery at 7:00 AM IST</b> ({{ istDetails?.nextDayDeliveryDateStr || (cartService.deliveryDate|date:'EEEE, d MMMM') }})
+<!-- Dedicated Unserviceable Area Modal Alert -->
+<div class="unserviceable-modal-backdrop" *ngIf="unserviceableModalFlg" [@fadeInOut]
+    (click)="closeUnserviceableModal()">
+    <div class="unserviceable-modal-card" (click)="$event.stopPropagation()">
+        <button class="modal-close-x" (click)="closeUnserviceableModal()" aria-label="Close">
+            <span class="material-icons">close</span>
+        </button>
+
+        <div class="modal-badge-icon">
+            <span class="material-icons">location_off</span>
+        </div>
+
+        <h3 class="modal-title">We're Not in Your Area Yet!</h3>
+
+        <p class="modal-lead">
+            Delivery is currently not available for pincode <span class="pin-pill">{{ unserviceablePincode ||
+                activeDeliveryAddress?.pincode }}</span>.
         </p>
-        <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_10'">
-            ⚡ Scheduled for <b>10 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate10EstimateStr }}</b>
-        </p>
-        <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_30'">
-            ⚡ Scheduled for <b>30 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate30EstimateStr }}</b>
-        </p>
-        <p class="delivery-info" *ngIf="cartService.selectedDeliveryOption === 'IMMEDIATE_60'">
-            ⚡ Scheduled for <b>60 Mins Delivery</b>! Estimated arrival: <b>~{{ istDetails?.immediate60EstimateStr }}</b>
-        </p>
-        <div class="flex-box">
-            <div class="tnkspt_secondary_btn cancel-btn" routerLink="/home/orders" (click)="cartService.orderPlacedFlag = false">Goto my orders</div>
-            <div class="tnkspt_primary_btn view-btn" (click)="shopNowAction()">Browse products</div>
+
+        <div class="serviceable-info-box">
+            <div class="info-header">
+                <span class="material-icons size-16 info-icon">verified</span>
+                <span>Currently Active Delivery Hub:</span>
+            </div>
+            <div class="serviceable-hub-pill">
+                <span class="hub-code">400071</span>
+                <span class="hub-area">&bull; Chembur, Mumbai</span>
+            </div>
+            <p class="info-note">Orders can only be accepted at serviceable pincodes. We are actively expanding to more
+                locations!</p>
+        </div>
+
+        <div class="modal-actions-group">
+            <button type="button" class="btn-primary-action" (click)="openAddressSelector()">
+                <span class="material-icons">edit_location_alt</span>
+                <span>Change Delivery Address</span>
+            </button>
+            <button type="button" class="btn-secondary-action" (click)="closeUnserviceableModal()">
+                <span>Back to Cart</span>
+            </button>
         </div>
     </div>
 </div>

@@ -2,6 +2,10 @@
 require_once __DIR__ . '/../config/db.php';
 
 $table_name = getParam('table_name');
+if ($table_name === 'zone2_products_new_1') {
+    sendJson([]);
+    exit;
+}
 
 if (!$pdo) {
     sendJson([

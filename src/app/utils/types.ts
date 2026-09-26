@@ -267,6 +267,21 @@ export type Banner = {
     desc: string
 }
 
+export interface HeroBanner {
+    id: string;
+    title: string;
+    desc: string;
+    badge: string;
+    category?: string;
+    routerLink: string;
+    bgGradient: string;
+    imgUrl: string;
+    btnText: string;
+    active?: boolean;
+    order?: number;
+}
+
+
 export type menuOptions = {
     //Catogory menu
     list: Array<string>;
