@@ -1,245 +1,479 @@
-<!-- --------------------Location access---------------- -->
+<!-- =========================================================================
+     LOGIN / LOCATION / OTP DIALOG
+     ========================================================================= -->
 
 <div *ngIf="bgClickFlg" [@fadeOut]>
-    <div class="popup_parent" *ngIf="!validOTPFlg" [@fadeInOut] (click)="overlayClick($event)">
-        <div class="popup_cont" *ngIf="locationPageFlg" [@translateEffect] (click)="contClickAction($event)">
-            <div class="container-center">
-                <div style="margin-top: 35px;"><img src="assets/profile/location.png" /></div>
-                <div class="info-2" style="font-weight: 400;">Loaction access</div>
-                <p class="info">We will need your location to give you a
-                    better
-                    experience</p>
+  <div class="popup_parent" *ngIf="!validOTPFlg" [@fadeInOut] (click)="overlayClick($event)">
 
-                <div class="info-2">Enter your pincode</div>
+    <!-- =======================================================================
+         SCREEN 1: LOCATION / PINCODE ENTRY
+         ======================================================================= -->
+    <div class="popup_cont login_card" *ngIf="locationPageFlg" [@translateEffect] (click)="contClickAction($event)">
+      <!-- Card Top Bar -->
+      <div class="card_header">
+        <div class="header_badge">
+          <span class="brand_dot"></span>
+          <span>Delivery Check</span>
+        </div>
+        <button type="button" class="btn_icon_close" (click)="closeModal()" aria-label="Close">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
 
-                <div style="display: flex; flex-direction: row;">
-                    <mat-form-field class="" style="margin-top: 21px; width: 140px;">
-                        <input matInput placeholder="Pincode" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                            [formControl]="pincodeFormControl"
-                            [errorStateMatcher]="matcher"
-                            style="font-size:18px; letter-spacing:1.3px; text-align: center; position: relative; top:-3px; line-height: 28px;">
-
-                        <mat-error
-                            *ngIf="(pincodeFormControl.hasError('checkLimit') || pincodeFormControl.hasError('pattern') || pincodeFormControl.hasError('range')) && !pincodeFormControl.hasError('required')">
-                            Enter a valid 6-digit pincode
-                        </mat-error>
-                        <mat-error *ngIf="pincodeFormControl.hasError('required')" class="info-3">
-                            Pincode is <strong>required</strong>
-                        </mat-error>
-                    </mat-form-field>
-
-                    <div class="goButton" (click)="goNext()"
-                        [ngClass]="{'goButtonDisabled': !pincodeFormControl.valid}"><span class="material-icons" style="
-        position: relative;
-            top: 3px;
-            font-size: 24px;">
-                            keyboard_arrow_right
-                        </span></div>
-                </div>
-
-                <div style="margin-top: 25px;">
-                    <span class="breakLine" style="right:8px"></span>
-                    <span class="orBreak">or</span>
-                    <span class="breakLine" style="right: -8px;"></span>
-                </div>
-
-                <button class="tnkspt_primary_btn" style="width: 180px; margin-top: 45px;"
-                    [disabled]="locationFetchBtnFlg" (click)="fetchLocation($event)">Use my
-                    current location</button>
-
-                <div class="fetch-status">{{fetchStatus}}</div>
-
-                <div class="notNow" (click)="skipAction($event)">Not now</div>
-            </div>
+      <!-- Card Body -->
+      <div class="card_body">
+        <div class="icon_avatar_box icon_avatar_teal">
+          <span class="material-icons">place</span>
         </div>
 
+        <h2 class="card_title">Choose Delivery Location</h2>
+        <p class="card_subtitle">
+          Enter your 6-digit delivery pincode to check instant availability of fresh groceries in your area.
+        </p>
 
-        <!-- Unserviceable Location Alert Modal -->
-        <div class="popup_cont unserviceable-popup" *ngIf="unserviceableModalFlg" [@translateEffect] (click)="contClickAction($event)">
-            <div class="container-center unserviceable-container">
-                <div class="unserviceable-icon-box">
-                    <span class="material-icons unserviceable-icon">location_off</span>
-                </div>
-                <h3 class="unserviceable-title">We're Not in Your Area Yet!</h3>
-                <p class="unserviceable-desc">
-                    We currently don't deliver to pincode <strong>{{ enteredPincode }}</strong>. We are rapidly expanding our delivery network to your neighborhood soon!
-                </p>
+        <!-- Pincode Input Container -->
+        <div class="pincode_field_wrapper">
+          <div class="pincode_input_group" [ngClass]="{'has_error': pincodeFormControl.invalid && pincodeFormControl.touched}">
+            <span class="material-icons input_prefix_icon">location_searching</span>
+            <input
+              id="pincodeInput"
+              type="tel"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="6"
+              placeholder="e.g. 400071"
+              class="pincode_native_input"
+              [formControl]="pincodeFormControl"
+              (input)="onPincodeInput($event)"
+              (keydown.enter)="goNext()"
+            />
+            <button
+              type="button"
+              class="pincode_submit_btn"
+              [disabled]="!pincodeFormControl.valid"
+              (click)="goNext()"
+              aria-label="Submit Pincode"
+            >
+              <span class="material-icons">arrow_forward</span>
+            </button>
+          </div>
 
-                <div class="serviceable-zones-info">
-                    <div class="zones-label">
-                        <span class="material-icons">check_circle</span>
-                        <span>Currently Delivering In:</span>
-                    </div>
-                    <div class="zone-pill-box">
-                        <button type="button" class="serviceable-pill" (click)="useServiceablePincode('400071')">
-                            <span class="material-icons">place</span>
-                            <span><strong>400071</strong> - Chembur, Mumbai</span>
-                            <span class="pill-tap-hint">Tap to use</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="unserviceable-actions">
-                    <button type="button" class="tnkspt_primary_btn retry-pin-btn" (click)="retryPincode()">
-                        <span class="material-icons">edit_location</span>
-                        <span>Try Another Pincode</span>
-                    </button>
-                    <button type="button" class="explore-anyway-btn" (click)="exploreAnyway()">
-                        <span>Explore Catalog Anyway</span>
-                        <span class="material-icons">arrow_forward</span>
-                    </button>
-                </div>
-            </div>
+          <div *ngIf="pincodeFormControl.invalid && pincodeFormControl.touched" class="field_error_msg">
+            <span class="material-icons">error_outline</span>
+            <span>Please enter a valid 6-digit pincode</span>
+          </div>
         </div>
 
-        <!-- ----------------Login please------------- -->
-        <div class="popup_cont" *ngIf="mobilePageFlg" [@translateEffect]>
-
-            <div class="container-center">
-                <div style="margin-top: 69px; font-weight: 400;" class="font-14">Login please</div>
-                <div style="margin-top: 69px; font-weight: 400; color: #98A1A1; text-align: center;" class="font-12">
-                    Your number will be used only in urgent situations and won’t be forwarded to third parties.
-                </div>
-
-                <div style="margin-top: 69px;" class="font-14">Enter your phone number</div>
-
-                <form #myForm="ngForm" (ngSubmit)="sendOTPAction()">
-                    <div style="display: flex; flex-direction: row; margin-left: -34px;">
-                        <div class="mobile-prefix">
-                            +91
-                        </div>
-
-                        <mat-form-field style="margin-top: 19px; width: 176px;">
-                            <input matInput placeholder="Phone Number" type="number" [formControl]="mobileFormControl"
-                                [errorStateMatcher]="matcher"
-                                style=" font-size:18px; letter-spacing:1.3px; text-align: left; margin-left: 19px; position: relative; top:-3px;  line-height: 28px;">
-
-                            <mat-error
-                                *ngIf="mobileFormControl.hasError('checkLimit') && !mobileFormControl.hasError('required')">
-                            </mat-error>
-                            <mat-error *ngIf="mobileFormControl.hasError('required')" style="text-align:center;"
-                                class="font-11">
-                                Mobile number is <strong>required</strong>
-                            </mat-error>
-                        </mat-form-field>
-                    </div>
-
-                    <button [disabled]="!sendOTPBtnFlg" class="tnkspt_primary_btn"
-                        style="width: 180px; margin-top: 104px;" (click)="sendOTPAction()">Send
-                        verification code
-                    </button>
-                </form>
-                <div class="font-10">{{fetchStatus}}</div>
-            </div>
+        <!-- OR Divider -->
+        <div class="divider_or">
+          <span class="divider_line"></span>
+          <span class="divider_text">OR</span>
+          <span class="divider_line"></span>
         </div>
 
+        <!-- Current Location Button -->
+        <button
+          type="button"
+          class="btn_gps_location"
+          [disabled]="locationFetchBtnFlg"
+          (click)="fetchLocation($event)"
+        >
+          <span class="material-icons gps_icon" [ngClass]="{'spinning': locationFetchBtnFlg}">
+            {{ locationFetchBtnFlg ? 'sync' : 'my_location' }}
+          </span>
+          <span>{{ locationFetchBtnFlg ? 'Detecting Location...' : 'Use My Current Location' }}</span>
+        </button>
 
-        <div class="popup_cont" *ngIf="otpPageFlg" [@translateEffect]>
-            <div class="container-center">
-                <div class="verify-no">Verify your number</div>
-                <div class="info">
-                    You will get a confirmation code via SMS to +91{{userID}}, please enter the code below in order to
-                    continue:</div>
-
-                <div style="margin-top: 69px;" class="font-14">Enter your verification code</div>
-
-                <form class="login-form" #otpForm="ngForm" (ngSubmit)="otpSubmit()">
-                    <div id="otpBox" class="otpSection" [ngClass]="{'otpSectionDisabled':validOTPFlg}">
-                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                            autocomplete="one-time-code" name="otp_1" [value]="otpValues[0]"
-                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp1
-                            (input)="onOtpInput($event, 1, otp2)" (change)="onOtpInput($event, 1, otp2)" (keyup)="onKeyUpHandler($event, otp2, 1)" id="otp_1"
-                            (paste)="onPasteAction($event)" />
-
-                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                            autocomplete="one-time-code" name="otp_2" [value]="otpValues[1]"
-                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp2
-                            (input)="onOtpInput($event, 2, otp3)" (change)="onOtpInput($event, 2, otp3)" (keyup)="onKeyUpHandler($event, otp3, 2)" id="otp_2"
-                            (paste)="onPasteAction($event)" />
-
-                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                            autocomplete="one-time-code" name="otp_3" [value]="otpValues[2]"
-                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp3
-                            (input)="onOtpInput($event, 3, otp4)" (change)="onOtpInput($event, 3, otp4)" (keyup)="onKeyUpHandler($event, otp4, 3)" id="otp_3"
-                            (paste)="onPasteAction($event)" />
-
-                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                            autocomplete="one-time-code" name="otp_4" [value]="otpValues[3]"
-                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp4
-                            (input)="onOtpInput($event, 4, otp5)" (change)="onOtpInput($event, 4, otp5)" (keyup)="onKeyUpHandler($event, otp5, 4)" id="otp_4"
-                            (paste)="onPasteAction($event)" />
-
-                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                            autocomplete="one-time-code" name="otp_5" [value]="otpValues[4]"
-                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp5
-                            (input)="onOtpInput($event, 5, otp6)" (change)="onOtpInput($event, 5, otp6)" (keyup)="onKeyUpHandler($event, otp6, 5)" id="otp_5"
-                            (paste)="onPasteAction($event)" />
-
-                        <input type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-                            autocomplete="one-time-code" name="otp_6" [value]="otpValues[5]"
-                            [ngClass]="(this.otpStatus && this.otpStatus != 'Valid' && this.otpStatus != 'Validating...') ? 'otpInput-error' : 'otpInput'" #otp6
-                            (input)="onOtpInput($event, 6, null)" (change)="onOtpInput($event, 6, null)" (keyup)="onKeyUpHandler($event, false, 6)" id="otp_6"
-                            (paste)="onPasteAction($event)" />
-                    </div>
-
-                    <button [disabled]="otpFlag" class="tnkspt_primary_btn" style="margin-top: 32px;"
-                        (click)="otpSubmit()">
-                        {{btnName}}</button>
-
-                    <div class="info-3" style="margin-top: 14px; font-weight: 600; color: #ef4444;" *ngIf="otpStatus && otpStatus !== 'Validating...' && otpStatus !== 'Valid'">{{otpStatus}}</div>
-                </form>
-            </div>
+        <div *ngIf="fetchStatus" class="fetch_status_alert">
+          <span>{{ fetchStatus }}</span>
         </div>
 
-
-        <!-- ----------------Referral (After OTP Verification)------------- -->
-        <div class="popup_cont" *ngIf="referralFlg" [@translateEffect]>
-
-            <div style="margin-top: 48px; font-weight: 700; text-align: center; color: #10b981;" class="font-16">🎁 Have a Referral Code?</div>
-            <div class="container-center" *ngIf="!referralSuccessFlg; else successMsg">
-
-                <div style="margin-top: 16px; font-weight: 400; color: #6b7280; text-align: center; padding: 0 20px;" class="font-12">
-                    Has a friend referred TomorrowNeeds to you? Enter their code below to get <strong>25% Cashback</strong> on your first order!
-                </div>
-
-                <div style="margin-top: 24px;" class="font-14">Enter your referral code (Optional)</div>
-
-                <form #myForm="ngForm" (ngSubmit)="referralValidation()">
-                    <div style="display: flex; justify-content: center;">
-                        <mat-form-field style="margin-top: 12px; width: 200px;">
-                            <input matInput placeholder="Referral Code" [formControl]="referralFormControl"
-                                [errorStateMatcher]="matcher" [maxlength]="20"
-                                style="font-size:18px; letter-spacing:1.5px; text-align: center; text-transform: uppercase;">
-                        </mat-form-field>
-                    </div>
-                    <div *ngIf="referralErrorCodeFlg" style="text-align:center; color: #ef4444; margin-top: 4px;" class="font-11">
-                        Invalid or expired referral code.
-                    </div>
-
-                    <div class="flex-box" style="margin-top: 36px; display: flex; gap: 12px; justify-content: center;">
-                        <div class="tnkspt_secondary_btn cancel-btn" (click)="couponContinue()">Skip</div>
-                        <div class="tnkspt_primary_btn view-btn" (click)="referralValidation()">Apply & Continue</div>
-                    </div>
-                </form>
-            </div>
-
-            <ng-template #successMsg>
-                <div class="container-center">
-                    <img [src]="'assets/refer/referral_sucess.png'" style="margin-top: 48px; margin-bottom: 24px; max-width: 120px;">
-                    <p style="text-align: center; color: #111827; font-size: 14px; padding: 0 16px;">
-                        Yaay!! Its time to thank <b>{{loginS.referrrarinfo.referrer_name || 'your friend'}}</b> 🎉<br>
-                        {{loginS.referrrarinfo.coupon_desc || '25% Cashback applied to your account!'}}
-                    </p>
-
-                    <button class="tnkspt_primary_btn" style="width: 180px; margin-top: 32px;"
-                        (click)="couponContinue()">Continue to App
-                    </button>
-                </div>
-            </ng-template>
-
+        <!-- Active Zone Hint -->
+        <div class="serviceable_quick_hint">
+          <span class="material-icons">verified</span>
+          <span>Delivering across Chembur, Mumbai (400071)</span>
         </div>
 
-
+        <!-- Bottom Skip Link -->
+        <button type="button" class="btn_text_skip" (click)="skipAction($event)">
+          <span>Explore catalog without location</span>
+          <span class="material-icons">arrow_forward</span>
+        </button>
+      </div>
     </div>
 
+
+    <!-- =======================================================================
+         SCREEN 1.5: ZONE ALERT (UNSERVICEABLE LOCATION MODAL)
+         ======================================================================= -->
+    <div class="popup_cont login_card zone_alert_card" *ngIf="unserviceableModalFlg" [@translateEffect] (click)="contClickAction($event)">
+      <!-- Card Top Bar -->
+      <div class="card_header">
+        <button type="button" class="btn_icon_back" (click)="retryPincode()" aria-label="Go Back">
+          <span class="material-icons">arrow_back</span>
+        </button>
+        <div class="header_badge header_badge_warning">
+          <span class="brand_dot brand_dot_amber"></span>
+          <span>Coverage Alert</span>
+        </div>
+        <button type="button" class="btn_icon_close" (click)="closeModal()" aria-label="Close">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- Card Body -->
+      <div class="card_body">
+        <div class="icon_avatar_box icon_avatar_amber">
+          <span class="material-icons">location_off</span>
+        </div>
+
+        <h2 class="card_title">We're Not in Your Area Yet!</h2>
+        <p class="card_subtitle">
+          We currently don't deliver to pincode <strong>{{ enteredPincode }}</strong>. We are rapidly expanding our delivery routes to your neighborhood soon!
+        </p>
+
+        <!-- Serviceable Zones Recommendation Box -->
+        <div class="active_zone_box">
+          <div class="active_zone_header">
+            <span class="material-icons">check_circle</span>
+            <span>Currently Serving Daily:</span>
+          </div>
+
+          <button
+            type="button"
+            class="serviceable_pill_btn"
+            (click)="useServiceablePincode(defaultServiceablePincode)"
+          >
+            <div class="pill_content">
+              <span class="material-icons pill_icon">place</span>
+              <div class="pill_text">
+                <span class="pill_pincode">{{ defaultServiceablePincode }}</span>
+                <span class="pill_area">{{ defaultServiceableArea }}</span>
+              </div>
+            </div>
+            <span class="pill_badge">Tap to Select</span>
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="zone_actions_group">
+          <button type="button" class="btn_primary_cta" (click)="retryPincode()">
+            <span class="material-icons">edit_location</span>
+            <span>Try Another Pincode</span>
+          </button>
+
+          <button type="button" class="btn_secondary_outline" (click)="exploreAnyway()">
+            <span>Explore Catalog Anyway</span>
+            <span class="material-icons">arrow_forward</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- =======================================================================
+         SCREEN 2: ENTER MOBILE NUMBER
+         ======================================================================= -->
+    <div class="popup_cont login_card" *ngIf="mobilePageFlg" [@translateEffect] (click)="contClickAction($event)">
+      <!-- Card Top Bar -->
+      <div class="card_header">
+        <button type="button" class="btn_icon_back" (click)="backToLocation()" aria-label="Back to Location">
+          <span class="material-icons">arrow_back</span>
+        </button>
+        <button type="button" class="location_chip" (click)="backToLocation()">
+          <span class="material-icons chip_pin">place</span>
+          <span>{{ loginS.user.pincode || defaultServiceablePincode }}</span>
+          <span class="chip_change">Change</span>
+        </button>
+        <button type="button" class="btn_icon_close" (click)="closeModal()" aria-label="Close">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- Card Body -->
+      <div class="card_body">
+        <div class="icon_avatar_box icon_avatar_teal">
+          <span class="material-icons">phone_iphone</span>
+        </div>
+
+        <h2 class="card_title">Welcome to TomorrowNeeds</h2>
+        <p class="card_subtitle">
+          Enter your 10-digit mobile number for quick verification and easy order updates.
+        </p>
+
+        <form (ngSubmit)="sendOTPAction()" class="login_form">
+          <!-- Mobile Input Group -->
+          <div class="mobile_input_group" [ngClass]="{'has_error': mobileFormControl.invalid && mobileFormControl.touched}">
+            <div class="country_code_box">
+              <span class="flag_in">🇮🇳</span>
+              <span class="code_text">+91</span>
+            </div>
+            <div class="mobile_divider"></div>
+            <input
+              type="tel"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="10"
+              placeholder="Enter mobile number"
+              class="mobile_native_input"
+              [formControl]="mobileFormControl"
+              (keydown.enter)="sendOTPAction()"
+            />
+          </div>
+
+          <div *ngIf="mobileFormControl.invalid && mobileFormControl.touched" class="field_error_msg">
+            <span class="material-icons">error_outline</span>
+            <span>Please enter a valid 10-digit Indian phone number</span>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            class="btn_primary_cta btn_full_width"
+            [disabled]="!sendOTPBtnFlg"
+            style="margin-top: 24px;"
+          >
+            <span>Continue with OTP</span>
+            <span class="material-icons">arrow_forward</span>
+          </button>
+        </form>
+
+        <div *ngIf="fetchStatus" class="fetch_status_alert">
+          <span>{{ fetchStatus }}</span>
+        </div>
+
+        <div class="trust_privacy_note">
+          <span class="material-icons">verified_user</span>
+          <span>We'll send a 6-digit OTP. Your number is never shared with third parties.</span>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- =======================================================================
+         SCREEN 3: OTP VERIFICATION
+         ======================================================================= -->
+    <div class="popup_cont login_card" *ngIf="otpPageFlg" [@translateEffect] (click)="contClickAction($event)">
+      <!-- Card Top Bar -->
+      <div class="card_header">
+        <button type="button" class="btn_icon_back" (click)="backToMobile()" aria-label="Back to Mobile">
+          <span class="material-icons">arrow_back</span>
+        </button>
+        <div class="header_badge">
+          <span class="brand_dot"></span>
+          <span>Verification</span>
+        </div>
+        <button type="button" class="btn_icon_close" (click)="closeModal()" aria-label="Close">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- Card Body -->
+      <div class="card_body">
+        <div class="icon_avatar_box icon_avatar_teal">
+          <span class="material-icons">sms</span>
+        </div>
+
+        <h2 class="card_title">Verify Your Number</h2>
+        <p class="card_subtitle">
+          We've sent a one-time verification code to<br>
+          <strong class="user_mobile_highlight">+91 {{ userID }}</strong>
+          <button type="button" class="btn_inline_edit" (click)="backToMobile()">Edit</button>
+        </p>
+
+        <!-- 6-Digit OTP Inputs Grid -->
+        <div class="otp_inputs_grid" [ngClass]="{'has_error': otpStatus && otpStatus !== 'Valid' && otpStatus !== 'Validating...'}">
+          <input
+            id="otp_1"
+            type="tel"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="1"
+            autocomplete="one-time-code"
+            class="otp_box"
+            #otp1
+            [value]="otpValues[0]"
+            (input)="onOtpInput($event, 1, otp2)"
+            (keydown)="onOtpKeydown($event, 1, null)"
+            (paste)="onPasteAction($event)"
+          />
+          <input
+            id="otp_2"
+            type="tel"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="1"
+            class="otp_box"
+            #otp2
+            [value]="otpValues[1]"
+            (input)="onOtpInput($event, 2, otp3)"
+            (keydown)="onOtpKeydown($event, 2, otp1)"
+            (paste)="onPasteAction($event)"
+          />
+          <input
+            id="otp_3"
+            type="tel"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="1"
+            class="otp_box"
+            #otp3
+            [value]="otpValues[2]"
+            (input)="onOtpInput($event, 3, otp4)"
+            (keydown)="onOtpKeydown($event, 3, otp2)"
+            (paste)="onPasteAction($event)"
+          />
+          <input
+            id="otp_4"
+            type="tel"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="1"
+            class="otp_box"
+            #otp4
+            [value]="otpValues[3]"
+            (input)="onOtpInput($event, 4, otp5)"
+            (keydown)="onOtpKeydown($event, 4, otp3)"
+            (paste)="onPasteAction($event)"
+          />
+          <input
+            id="otp_5"
+            type="tel"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="1"
+            class="otp_box"
+            #otp5
+            [value]="otpValues[4]"
+            (input)="onOtpInput($event, 5, otp6)"
+            (keydown)="onOtpKeydown($event, 5, otp4)"
+            (paste)="onPasteAction($event)"
+          />
+          <input
+            id="otp_6"
+            type="tel"
+            inputmode="numeric"
+            pattern="[0-9]*"
+            maxlength="1"
+            class="otp_box"
+            #otp6
+            [value]="otpValues[5]"
+            (input)="onOtpInput($event, 6, null)"
+            (keydown)="onOtpKeydown($event, 6, otp5)"
+            (paste)="onPasteAction($event)"
+          />
+        </div>
+
+        <!-- Inline Error Banner -->
+        <div *ngIf="otpStatus && otpStatus !== 'Valid' && otpStatus !== 'Validating...'" class="otp_error_banner">
+          <span class="material-icons">error_outline</span>
+          <span>{{ otpStatus }}</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="button"
+          class="btn_primary_cta btn_full_width"
+          [disabled]="otpFlag"
+          (click)="otpSubmit()"
+          style="margin-top: 20px;"
+        >
+          <span>{{ btnName }}</span>
+        </button>
+
+        <!-- Resend Countdown / Link -->
+        <div class="resend_otp_row">
+          <span *ngIf="maxTimerInterval > 0" class="timer_text">
+            Didn't receive code? Resend in <strong>{{ maxTimerInterval }}s</strong>
+          </span>
+          <button
+            *ngIf="maxTimerInterval <= 0"
+            type="button"
+            class="btn_resend_active"
+            (click)="resendOtp()"
+          >
+            <span class="material-icons">replay</span>
+            <span>Resend OTP via SMS</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- =======================================================================
+         SCREEN 4: REFERRAL BONUS (FOR NEW USERS)
+         ======================================================================= -->
+    <div class="popup_cont login_card" *ngIf="referralFlg" [@translateEffect] (click)="contClickAction($event)">
+      <!-- Card Top Bar -->
+      <div class="card_header">
+        <div class="header_badge header_badge_success">
+          <span class="brand_dot brand_dot_emerald"></span>
+          <span>Special Reward</span>
+        </div>
+        <button type="button" class="btn_icon_close" (click)="couponContinue()" aria-label="Close">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <!-- State 1: Enter Referral Code -->
+      <div class="card_body" *ngIf="!referralSuccessFlg; else referralSuccessView">
+        <div class="icon_avatar_box icon_avatar_emerald">
+          <span class="material-icons">redeem</span>
+        </div>
+
+        <h2 class="card_title">Unlock Welcome Bonus!</h2>
+        <p class="card_subtitle">
+          Has a friend recommended TomorrowNeeds? Enter their referral code below to get <strong>25% Cashback</strong> credited on your first grocery delivery!
+        </p>
+
+        <form (ngSubmit)="referralValidation()" class="login_form">
+          <div class="referral_input_group" [ngClass]="{'has_error': referralErrorCodeFlg}">
+            <span class="material-icons input_prefix_icon">card_giftcard</span>
+            <input
+              type="text"
+              maxlength="20"
+              placeholder="ENTER REFERRAL CODE"
+              class="referral_native_input"
+              [formControl]="referralFormControl"
+            />
+          </div>
+
+          <div *ngIf="referralErrorCodeFlg" class="field_error_msg">
+            <span class="material-icons">error_outline</span>
+            <span>Invalid or expired referral code</span>
+          </div>
+
+          <div class="dual_actions_row" style="margin-top: 24px;">
+            <button type="button" class="btn_secondary_outline" (click)="couponContinue()">
+              Skip
+            </button>
+            <button type="submit" class="btn_primary_cta flex_1">
+              Apply & Continue
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- State 2: Success Celebratory View -->
+      <ng-template #referralSuccessView>
+        <div class="card_body text_center">
+          <div class="celebration_circle">
+            <span class="material-icons celebration_icon">celebration</span>
+          </div>
+
+          <h2 class="card_title">Yay! Reward Unlocked 🎉</h2>
+          <p class="card_subtitle">
+            Special thanks to <strong>{{ loginS.referrrarinfo.referrer_name || 'your friend' }}</strong>!<br>
+            <span class="reward_highlight">{{ loginS.referrrarinfo.coupon_desc || '25% Cashback Bonus applied to your account!' }}</span>
+          </p>
+
+          <button type="button" class="btn_primary_cta btn_full_width" (click)="couponContinue()" style="margin-top: 24px;">
+            <span>Start Shopping Fresh</span>
+            <span class="material-icons">arrow_forward</span>
+          </button>
+        </div>
+      </ng-template>
+    </div>
+
+  </div>
 </div>

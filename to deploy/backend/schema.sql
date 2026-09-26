@@ -1,13 +1,12 @@
--- Thinkspot E-Commerce MySQL Database Schema
-
-CREATE DATABASE IF NOT EXISTS `thinkspot_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `thinkspot_db`;
+-- Thinkspot / TomorrowNeeds MySQL Database Schema
 
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS `users` (
   `mobile` VARCHAR(15) NOT NULL PRIMARY KEY,
   `name` VARCHAR(100) DEFAULT NULL,
   `email` VARCHAR(150) DEFAULT NULL,
+  `referral_id` VARCHAR(50) DEFAULT NULL,
+  `referred_by` VARCHAR(50) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -34,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `products` (
   `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `original_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `stock_price` DECIMAL(10,2) DEFAULT 0.00,
-  `profit_percent` INT DEFAULT 0,
+  `profit_percent` INT DEFAULT 10,
   `show_off_percent` INT DEFAULT 0,
   `weight` INT DEFAULT 500,
   `original_weight` INT DEFAULT 500,
@@ -44,7 +43,16 @@ CREATE TABLE IF NOT EXISTS `products` (
   `disabled` TINYINT(1) DEFAULT 0,
   `preferred_days` VARCHAR(255) DEFAULT '[]',
   `index_num` INT DEFAULT 0,
-  `offer` INT DEFAULT 0
+  `offer` INT DEFAULT 0,
+  `in_stock` INT DEFAULT 1,
+  `stock_qty` DECIMAL(10,2) DEFAULT 100.00,
+  `gst_percent` DECIMAL(5,2) DEFAULT 5.00,
+  `subscribe_flg` INT DEFAULT 0,
+  `allow_next_day` INT DEFAULT 1,
+  `allow_immediate_10` INT DEFAULT 0,
+  `allow_immediate_30` INT DEFAULT 0,
+  `allow_immediate_60` INT DEFAULT 0,
+  `is_unlimited` TINYINT(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- 4. Orders Table
@@ -55,8 +63,24 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `address_json` TEXT DEFAULT NULL,
   `total_amount` DECIMAL(10,2) NOT NULL,
   `payment_type` VARCHAR(50) DEFAULT 'COD',
-  `status` VARCHAR(50) DEFAULT 'PLACED', -- PLACED, PROCESSING, SHIPPED, DELIVERED, CANCELLED
+  `status` VARCHAR(50) DEFAULT 'PLACED',
   `delivery_date` DATE DEFAULT NULL,
+  `order_source` VARCHAR(50) DEFAULT 'CLIENT_WEB',
+  `created_by` VARCHAR(100) DEFAULT NULL,
+  `delivery_inst` TEXT,
+  `delivery_mode` VARCHAR(100) DEFAULT '',
+  `delivery_option` VARCHAR(50) DEFAULT 'next_day',
+  `delivery_expected_at` VARCHAR(100) DEFAULT '',
+  `delivery_cutoff_ist` VARCHAR(100) DEFAULT '',
+  `delivered_at` DATETIME NULL,
+  `undelivered_reason` VARCHAR(255) DEFAULT NULL,
+  `refund_amount` DECIMAL(10,2) DEFAULT 0.00,
+  `refund_notes` TEXT DEFAULT NULL,
+  `assigned_to` VARCHAR(100) DEFAULT '',
+  `coupon` VARCHAR(50) DEFAULT NULL,
+  `coupon_discount` DECIMAL(10,2) DEFAULT 0.00,
+  `referral_code` VARCHAR(50) DEFAULT NULL,
+  `referred_by` VARCHAR(100) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -68,6 +92,17 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   `product_name` VARCHAR(255) DEFAULT NULL,
   `quantity` INT NOT NULL DEFAULT 1,
   `price` DECIMAL(10,2) NOT NULL,
+  `weight` VARCHAR(50) DEFAULT '',
+  `item_status` VARCHAR(50) DEFAULT 'packed',
+  `missing_qty` INT DEFAULT 0,
+  `refund_amount` DECIMAL(10,2) DEFAULT 0.00,
+  `subscriptionType` VARCHAR(50) DEFAULT 'none',
+  `rangeDates` TEXT,
+  `subscribedDates` TEXT,
+  `subsStatus` VARCHAR(50) DEFAULT 'active',
+  `pausedDates` TEXT,
+  `startDate` VARCHAR(50) DEFAULT '',
+  `endDate` VARCHAR(50) DEFAULT '',
   FOREIGN KEY (`order_id`) REFERENCES `orders`(`order_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -76,8 +111,9 @@ CREATE TABLE IF NOT EXISTS `wallets` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `mobile` VARCHAR(15) NOT NULL,
   `amount` DECIMAL(10,2) NOT NULL,
-  `type` VARCHAR(20) DEFAULT 'CREDIT', -- CREDIT or DEBIT
+  `type` VARCHAR(20) DEFAULT 'CREDIT',
   `description` VARCHAR(255) DEFAULT NULL,
+  `status` VARCHAR(20) DEFAULT 'authorized',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -85,6 +121,11 @@ CREATE TABLE IF NOT EXISTS `wallets` (
 CREATE TABLE IF NOT EXISTS `coupons` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `code` VARCHAR(50) NOT NULL UNIQUE,
+  `count` INT DEFAULT 5,
+  `categories` VARCHAR(255) DEFAULT 'all',
+  `description` VARCHAR(255) DEFAULT NULL,
+  `offer` VARCHAR(100) DEFAULT NULL,
+  `offer_desc` VARCHAR(255) DEFAULT NULL,
   `discount_percent` DECIMAL(5,2) DEFAULT 0.00,
   `max_discount` DECIMAL(10,2) DEFAULT 0.00,
   `min_order_amount` DECIMAL(10,2) DEFAULT 0.00,
@@ -98,6 +139,88 @@ CREATE TABLE IF NOT EXISTS `user_coupons` (
   `coupon_code` VARCHAR(50) NOT NULL,
   `used` TINYINT(1) DEFAULT 0,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 9. Store Settings Table
+CREATE TABLE IF NOT EXISTS `store_settings` (
+  `key` VARCHAR(100) PRIMARY KEY,
+  `value` TEXT,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO `store_settings` (`key`, `value`) VALUES
+('weekly_off_day', 'None'),
+('enable_razorpay', '1'),
+('enable_cod', '1');
+
+-- 10. System Logs Table
+CREATE TABLE IF NOT EXISTS `system_logs` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `level` VARCHAR(20) NOT NULL,
+  `source` VARCHAR(20) DEFAULT 'backend',
+  `message` TEXT NOT NULL,
+  `file` VARCHAR(255) DEFAULT NULL,
+  `line` INT DEFAULT NULL,
+  `trace` MEDIUMTEXT DEFAULT NULL,
+  `url` VARCHAR(500) DEFAULT NULL,
+  `user_info` VARCHAR(500) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_level (`level`),
+  INDEX idx_source (`source`),
+  INDEX idx_created_at (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 11. Delivery Partners Table
+CREATE TABLE IF NOT EXISTS `delivery_partners` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `name` VARCHAR(100) NOT NULL,
+  `mobile` VARCHAR(20) NOT NULL UNIQUE,
+  `status` VARCHAR(20) DEFAULT 'active',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 12. Daily Expenses Table
+CREATE TABLE IF NOT EXISTS `daily_expenses` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `expense_date` DATE NOT NULL,
+  `procurement` DECIMAL(10,2) DEFAULT 0.00,
+  `rent` DECIMAL(10,2) DEFAULT 0.00,
+  `delivery` DECIMAL(10,2) DEFAULT 0.00,
+  `electricity` DECIMAL(10,2) DEFAULT 0.00,
+  `packaging` DECIMAL(10,2) DEFAULT 0.00,
+  `salaries` DECIMAL(10,2) DEFAULT 0.00,
+  `marketing` DECIMAL(10,2) DEFAULT 0.00,
+  `other` DECIMAL(10,2) DEFAULT 0.00,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 13. Razorpay Orders Table
+CREATE TABLE IF NOT EXISTS `razorpay_orders` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `order_id` VARCHAR(100) UNIQUE NOT NULL,
+  `mobile` VARCHAR(20) NOT NULL,
+  `amount` DECIMAL(10,2) DEFAULT 0.00,
+  `currency` VARCHAR(10) DEFAULT 'INR',
+  `status` VARCHAR(20) DEFAULT 'created',
+  `payment_id` VARCHAR(100) DEFAULT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 14. Product Purchases Table
+CREATE TABLE IF NOT EXISTS `product_purchases` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `product_id` VARCHAR(100) NOT NULL,
+  `product_name` VARCHAR(255) DEFAULT '',
+  `quantity` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `unit_name` VARCHAR(50) DEFAULT 'kg',
+  `total_cost` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `cost_per_unit` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `vendor_name` VARCHAR(255) DEFAULT '',
+  `notes` TEXT DEFAULT NULL,
+  `purchase_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_prod (`product_id`),
+  INDEX idx_date (`purchase_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Sample Seed Data Insertion

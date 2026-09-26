@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Kolkata');
 // Set CORS headers immediately for frontend integration
 if (isset($_SERVER['HTTP_ORIGIN'])) {
     header("Access-Control-Allow-Origin: {$_SERVER['HTTP_ORIGIN']}");
@@ -13,6 +14,11 @@ if (isset($_SERVER['HTTP_ACCESS_CONTROL_REQUEST_HEADERS'])) {
 }
 header("Access-Control-Max-Age: 86400");
 header("Content-Type: application/json; charset=UTF-8");
+
+// Enable GZIP compression if supported by browser/client
+if (!ob_get_level() && extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+    @ob_start('ob_gzhandler');
+}
 
 // Handle preflight OPTIONS request immediately
 if (isset($_SERVER['REQUEST_METHOD']) && strtoupper($_SERVER['REQUEST_METHOD']) === 'OPTIONS') {
@@ -70,32 +76,48 @@ $isLocal = !isset($_SERVER['HTTP_HOST']) || php_sapi_name() === 'cli' || (
     str_contains($_SERVER['HTTP_HOST'], '127.0.0.1')
 );
 
-if ($isLocal) {
-    $host   = 'localhost';
-    $dbname = 'thinkspot_db';
-    $user   = 'root';
-    $pass   = '';
-} else {
-    // Production BigRock Hosting Credentials
-    $host   = 'localhost';
-    $dbname = 'onenesgw_thinkspot_db';
-    $user   = 'onenesgw_thinkspot';
-    $pass   = 'silenceRocks@77';
-}
-
 if (!defined('GEMINI_API_KEY')) {
     define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
 }
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_TIMEOUT => 1
-    ]);
+    if ($isLocal) {
+        $host   = 'localhost';
+        $user   = 'root';
+        $pass   = '';
+        $dbCandidates = ['tomorrowneeds', 'thinkspot_db'];
+        $pdo = null;
+        foreach ($dbCandidates as $candidate) {
+            try {
+                $pdo = new PDO("mysql:host=$host;dbname=$candidate;charset=utf8mb4", $user, $pass, [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_TIMEOUT => 1
+                ]);
+                $dbname = $candidate;
+                break;
+            } catch (PDOException $ex) {
+                continue;
+            }
+        }
+        if (!$pdo) {
+            throw new PDOException("Could not connect to local MySQL database");
+        }
+        ensureSchemaColumns($pdo);
+    } else {
+        // Production Hostinger Credentials
+        $host   = 'localhost';
+        $dbname = 'u628989339_tmwneeds';
+        $user   = 'u628989339_benkart';
+        $pass   = 'silenceRocks@77';
 
-    // Auto-ensure required columns exist in production
-    ensureSchemaColumns($pdo);
+        $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_TIMEOUT => 1
+        ]);
+        ensureSchemaColumns($pdo);
+    }
 } catch (PDOException $e) {
     if ($isLocal) {
         // Instant SQLite fallback for local dev when MySQL is not running
@@ -299,6 +321,20 @@ function initSqliteTables($pdo) {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )");
 
+        $pdo->exec("CREATE TABLE IF NOT EXISTS serviceable_pincodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            pincode TEXT NOT NULL UNIQUE,
+            zone TEXT NOT NULL DEFAULT 'zone1',
+            area_name TEXT DEFAULT '',
+            is_active INTEGER DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )");
+
+        $pinCount = (int)$pdo->query("SELECT COUNT(*) FROM serviceable_pincodes")->fetchColumn();
+        if ($pinCount === 0) {
+            $pdo->exec("INSERT OR IGNORE INTO serviceable_pincodes (pincode, zone, area_name, is_active) VALUES ('400071', 'zone1', 'Chembur, Mumbai', 1)");
+        }
+
         // Seed products if empty
         $pCount = (int)$pdo->query("SELECT COUNT(*) FROM products")->fetchColumn();
         if ($pCount === 0) {
@@ -327,6 +363,36 @@ function ensureSchemaColumns($pdo) {
     if ($ensured) return;
     $ensured = true;
 
+    // Check if store_settings already exists; if not, definitely run schema initialization
+    $needsInit = true;
+    try {
+        $checkStmt = $pdo->query("SELECT 1 FROM `store_settings` LIMIT 1");
+        if ($checkStmt !== false) {
+            $needsInit = false;
+        }
+    } catch (Exception $e) {
+        $needsInit = true;
+    }
+
+    $cacheFile = __DIR__ . '/.schema_ensured';
+    if (!$needsInit && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 86400)) {
+        return;
+    }
+
+    // 1. Ensure essential production tables exist
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `store_settings` (
+            `key` VARCHAR(100) PRIMARY KEY,
+            `value` TEXT,
+            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $pdo->exec("INSERT IGNORE INTO `store_settings` (`key`, `value`) VALUES
+            ('weekly_off_day', 'None'),
+            ('enable_razorpay', '1'),
+            ('enable_cod', '1')");
+    } catch (Exception $e) {}
+
     try {
         $pdo->exec("CREATE TABLE IF NOT EXISTS `system_logs` (
             `id` INT AUTO_INCREMENT PRIMARY KEY,
@@ -345,11 +411,90 @@ function ensureSchemaColumns($pdo) {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     } catch (Exception $e) {}
 
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `delivery_partners` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `name` VARCHAR(100) NOT NULL,
+            `mobile` VARCHAR(20) NOT NULL UNIQUE,
+            `status` VARCHAR(20) DEFAULT 'active',
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {}
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `daily_expenses` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `expense_date` DATE NOT NULL,
+            `procurement` DECIMAL(10,2) DEFAULT 0.00,
+            `rent` DECIMAL(10,2) DEFAULT 0.00,
+            `delivery` DECIMAL(10,2) DEFAULT 0.00,
+            `electricity` DECIMAL(10,2) DEFAULT 0.00,
+            `packaging` DECIMAL(10,2) DEFAULT 0.00,
+            `salaries` DECIMAL(10,2) DEFAULT 0.00,
+            `marketing` DECIMAL(10,2) DEFAULT 0.00,
+            `other` DECIMAL(10,2) DEFAULT 0.00,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {}
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `razorpay_orders` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `order_id` VARCHAR(100) UNIQUE NOT NULL,
+            `mobile` VARCHAR(20) NOT NULL,
+            `amount` DECIMAL(10,2) DEFAULT 0.00,
+            `currency` VARCHAR(10) DEFAULT 'INR',
+            `status` VARCHAR(20) DEFAULT 'created',
+            `payment_id` VARCHAR(100) DEFAULT NULL,
+            `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {}
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `product_purchases` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `product_id` VARCHAR(100) NOT NULL,
+            `product_name` VARCHAR(255) DEFAULT '',
+            `quantity` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            `unit_name` VARCHAR(50) DEFAULT 'kg',
+            `total_cost` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            `cost_per_unit` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            `vendor_name` VARCHAR(255) DEFAULT '',
+            `notes` TEXT DEFAULT NULL,
+            `purchase_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_prod (`product_id`),
+            INDEX idx_date (`purchase_date`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    } catch (Exception $e) {}
+
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `serviceable_pincodes` (
+            `id` INT AUTO_INCREMENT PRIMARY KEY,
+            `pincode` VARCHAR(10) NOT NULL UNIQUE,
+            `zone` VARCHAR(50) NOT NULL DEFAULT 'zone1',
+            `area_name` VARCHAR(100) DEFAULT '',
+            `is_active` TINYINT(1) DEFAULT 1,
+            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $count = $pdo->query("SELECT COUNT(*) FROM `serviceable_pincodes`")->fetchColumn();
+        if ($count == 0) {
+            $pdo->exec("INSERT IGNORE INTO `serviceable_pincodes` (`pincode`, `zone`, `area_name`, `is_active`) VALUES ('400071', 'zone1', 'Chembur, Mumbai', 1)");
+        }
+    } catch (Exception $e) {}
+
+    // 2. Ensure all columns exist on tables
     $columns = [
         "orders" => [
             "assigned_to VARCHAR(100) DEFAULT ''",
             "delivery_inst TEXT",
             "delivery_mode VARCHAR(100) DEFAULT ''",
+            "delivery_option VARCHAR(50) DEFAULT 'next_day'",
+            "delivery_expected_at VARCHAR(100) DEFAULT ''",
+            "delivery_cutoff_ist VARCHAR(100) DEFAULT ''",
+            "order_source VARCHAR(50) DEFAULT 'CLIENT_WEB'",
+            "created_by VARCHAR(100) DEFAULT NULL",
             "delivered_at DATETIME NULL",
             "undelivered_reason VARCHAR(255) DEFAULT NULL",
             "refund_amount DECIMAL(10,2) DEFAULT 0.00",
@@ -360,6 +505,7 @@ function ensureSchemaColumns($pdo) {
             "referred_by VARCHAR(100) DEFAULT NULL"
         ],
         "order_items" => [
+            "weight VARCHAR(50) DEFAULT ''",
             "item_status VARCHAR(50) DEFAULT 'packed'",
             "missing_qty INT DEFAULT 0",
             "refund_amount DECIMAL(10,2) DEFAULT 0.00",
@@ -401,14 +547,6 @@ function ensureSchemaColumns($pdo) {
         ]
     ];
 
-    try {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS `store_settings` (
-            `key` VARCHAR(100) PRIMARY KEY,
-            `value` TEXT,
-            `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        )");
-    } catch (Exception $e) {}
-
     foreach ($columns as $table => $cols) {
         foreach ($cols as $colDef) {
             try {
@@ -421,6 +559,8 @@ function ensureSchemaColumns($pdo) {
 
     // Bi-directional sync: if either razorpay_orders or wallets table is cleared, clear the other
     syncWalletAndRazorpayTables($pdo);
+
+    @touch(__DIR__ . '/.schema_ensured');
 }
 
 function syncWalletAndRazorpayTables($pdo) {
@@ -449,11 +589,34 @@ function getParam($key, $default = null) {
 }
 
 /**
- * Send JSON response
+ * Send JSON response with optional HTTP caching & ETag support
  */
-function sendJson($data, $statusCode = 200) {
+function sendJson($data, $statusCode = 200, $maxAge = 0) {
     http_response_code($statusCode);
-    echo json_encode($data);
+    header("Content-Type: application/json; charset=UTF-8");
+
+    if ($maxAge > 0) {
+        header("Cache-Control: public, max-age={$maxAge}, stale-while-revalidate=60");
+    }
+
+    $json = json_encode($data);
+
+    // ETag caching for idempotent status 200 responses
+    if ($statusCode === 200) {
+        $rawEtag = md5($json);
+        $etag = '"' . $rawEtag . '"';
+        header("ETag: {$etag}");
+
+        if (isset($_SERVER['HTTP_IF_NONE_MATCH'])) {
+            $clientEtag = trim(preg_replace('/^W\//i', '', trim($_SERVER['HTTP_IF_NONE_MATCH'])), "\" \t\n\r\0\x0B");
+            if ($clientEtag === $rawEtag) {
+                http_response_code(304);
+                exit();
+            }
+        }
+    }
+
+    echo $json;
     exit();
 }
 

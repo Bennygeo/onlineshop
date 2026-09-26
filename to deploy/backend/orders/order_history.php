@@ -21,10 +21,23 @@ try {
         "ALTER TABLE orders ADD COLUMN refund_notes TEXT DEFAULT NULL",
         "ALTER TABLE orders ADD COLUMN assigned_to VARCHAR(100) DEFAULT ''",
         "ALTER TABLE orders ADD COLUMN coupon VARCHAR(50) DEFAULT NULL",
-        "ALTER TABLE orders ADD COLUMN coupon_discount DECIMAL(10,2) DEFAULT 0.00",
+        "ALTER TABLE orders ADD COLUMN delivery_option VARCHAR(50) DEFAULT 'next_day'",
+        "ALTER TABLE orders ADD COLUMN delivery_expected_at VARCHAR(100) DEFAULT ''",
+        "ALTER TABLE orders ADD COLUMN delivery_cutoff_ist VARCHAR(100) DEFAULT ''",
         "ALTER TABLE orders ADD COLUMN referral_code VARCHAR(50) DEFAULT NULL",
         "ALTER TABLE orders ADD COLUMN referred_by VARCHAR(100) DEFAULT NULL",
-        "ALTER TABLE users ADD COLUMN referred_by VARCHAR(50) DEFAULT NULL"
+        "ALTER TABLE users ADD COLUMN referred_by VARCHAR(50) DEFAULT NULL",
+        "ALTER TABLE order_items ADD COLUMN subscriptionType VARCHAR(50) DEFAULT 'none'",
+        "ALTER TABLE order_items ADD COLUMN rangeDates TEXT",
+        "ALTER TABLE order_items ADD COLUMN subscribedDates TEXT",
+        "ALTER TABLE order_items ADD COLUMN subsStatus VARCHAR(50) DEFAULT 'active'",
+        "ALTER TABLE order_items ADD COLUMN pausedDates TEXT",
+        "ALTER TABLE order_items ADD COLUMN startDate VARCHAR(50) DEFAULT ''",
+        "ALTER TABLE order_items ADD COLUMN endDate VARCHAR(50) DEFAULT ''",
+        "ALTER TABLE order_items ADD COLUMN weight VARCHAR(50) DEFAULT ''",
+        "ALTER TABLE order_items ADD COLUMN item_status VARCHAR(50) DEFAULT 'packed'",
+        "ALTER TABLE order_items ADD COLUMN missing_qty INT DEFAULT 0",
+        "ALTER TABLE order_items ADD COLUMN refund_amount DECIMAL(10,2) DEFAULT 0.00"
     ];
     foreach ($alters as $sql) {
         try {
@@ -58,29 +71,24 @@ try {
             ORDER BY o.created_at DESC
         ");
         $stmt->execute([$mobile]);
-        $orders = $stmt->fetchAll();
     } catch (Exception $queryEx) {
-        $stmt = $pdo->prepare("
-            SELECT o.*,
-                   COALESCE(o.coupon, '') AS coupon,
-                   COALESCE(o.coupon_discount, 0.00) AS coupon_discount,
-                   COALESCE(o.referral_code, '') AS referral_code,
-                   COALESCE(o.referred_by, '') AS referred_by,
-                   EXISTS (
-                       SELECT 1 FROM order_items oi 
-                       WHERE oi.order_id = o.order_id 
-                         AND (
-                             (oi.subscriptionType IS NOT NULL AND oi.subscriptionType != '' AND oi.subscriptionType != 'none' AND oi.subscriptionType != 'undefined')
-                             OR (oi.rangeDates IS NOT NULL AND oi.rangeDates != '' AND oi.rangeDates != '[]' AND oi.rangeDates != 'undefined' AND oi.rangeDates != 'null')
-                             OR (oi.subscribedDates IS NOT NULL AND oi.subscribedDates != '' AND oi.subscribedDates != '[]' AND oi.subscribedDates != 'undefined' AND oi.subscribedDates != 'null')
-                         )
-                   ) AS is_subscription
-            FROM orders o 
-            WHERE o.mobile = ? 
-            ORDER BY o.created_at DESC
-        ");
-        $stmt->execute([$mobile]);
-        $orders = $stmt->fetchAll();
+        try {
+            $stmt = $pdo->prepare("
+                SELECT o.*,
+                       COALESCE(o.coupon, '') AS coupon,
+                       COALESCE(o.coupon_discount, 0.00) AS coupon_discount,
+                       COALESCE(o.referral_code, '') AS referral_code,
+                       COALESCE(o.referred_by, '') AS referred_by,
+                       0 AS is_subscription
+                FROM orders o 
+                WHERE o.mobile = ? 
+                ORDER BY o.created_at DESC
+            ");
+            $stmt->execute([$mobile]);
+            $orders = $stmt->fetchAll();
+        } catch (Exception $eFinal) {
+            $orders = [];
+        }
     }
     
     foreach ($orders as &$ord) {

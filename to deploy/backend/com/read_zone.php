@@ -4,18 +4,34 @@ require_once __DIR__ . '/../config/db.php';
 // Auto-ensure serviceable_pincodes table exists
 try {
     if ($pdo) {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS `serviceable_pincodes` (
-            `id` INT AUTO_INCREMENT PRIMARY KEY,
-            `pincode` VARCHAR(10) NOT NULL UNIQUE,
-            `zone` VARCHAR(50) NOT NULL DEFAULT 'zone1',
-            `area_name` VARCHAR(100) DEFAULT '',
-            `is_active` TINYINT(1) DEFAULT 1,
-            `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `serviceable_pincodes` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT,
+                `pincode` TEXT NOT NULL UNIQUE,
+                `zone` TEXT NOT NULL DEFAULT 'zone1',
+                `area_name` TEXT DEFAULT '',
+                `is_active` INTEGER DEFAULT 1,
+                `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+            )");
+            $count = (int)$pdo->query("SELECT COUNT(*) FROM `serviceable_pincodes`")->fetchColumn();
+            if ($count === 0) {
+                $pdo->exec("INSERT OR IGNORE INTO `serviceable_pincodes` (`pincode`, `zone`, `area_name`, `is_active`) VALUES ('400071', 'zone1', 'Chembur, Mumbai', 1)");
+            }
+        } else {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `serviceable_pincodes` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `pincode` VARCHAR(10) NOT NULL UNIQUE,
+                `zone` VARCHAR(50) NOT NULL DEFAULT 'zone1',
+                `area_name` VARCHAR(100) DEFAULT '',
+                `is_active` TINYINT(1) DEFAULT 1,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-        $count = $pdo->query("SELECT COUNT(*) FROM `serviceable_pincodes`")->fetchColumn();
-        if ($count == 0) {
-            $pdo->exec("INSERT IGNORE INTO `serviceable_pincodes` (`pincode`, `zone`, `area_name`, `is_active`) VALUES ('400071', 'zone1', 'Chembur, Mumbai', 1)");
+            $count = $pdo->query("SELECT COUNT(*) FROM `serviceable_pincodes`")->fetchColumn();
+            if ($count == 0) {
+                $pdo->exec("INSERT IGNORE INTO `serviceable_pincodes` (`pincode`, `zone`, `area_name`, `is_active`) VALUES ('400071', 'zone1', 'Chembur, Mumbai', 1)");
+            }
         }
     }
 } catch (Exception $e) {}
