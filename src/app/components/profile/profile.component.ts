@@ -19,6 +19,10 @@ export class ProfileComponent implements OnInit {
   isSaving: boolean = false;
   savedSuccessToast: boolean = false;
 
+  showDeleteConfirm: boolean = false;
+  isDeleting: boolean = false;
+  deleteErrorToast: boolean = false;
+
   constructor(
     private formBuilder: FormBuilder,
     private cartS: CartService,
@@ -95,6 +99,34 @@ export class ProfileComponent implements OnInit {
   logoutAction(): void {
     this.loginS.logoutEvent.next();
     this.cartS.router.navigate(['/']);
+  }
+
+  openDeleteConfirm(): void {
+    this.showDeleteConfirm = true;
+    this.deleteErrorToast = false;
+  }
+
+  cancelDelete(): void {
+    this.showDeleteConfirm = false;
+    this.deleteErrorToast = false;
+  }
+
+  deleteAccount(): void {
+    if (this.isDeleting) return;
+    this.isDeleting = true;
+    this.deleteErrorToast = false;
+
+    this.loginS.deleteAccount().subscribe({
+      next: () => {
+        this.loginS.clearAllUserData();
+        this.cartS.router.navigate(['/home/view']);
+      },
+      error: () => {
+        this.isDeleting = false;
+        this.deleteErrorToast = true;
+        setTimeout(() => { this.deleteErrorToast = false; }, 3500);
+      }
+    });
   }
 }
 

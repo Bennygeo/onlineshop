@@ -269,6 +269,30 @@ export class LoginService {
     updateUser(params: any): Observable<any> {
         return this.apiService.postApi("user/update_user.php", params);
     }
+
+    deleteAccount(): Observable<any> {
+        return this.apiService.postApi("user/delete_user.php", { mobile: this.user.mobile });
+    }
+
+    clearAllUserData(): void {
+        // Remove auth token
+        this.storageS.removeItem('login');
+        // Remove cached location
+        this.storageS.removeItem('tnk_location');
+        // Remove referral info
+        this.storageS.removeItem('user_referral_info');
+        // Remove cached address list for this user
+        if (this.user?.mobile) {
+            this.storageS.removeItem('tnk_user_addrs_' + this.user.mobile);
+        }
+        // Remove admin mode if any
+        this.storageS.removeItem('tnkspt_admin_mode');
+        // Reset user object and status
+        this.user = new User();
+        this.userStatus = 'LOGOUT';
+        this.loginChangeEvent.next(Common.loginStatus.LOGOUT);
+        this.loginPromptEvent.next(true);
+    }
 }
 
 export type LoginStatus = "LOGIN" | "LOGOUT";

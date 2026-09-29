@@ -508,3 +508,203 @@
         }
     }
 }
+
+/* Error Toast Variant */
+.toast-badge.toast-error {
+    background: #7f1d1d;
+
+    .toast-icon {
+        color: #fca5a5;
+    }
+}
+
+/* Danger Zone */
+.danger-zone {
+    margin-top: 20px;
+
+    .danger-zone-divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+
+        &::before,
+        &::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #fee2e2;
+        }
+
+        .danger-zone-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #fca5a5;
+            white-space: nowrap;
+        }
+    }
+
+    /* Subtle delete trigger button */
+    .btn-delete-account {
+        width: 100%;
+        background: transparent;
+        border: 1px dashed #fca5a5;
+        color: #ef4444;
+        padding: 11px 16px;
+        border-radius: 14px;
+        font-family: $inter;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        opacity: 0.75;
+
+        .material-icons-round {
+            font-size: 18px;
+        }
+
+        &:hover {
+            opacity: 1;
+            background: #fef2f2;
+            border-style: solid;
+            border-color: #ef4444;
+            transform: translateY(-1px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    }
+
+    /* Inline confirmation panel */
+    .delete-confirm-panel {
+        background: #fff5f5;
+        border: 1.5px solid #fecaca;
+        border-radius: 18px;
+        padding: 20px 18px;
+        animation: panelExpand 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+
+        .delete-warn-icon {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+
+            .material-icons-round {
+                font-size: 36px;
+                color: #ef4444;
+            }
+        }
+
+        .delete-warn-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #7f1d1d;
+            margin: 0 0 8px 0;
+            text-align: center;
+        }
+
+        .delete-warn-body {
+            font-size: 12.5px;
+            color: #9f1239;
+            line-height: 1.55;
+            text-align: center;
+            margin: 0 0 18px 0;
+
+            strong {
+                display: block;
+                margin-top: 5px;
+                color: #7f1d1d;
+                font-size: 12px;
+            }
+        }
+
+        .delete-confirm-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+
+            .btn-confirm-delete {
+                width: 100%;
+                background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+                color: #ffffff;
+                border: none;
+                padding: 13px 18px;
+                border-radius: 13px;
+                font-family: $inter;
+                font-size: 13px;
+                font-weight: 700;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+                transition: all 0.2s ease;
+
+                .material-icons-round {
+                    font-size: 18px;
+                }
+
+                &:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 18px rgba(220, 38, 38, 0.45);
+                }
+
+                &:active:not(:disabled) {
+                    transform: translateY(0);
+                }
+
+                &:disabled {
+                    opacity: 0.65;
+                    cursor: not-allowed;
+                    box-shadow: none;
+                }
+            }
+
+            .btn-cancel-delete {
+                width: 100%;
+                background: #ffffff;
+                border: 1.5px solid #d1d5db;
+                color: #374151;
+                padding: 12px 18px;
+                border-radius: 13px;
+                font-family: $inter;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s ease;
+
+                &:hover:not(:disabled) {
+                    background: #f9fafb;
+                    border-color: #9ca3af;
+                    transform: translateY(-1px);
+                }
+
+                &:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+            }
+        }
+    }
+}
+
+@keyframes panelExpand {
+    from {
+        opacity: 0;
+        transform: scaleY(0.92) translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1) translateY(0);
+    }
+}

@@ -162,4 +162,56 @@
         </button>
     </div>
 
+    <!-- Delete Account Error Toast -->
+    <div class="toast-badge toast-error" *ngIf="deleteErrorToast">
+        <span class="material-icons-round toast-icon">error_outline</span>
+        <span>Failed to delete account. Please try again.</span>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="danger-zone">
+        <div class="danger-zone-divider">
+            <span class="danger-zone-label">Danger Zone</span>
+        </div>
+
+        <!-- Trigger Button -->
+        <button
+            class="btn-delete-account"
+            *ngIf="!showDeleteConfirm"
+            (click)="openDeleteConfirm()"
+        >
+            <span class="material-icons-round">delete_forever</span>
+            <span>Delete My Account</span>
+        </button>
+
+        <!-- Inline Confirmation Panel -->
+        <div class="delete-confirm-panel" *ngIf="showDeleteConfirm">
+            <div class="delete-warn-icon">
+                <span class="material-icons-round">warning_amber</span>
+            </div>
+            <h4 class="delete-warn-title">Are you absolutely sure?</h4>
+            <p class="delete-warn-body">
+                This will permanently delete your account, all your orders, addresses, and wallet data.
+                <strong>This action cannot be undone.</strong>
+            </p>
+            <div class="delete-confirm-actions">
+                <button
+                    class="btn-confirm-delete"
+                    (click)="deleteAccount()"
+                    [disabled]="isDeleting"
+                >
+                    <span class="material-icons-round" *ngIf="!isDeleting">delete_forever</span>
+                    <span>{{ isDeleting ? 'Deleting Account...' : 'Yes, Delete My Account' }}</span>
+                </button>
+                <button
+                    class="btn-cancel-delete"
+                    (click)="cancelDelete()"
+                    [disabled]="isDeleting"
+                >
+                    <span>Cancel</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
