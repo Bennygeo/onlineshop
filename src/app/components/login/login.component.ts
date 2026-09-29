@@ -449,7 +449,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   private checkOtpCompletion(): void {
     const filledCount = this.otpValues.filter(v => v !== '').length;
     // Support standard 6-digit OTP or 4-digit dev testing (e.g. 1111)
-    if (filledCount === 6 || (filledCount === 4 && this.otpUserVal === '1111')) {
+    if (filledCount === 6) {
       this.otpFlag = false;
       this.btnName = 'Verify & Proceed';
     } else {

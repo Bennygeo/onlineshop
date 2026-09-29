@@ -36,12 +36,12 @@
 
                 <div class="search-actions-group">
                     <!-- 100% Free AI Voice Shopping Trigger -->
-                    <button class="voice-search-trigger-btn" (click)="openVoiceModal(); $event.stopPropagation()"
+                    <!-- <button class="voice-search-trigger-btn" (click)="openVoiceModal(); $event.stopPropagation()"
                         title="Shop with Voice AI (English / தமிழ்)">
                         <span class="material-icons voice-mic-icon">mic</span>
                         <span class="voice-btn-label">Voice AI</span>
                         <span class="voice-pulse-ring"></span>
-                    </button>
+                    </button> -->
 
                     <span class="search-action-badge">
                         <span class="material-icons size-16">arrow_forward</span>
@@ -95,32 +95,6 @@
                 </div>
             </div>
 
-            <!-- WEEKLY STORE OFF DAY NOTICE BANNER -->
-            <div class="weekly-leave-banner" *ngIf="isWeeklyOffActive">
-                <div class="leave-banner-glow"></div>
-                <div class="leave-banner-body">
-                    <div class="leave-banner-icon-box">
-                        <span class="material-icons">spa</span>
-                    </div>
-                    <div class="leave-banner-details">
-                        <div class="leave-banner-top">
-                            <span class="leave-badge">
-                                <span class="material-icons size-13">event_busy</span> Weekly Store Schedule
-                            </span>
-                            <span class="leave-day-tag">{{ weeklyOffDay }}s Off</span>
-                        </div>
-                        <h3 class="leave-banner-title">Prioritizing Team & Employee Well-Being</h3>
-                        <p class="leave-banner-desc">
-                            Concerning our staff and delivery team's health, our store takes a weekly break on
-                            <strong>{{ weeklyOffDay }}s</strong>. Orders placed on <strong>{{ previousDayToWeeklyOff
-                                }}</strong> will be freshly delivered on <strong>{{ nextOperatingDayAfterOff }} morning
-                                at 7:00 AM IST</strong>.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-
 
             <!-- 4. BUY AGAIN / RECENT PURCHASES (If different from restock) -->
             <div class="section-block recent-purchases-section"
@@ -144,7 +118,8 @@
                         <div class="prod-badge reorder-badge">Previous Order</div>
                         <div class="prod-img-box" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" class="prod-img"
-                                [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
+                                [alt]="product.name || 'Product'"
+                                onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                         </div>
                         <div class="prod-details" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
@@ -232,6 +207,33 @@
                 </div>
             </div>
 
+
+            <!-- WEEKLY STORE OFF DAY NOTICE BANNER -->
+            <div class="weekly-leave-banner" *ngIf="isWeeklyOffActive">
+                <div class="leave-banner-glow"></div>
+                <div class="leave-banner-body">
+                    <div class="leave-banner-icon-box">
+                        <span class="material-icons">spa</span>
+                    </div>
+                    <div class="leave-banner-details">
+                        <div class="leave-banner-top">
+                            <span class="leave-badge">
+                                <span class="material-icons size-13">event_busy</span> Weekly Store Schedule
+                            </span>
+                            <span class="leave-day-tag">{{ weeklyOffDay }}s Off</span>
+                        </div>
+                        <h3 class="leave-banner-title">Prioritizing Team & Employee Well-Being</h3>
+                        <p class="leave-banner-desc">
+                            Concerning our staff and delivery team's health, our store takes a weekly break on
+                            <strong>{{ weeklyOffDay }}s</strong>. Orders placed on <strong>{{ previousDayToWeeklyOff
+                                }}</strong> will be freshly delivered on <strong>{{ nextOperatingDayAfterOff }} morning
+                                at 7:00 AM IST</strong>.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+
             <!-- 3. AI KITCHEN RESTOCK PREDICTOR (Smart Reorder Engine) -->
             <div class="section-block ai-restock-section" *ngIf="restockPredictions && restockPredictions.length > 0">
                 <div class="section-header-row">
@@ -267,8 +269,8 @@
                             {{ item.urgencyBadge }}
                         </div>
                         <div class="prod-img-box" (click)="viewProductDetail(item.product)" style="cursor: pointer;">
-                            <img [src]="item.product.img_url || 'assets/general/product_placeholder.svg'" class="prod-img"
-                                [alt]="item.product.name || 'Product'"
+                            <img [src]="item.product.img_url || 'assets/general/product_placeholder.svg'"
+                                class="prod-img" [alt]="item.product.name || 'Product'"
                                 onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                         </div>
                         <div class="prod-details" (click)="viewProductDetail(item.product)" style="cursor: pointer;">
@@ -351,7 +353,8 @@
                         <div class="prod-badge diet-badge">{{ getDietaryTag(product) }}</div>
                         <div class="prod-img-box">
                             <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" class="prod-img"
-                                [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
+                                [alt]="product.name || 'Product'"
+                                onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                         </div>
                         <div class="prod-details">
                             <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
@@ -367,8 +370,7 @@
 
                         <div class="prod-action-wrap">
                             <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
-                                [maxVal]="(product.stock_qty !== undefined && product.stock_qty !== null) ? product.stock_qty : 10"
-                                [disabled]="product['disabled'] || product['disable']"
+                                [maxVal]="getMaxStock(product)" [disabled]="product['disabled'] || product['disable']"
                                 (onChange)="plusMinusValue($event, product)"
                                 *ngIf="isProductInStock(product); else NotAvailableDiet">
                             </plus-minus>
@@ -447,7 +449,8 @@
                         <div class="prod-badge">Farm Direct</div>
                         <div class="prod-img-box" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" class="prod-img"
-                                [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
+                                [alt]="product.name || 'Product'"
+                                onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                         </div>
                         <div class="prod-details" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <h4 class="prod-name" [title]="product.name">{{ product.name }}</h4>
@@ -620,7 +623,8 @@
 
                 <div class="voice-products-grid">
                     <div class="voice-product-card" *ngFor="let prod of aiVoiceProducts">
-                        <img [src]="prod.img_url || 'assets/general/product_placeholder.svg'" class="vp-img" [alt]="prod.name || 'Product'"
+                        <img [src]="prod.img_url || 'assets/general/product_placeholder.svg'" class="vp-img"
+                            [alt]="prod.name || 'Product'"
                             onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                         <div class="vp-info">
                             <span class="vp-name">{{ prod.name }}</span>

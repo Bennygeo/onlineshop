@@ -1184,7 +1184,7 @@ export class CartService {
       product["units"] = _quantity;
       let weight = product["weight"] * _quantity;
       //if product weight greater than or equal to 1000, then convert into kg.
-      if (product["unit_name"] != "ml") {
+      if (product["unit_name"] == "grams" || product["unit_name"] == "g" || product["unit_name"] == "kg") {
         if (weight >= 1000) {
           weight = weight / 1000;
           product["original_unit_name"] = "grams";
@@ -1194,6 +1194,18 @@ export class CartService {
           product["original_unit_name"] = "grams";
         }
       }
+
+      if (product["unit_name"] == "ml" || product["unit_name"] == "ltr" || product["unit_name"] == "ltrs") {
+        if (weight >= 1000) {
+          weight = weight / 1000;
+          product["original_unit_name"] = "ml";
+          product["unit_name"] = "ltr";
+        } else if (weight < 1000 && weight > 200) {
+          product["unit_name"] = "ml";
+          product["original_unit_name"] = "ltrs";
+        }
+      }
+
       product['updated_weight'] = weight;
 
       if (!product['unit_price'] || isNaN(Number(product['unit_price'])) || Number(product['unit_price']) <= 0) {
@@ -1259,6 +1271,8 @@ export class CartService {
           cnt++;
           if (this.cartLiveProducts[targetId]) {
             this.productsList[i] = this.cartLiveProducts[targetId];
+            this.productsList[i].quantity = 0;
+            this.productsList[i].units = 0;
           } else {
             this.productsList[i].units = val;
           }
@@ -1373,6 +1387,8 @@ export class CartService {
           }
           if (cartPriceUpdated) {
             this.calculateCart(this.cartProducts);
+            console.log("this.cartProducts[0].quantity : ", this.cartProducts[0]?.quantity);
+
             this.storageS.setItem("tnkspt_cart_products", this.cartProducts);
           }
         }
@@ -1513,6 +1529,7 @@ export class CartService {
     });
     this.updateRecommendedProducts();
     this.calculateCart(this.cartProducts);
+    console.log("this.cartProducts[0].quantity service : ", this.cartProducts[0]?.quantity);
     this.storageS.setItem("tnkspt_cart_products", this.cartProducts);
     this.notifyCartEvent.next();
 
@@ -1596,14 +1613,18 @@ export class CartService {
         const dateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`;
         prod.scheduled_delivery_date = dateStr;
         prod.scheduled_delivery_label = dayName;
-        const formattedDate = nextDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        groupKey = `Scheduled Delivery (${formattedDate})`;
-      } else if (isImmediateOperating && Number(prod.allow_immediate_10) === 1) {
-        groupKey = "10_Mins_Delivery";
-      } else if (isImmediateOperating && Number(prod.allow_immediate_30) === 1) {
-        groupKey = "30_Mins_Delivery";
-      } else if (isImmediateOperating && Number(prod.allow_immediate_60) === 1) {
-        groupKey = "60_Mins_Delivery";
+
+
+        if (isImmediateOperating && Number(prod.allow_immediate_10) === 1) {
+          groupKey = "10_Mins_Delivery";
+        } else if (isImmediateOperating && Number(prod.allow_immediate_30) === 1) {
+          groupKey = "30_Mins_Delivery";
+        } else if (isImmediateOperating && Number(prod.allow_immediate_60) === 1) {
+          groupKey = "60_Mins_Delivery";
+        } else {
+          const formattedDate = nextDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+          groupKey = `Scheduled Delivery (${formattedDate})`;
+        }
       } else {
         groupKey = "Tomorrow_Delivery";
       }

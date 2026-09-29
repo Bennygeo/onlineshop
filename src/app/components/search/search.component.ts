@@ -416,6 +416,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   plusMinusValue(val: number, product: Product) {
+    // Emit cart update event with the adjusted quantity for the given product
     this.cartService.cartUpdateEvent.next({ cart: this.cartService.cartProducts, product: product, unit: val });
   }
 

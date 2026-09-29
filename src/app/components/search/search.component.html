@@ -9,36 +9,30 @@
 
             <div class="search-input-box">
                 <span class="material-icons search-lead-icon">search</span>
-                <input type="text" 
-                       class="search-main-input" 
-                       [value]="searchTerm"
-                       (input)="onSearchInput($event)"
-                       (keyup.enter)="askAi()"
-                       placeholder="Search fresh veggies, batters, milk, or ask recipes..." 
-                       autofocus />
+                <input type="text" class="search-main-input" [value]="searchTerm" (input)="onSearchInput($event)"
+                    (keyup.enter)="askAi()" placeholder="Search fresh veggies, batters, milk, or ask recipes..."
+                    autofocus />
                 <button class="clear-search-btn" *ngIf="searchTerm" (click)="clearSearch()" title="Clear">
                     <span class="material-icons size-16">close</span>
                 </button>
             </div>
 
-            <button class="ai-sparkle-btn" (click)="askAi()" [disabled]="aiLoading" title="Ask AI Assistant">
+            <!-- <button class="ai-sparkle-btn" (click)="askAi()" [disabled]="aiLoading" title="Ask AI Assistant">
                 <span class="material-icons sparkle-icon">auto_awesome</span>
                 <span class="ai-btn-text">AI Chef</span>
-            </button>
+            </button> -->
         </div>
 
         <!-- Category Filter Tabs (Appears when search has multiple categories) -->
-        <div class="search-category-tabs" *ngIf="hasSearched && allResults.length > 0 && availableCategories.length > 1">
-            <button class="cat-filter-tab" 
-                    [class.active]="activeCategoryFilter === 'ALL'" 
-                    (click)="filterByCategory('ALL')">
+        <div class="search-category-tabs"
+            *ngIf="hasSearched && allResults.length > 0 && availableCategories.length > 1">
+            <button class="cat-filter-tab" [class.active]="activeCategoryFilter === 'ALL'"
+                (click)="filterByCategory('ALL')">
                 <span>All</span>
                 <span class="tab-count-badge">{{ allResults.length }}</span>
             </button>
-            <button class="cat-filter-tab" 
-                    *ngFor="let cat of availableCategories" 
-                    [class.active]="activeCategoryFilter === cat.name" 
-                    (click)="filterByCategory(cat.name)">
+            <button class="cat-filter-tab" *ngFor="let cat of availableCategories"
+                [class.active]="activeCategoryFilter === cat.name" (click)="filterByCategory(cat.name)">
                 <span>{{ cat.name }}</span>
                 <span class="tab-count-badge">{{ cat.count }}</span>
             </button>
@@ -64,7 +58,8 @@
             <!-- AI Loading State -->
             <div class="ai-loading-box" *ngIf="aiLoading">
                 <div class="ai-spinner"></div>
-                <p>Asking Gemini AI for recipes and checking farm-fresh inventory for "<em>{{ aiActivePrompt }}</em>"...</p>
+                <p>Asking Gemini AI for recipes and checking farm-fresh inventory for "<em>{{ aiActivePrompt }}</em>"...
+                </p>
             </div>
 
             <!-- AI Response Content -->
@@ -72,32 +67,9 @@
                 <div class="ai-reply-text" [innerHTML]="aiResponse.reply.replace('\n', '<br>')"></div>
 
                 <!-- Matched Store Ingredients / Add to Cart Chips -->
-                <div class="ai-suggested-products" *ngIf="aiSuggestedProducts && aiSuggestedProducts.length > 0">
-                    <h5 class="suggested-heading">
-                        <span class="material-icons size-16">shopping_basket</span>
-                        Matching Store Ingredients Ready to Add:
-                    </h5>
-                    <div class="ai-product-chips-grid">
-                        <div class="ai-prod-chip" *ngFor="let product of aiSuggestedProducts">
-                            <div class="chip-left" (click)="viewProductDetail(product)" style="cursor: pointer;">
-                                <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" 
-                                     class="chip-thumb" 
-                                     [alt]="product.name || 'Product'" 
-                                     onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
-                                <div class="chip-info">
-                                    <span class="chip-name" [title]="product.name">{{ product.name }}</span>
-                                    <div class="chip-pricing">
-                                        <span class="chip-price">₹{{ product.price }}</span>
-                                        <span class="chip-unit">{{ product.weight }} {{ product.unit_name || 'grams' }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="chip-action">
-                                <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
-                                    (onChange)="plusMinusValue($event, product)">
-                                </plus-minus>
-                            </div>
-                        </div>
+                <div class="row ai-suggested-products" *ngIf="aiSuggestedProducts && aiSuggestedProducts.length > 0">
+                    <div class="col-6 col-md-3 col-lg-2 products" *ngFor="let product of aiSuggestedProducts">
+                        <product [product]="product" (valueChanges)="onProductChanges(product)"></product>
                     </div>
                 </div>
             </div>
@@ -115,7 +87,7 @@
 
         <!-- 3. PRE-SEARCH DISCOVERY & TRENDING (When user hasn't typed a query yet) -->
         <div class="discovery-container" *ngIf="(!hasSearched || searchTerm.length < 2) && !loadingFlg && !showAiCard">
-            
+
             <!-- AI Smart Recipe Kits / Meal Planner -->
             <div class="discovery-section ai-kits-section">
                 <div class="discovery-header">
@@ -137,7 +109,8 @@
                     <h3 class="discovery-title">Popular Searches</h3>
                 </div>
                 <div class="trending-tags-wrap">
-                    <button class="trending-tag-pill" *ngFor="let keyword of trendingKeywords" (click)="searchKeyword(keyword)">
+                    <button class="trending-tag-pill" *ngFor="let keyword of trendingKeywords"
+                        (click)="searchKeyword(keyword)">
                         <span class="material-icons size-14">search</span>
                         <span>{{ keyword }}</span>
                     </button>
@@ -170,14 +143,17 @@
                     <div class="search-product-card" *ngFor="let product of trendingProducts">
                         <div class="card-badge" *ngIf="product.cat">{{ product.cat }}</div>
                         <div class="card-img-wrap" (click)="viewProductDetail(product)" style="cursor: pointer;">
-                            <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" class="card-img" [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
+                            <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" class="card-img"
+                                [alt]="product.name || 'Product'"
+                                onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
                         </div>
                         <div class="card-info" (click)="viewProductDetail(product)" style="cursor: pointer;">
                             <h4 class="card-title" [title]="product.name">{{ product.name }}</h4>
                             <div class="card-meta">{{ product.weight }} {{ product.unit_name || 'grams' }}</div>
                             <div class="card-price-row">
                                 <span class="card-price">₹{{ product.price }}</span>
-                                <span class="card-original-price" *ngIf="product.original_price > product.price">₹{{ product.original_price }}</span>
+                                <span class="card-original-price" *ngIf="product.original_price > product.price">₹{{
+                                    product.original_price }}</span>
                             </div>
                         </div>
                         <div class="card-action">
@@ -199,35 +175,18 @@
         <div class="search-results-container" *ngIf="hasSearched && filteredResults.length > 0 && !loadingFlg">
             <div class="results-header-bar">
                 <span class="results-count-text">
-                    Showing <strong>{{ filteredResults.length }}</strong> {{ filteredResults.length === 1 ? 'item' : 'items' }} for "<em>{{ searchTerm }}</em>"
+                    Showing <strong>{{ filteredResults.length }}</strong> {{ filteredResults.length === 1 ? 'item' :
+                    'items' }} for "<em>{{ searchTerm }}</em>"
                 </span>
                 <button class="ask-ai-inline-btn" (click)="askAi()">
                     <span class="material-icons size-14">auto_awesome</span> Ask AI Recipe
                 </button>
             </div>
 
-            <div class="search-products-grid">
-                <div class="search-product-card" *ngFor="let product of filteredResults">
-                    <div class="card-badge" *ngIf="product.cat">{{ product.cat }}</div>
-                    <div class="card-img-wrap" (click)="viewProductDetail(product)" style="cursor: pointer;">
-                        <img [src]="product.img_url || 'assets/general/product_placeholder.svg'" class="card-img" [alt]="product.name || 'Product'" onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
-                    </div>
-                    <div class="card-info" (click)="viewProductDetail(product)" style="cursor: pointer;">
-                        <h4 class="card-title" [title]="product.name">{{ product.name }}</h4>
-                        <div class="card-meta">{{ product.weight }} {{ product.unit_name || 'grams' }}</div>
-                        <div class="card-price-row">
-                            <span class="card-price">₹{{ product.price }}</span>
-                            <span class="card-original-price" *ngIf="product.original_price > product.price">₹{{ product.original_price }}</span>
-                        </div>
-                    </div>
-                    <div class="card-action">
-                        <plus-minus [caption]="" [inputVal]="(product['units'] || 0)" [stepVal]="1" [minVal]="0"
-                            (onChange)="plusMinusValue($event, product)"
-                            *ngIf="isProductInStock(product); else NotAvailableResult">
-                        </plus-minus>
-                        <ng-template #NotAvailableResult>
-                            <span class="sold-out-badge">Out of stock</span>
-                        </ng-template>
+            <div class="container">
+                <div class="row" style="padding: 0; margin: 0;">
+                    <div class="col-6 col-md-6 col-lg-2 products" *ngFor="let product of filteredResults">
+                        <product [product]="product" (valueChanges)="onProductChanges(product)"></product>
                     </div>
                 </div>
             </div>
@@ -240,7 +199,8 @@
             </div>
             <h3 class="not-found-title">No products found for "{{ searchTerm }}"</h3>
             <p class="not-found-desc">
-                We couldn't find an exact keyword match. Let our AI Assistant find recipe ingredients or related fresh items for you!
+                We couldn't find an exact keyword match. Let our AI Assistant find recipe ingredients or related fresh
+                items for you!
             </p>
             <div class="ai-fallback-action">
                 <button class="ask-ai-primary-btn" (click)="askAi()">

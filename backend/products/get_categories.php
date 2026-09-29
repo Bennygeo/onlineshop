@@ -31,7 +31,11 @@ $categoryIcons = [
     'Pickles' => 'assets/categories/Thinkspot_Pickles.png',
     'Pets' => 'assets/categories/Thinkspot_AncientSouk.png',
     'Vegan' => 'assets/categories/Thinkspot_veggiesIcon.png',
-    'Greens' => 'assets/categories/Thinkspot_greensIcon.png'
+    'Greens' => 'assets/categories/Thinkspot_greensIcon.png',
+    'FRESH PRODUCE' => 'assets/categories/Thinkspot_veggiesIcon.png',
+    'DAIRY & EGGS' => 'assets/categories/thinksot_milkAndEggs.png',
+    'BATTER' => 'assets/categories/Thinkspot_BatterIcon.png',
+    'FLOURS & ATTA' => 'assets/categories/Thinkspot_Flour.png'
 ];
 
 try {

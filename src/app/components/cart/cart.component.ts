@@ -99,6 +99,8 @@ export class CartComponent {
       }
       this.product.subscribe = false;
     }
+    console.log("cart", this.cartS.cartProducts);
+
     this.cartS.cartUpdateEvent.next({ cart: this.cartS.cartProducts, product: this.product, unit: val });
   }
 
@@ -109,7 +111,7 @@ export class CartComponent {
   getScheduledDeliveryInfo(): { label: string; icon: string; isPreferredDay: boolean } | null {
     if (!this.product) return null;
     const prefDays = this.product.preferred_days ? (Array.isArray(this.product.preferred_days) ? this.product.preferred_days : []) : [];
-    
+
     if (prefDays.length > 0 && prefDays.length < 7) {
       let dObj: Date;
       if (this.product.scheduled_delivery_date) {

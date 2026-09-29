@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CartService } from 'src/app/services/cart.service';
 import { SubsOptions, Product, SubProductType, DescriptionOptions, ProductOptions, menuOptions, renderOptions, SubsEntry } from 'src/app/utils/types';
 
@@ -88,7 +88,8 @@ export class ProductListComponent implements OnInit, OnDestroy {
     public productService: ProductService,
     private location: Location,
     private loginS: LoginService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cdr: ChangeDetectorRef
   ) {
 
     this.menus = this.productService.menus;
@@ -163,7 +164,6 @@ export class ProductListComponent implements OnInit, OnDestroy {
     });
 
     this.cartS.productsExistEvent.subscribe((res: string) => {
-
       let renderResult = this.renderProducts();
       this.productsOptions.productsCategoryWise = renderResult.productsCategoryWise;
 
@@ -287,7 +287,18 @@ export class ProductListComponent implements OnInit, OnDestroy {
       cat = prod['cat'] || '';
       let sub_cat = (prod['sub_cat'] || '').trim();
 
-      if (cat.toLocaleLowerCase() == (this.menus.activeMenu || '').toLocaleLowerCase()) {
+      const active = (this.menus.activeMenu || '').toLocaleLowerCase().trim();
+      const catLower = cat.toLocaleLowerCase().trim();
+      const subLower = sub_cat.toLocaleLowerCase().trim();
+
+      const matchesCat = (catLower === active);
+      const matchesSub = (subLower === active ||
+        (active === 'vegetables' && subLower.includes('vegetable')) ||
+        (active === 'fruits' && subLower.includes('fruit')) ||
+        (active === 'greens' && (subLower.includes('green') || subLower.includes('geen')))
+      );
+
+      if (matchesCat || matchesSub) {
         if (sub_cat != '') {
           _sub_categories.push(sub_cat);
           if (!_sub_category_products[sub_cat]) _sub_category_products[sub_cat] = { products: [] };

@@ -75,7 +75,7 @@ export class AdminProductBulkComponent implements OnInit {
   constructor(
     private apiS: ApiService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadCatalogContext();
@@ -88,7 +88,7 @@ export class AdminProductBulkComponent implements OnInit {
       }
     });
 
-    this.apiS.postApi('products/download_products_sql.php', { table_name: 'zone2_products_new_1', cat: 'all', is_admin: 1 }).subscribe({
+    this.apiS.postApi('products/download_products_sql.php', { table_name: 'products', cat: 'all', is_admin: 1 }).subscribe({
       next: (res: any) => {
         if (Array.isArray(res)) this.existingProducts = res;
       }

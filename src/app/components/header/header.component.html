@@ -10,7 +10,8 @@
 <div class="main-header-bar"
     style="z-index: 100; padding: 6px 14px; height: 52px; background-color: #097e63; position: sticky; top: 0;"
     *ngIf="type==='type1'">
-    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto;">
+    <div
+        style="display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto;">
         <div (click)="homeBtnClick()" class="headerItems" style="cursor: pointer; display: flex; align-items: center;">
             <div class="logoCont">
                 <img src="assets/home/logo_main.png" class="logoImg" style="top: 0; max-height: 38px;" />
@@ -19,8 +20,11 @@
 
         <div class="headerItems rightMenu" style="display: flex; align-items: center; gap: 10px; float: none; top: 0;">
             <div style="text-align: right; cursor: pointer;" (click)="addressSelection()">
-                <div style="line-height: 12px; font-size: 11px; opacity: 0.9;">Deliver to&nbsp;&nbsp;<span class="down-arrow">▼</span></div>
-                <div class="addressTitle" style="font-size: 13px; font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">{{addressName}}</div>
+                <div style="line-height: 12px; font-size: 11px; opacity: 0.9;">Deliver to&nbsp;&nbsp;<span
+                        class="down-arrow">▼</span></div>
+                <div class="addressTitle"
+                    style="font-size: 13px; font-weight: 700; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">
+                    {{addressName}}</div>
             </div>
             <div style="width: 36px; height: 36px; background-color: #FFC529; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0;"
                 (click)="profileAction()">
@@ -114,12 +118,14 @@ font-size: 20px; font-weight: bolder;">
 <div class="main-header-bar"
     style="z-index: 1000; padding: 6px 14px; height: 52px; background-color: #ffffff; position: sticky; top: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.06);"
     *ngIf="type==='type5'">
-    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto;">
-        <div class="backBtn" (click)="backBtnAction()" style="cursor: pointer; display: flex; align-items: center; gap: 6px; float: none;">
+    <div
+        style="display: flex; align-items: center; justify-content: space-between; width: 100%; height: 100%; max-width: 1200px; margin: 0 auto;">
+        <div class="backBtn" (click)="backBtnAction()"
+            style="cursor: pointer; display: flex; align-items: center; gap: 6px; float: none;">
             <span class="material-icons" style="font-size: 26px; color: #0f172a; font-weight: bold; line-height: 1;">
                 keyboard_arrow_left
             </span>
-            <span style="font-size: 17px; font-weight: 700; color: #0f172a;">My Orders</span>
+            <!-- <span style="font-size: 17px; font-weight: 700; color: #0f172a;">My Orders</span> -->
         </div>
 
         <div class="headerItems rightMenu" style="display: flex; align-items: center; float: none; top: 0;">

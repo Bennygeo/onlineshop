@@ -267,7 +267,7 @@ export class CartListComponent implements OnInit, OnDestroy {
     let loadingEl = document.getElementById("loading");
     if (loadingEl)
       loadingEl.remove();
-    
+
     // Refresh wallet
     if (this.loginS.user?.mobile) {
       this.loginS.readWallet();

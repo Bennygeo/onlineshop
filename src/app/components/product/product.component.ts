@@ -64,6 +64,9 @@ export class ProductComponent implements OnInit, OnChanges {
       this.init();
     });
 
+    console.log("benny", this.product["delivery_date_enhanced"]);
+
+
     this.product.changeInProduct.subscribe({
       next: (product: Product) => {
         if (product.subscribe) {
@@ -158,20 +161,21 @@ export class ProductComponent implements OnInit, OnChanges {
     const hasImm10 = isImmOperating && Number(this.product.allow_immediate_10) === 1;
     const hasImm60 = isImmOperating && Number(this.product.allow_immediate_60) === 1;
 
+
     const isActuallyTomorrow = (DateE.dateDiff(this.cartS.todaysDate, this.product.delivery_date) === 1);
 
-    if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
-      try {
-        this.product.delivery_date_enhanced = isActuallyTomorrow ? "Tomorrow" : (this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d') || 'Scheduled');
-      } catch (e) {
-        this.product.delivery_date_enhanced = this.product.scheduled_delivery_label || "Scheduled";
-      }
-    } else if (hasImm10) {
+    if (hasImm10) {
       this.product.delivery_date_enhanced = "10 mins";
     } else if (hasImm30) {
       this.product.delivery_date_enhanced = "30 mins";
     } else if (hasImm60) {
       this.product.delivery_date_enhanced = "60 mins";
+    } else if (prefDays && prefDays.length > 0 && prefDays.length < 7) {
+      try {
+        this.product.delivery_date_enhanced = isActuallyTomorrow ? "Tomorrow" : (this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d') || 'Scheduled');
+      } catch (e) {
+        this.product.delivery_date_enhanced = this.product.scheduled_delivery_label || "Scheduled";
+      }
     } else {
       try {
         this.product.delivery_date_enhanced = isActuallyTomorrow ? "Tomorrow" : this.datePipe.transform(this.product["delivery_date"], 'EEE, MMM d');

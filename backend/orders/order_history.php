@@ -71,6 +71,7 @@ try {
             ORDER BY o.created_at DESC
         ");
         $stmt->execute([$mobile]);
+        $orders = $stmt->fetchAll();
     } catch (Exception $queryEx) {
         try {
             $stmt = $pdo->prepare("

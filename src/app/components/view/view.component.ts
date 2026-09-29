@@ -191,10 +191,10 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   // Quick Perks
   groceryPerks = [
-    { icon: 'bolt', title: '7 AM Delivery', desc: 'Fresh at doorstep' },
-    { icon: 'eco', title: '100% Farm Pure', desc: 'No chemicals' },
+    { icon: 'bolt', title: '8-11 AM Delivery', desc: 'Fresh at doorstep' },
     { icon: 'payments', title: 'COD', desc: 'Pay at door' },
-    { icon: 'event_repeat', title: 'Easy Subscriptions', desc: 'Pause anytime' }
+    { icon: 'vehicle', title: 'Free Delivery', desc: 'Within 1 km' },
+    { icon: 'leave', title: 'FYI', desc: `Every ${this.cartS.storeSettings?.weekly_off_day} we closed.` },
   ];
 
   activeSlideIndex: number = 0;

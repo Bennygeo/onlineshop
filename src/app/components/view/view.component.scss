@@ -586,7 +586,10 @@
         .leave-banner-icon-box {
             width: 38px;
             height: 38px;
-            .material-icons { font-size: 20px; }
+
+            .material-icons {
+                font-size: 20px;
+            }
         }
 
         .leave-banner-title {
@@ -1161,10 +1164,12 @@
         transform: scale(0.95);
         opacity: 0.8;
     }
+
     50% {
         transform: scale(1.08);
         opacity: 0;
     }
+
     100% {
         transform: scale(0.95);
         opacity: 0;
@@ -1908,7 +1913,8 @@
 
                 .voice-products-grid {
                     display: grid;
-                    grid-template-columns: 1fr; /* Single column on mobile prevents any horizontal scroll */
+                    grid-template-columns: 1fr;
+                    /* Single column on mobile prevents any horizontal scroll */
                     gap: 10px;
                     width: 100%;
                     box-sizing: border-box;
@@ -1928,7 +1934,8 @@
                         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
                         box-sizing: border-box;
                         width: 100%;
-                        min-width: 0; /* Prevents child expansion beyond parent */
+                        min-width: 0;
+                        /* Prevents child expansion beyond parent */
 
                         .vp-img {
                             width: 46px;
@@ -1941,7 +1948,8 @@
 
                         .vp-info {
                             flex: 1;
-                            min-width: 0; /* Critical: allows flex item to shrink and truncate text */
+                            min-width: 0;
+                            /* Critical: allows flex item to shrink and truncate text */
                             display: flex;
                             flex-direction: column;
                             overflow: hidden;
@@ -2001,6 +2009,7 @@
         transform: scale(0.8);
         opacity: 0.8;
     }
+
     100% {
         transform: scale(1.6);
         opacity: 0;
@@ -2008,9 +2017,12 @@
 }
 
 @keyframes pulseSpin {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.06);
     }
@@ -2020,6 +2032,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -2029,6 +2042,7 @@
     from {
         transform: translateY(100%);
     }
+
     to {
         transform: translateY(0);
     }
@@ -2270,6 +2284,7 @@
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -2280,6 +2295,7 @@
         opacity: 0;
         transform: scale(0.92) translateY(12px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -2326,7 +2342,7 @@
     }
 
     .home-main-content {
-        padding: 14px 10px 80px 10px;
+        padding: 14px 10px 0px 10px;
         border-radius: 20px 20px 0 0;
         margin-top: -18px;
 

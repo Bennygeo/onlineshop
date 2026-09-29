@@ -74,11 +74,11 @@ export class AdminOrdersComponent implements OnInit {
     message: string;
     type: 'success' | 'error' | 'info';
   } = {
-    show: false,
-    title: '',
-    message: '',
-    type: 'success'
-  };
+      show: false,
+      title: '',
+      message: '',
+      type: 'success'
+    };
   toastTimeout: any = null;
 
   // Cached purchase summary list and totals (prevents Angular infinite change-detection loops)
@@ -90,12 +90,12 @@ export class AdminOrdersComponent implements OnInit {
     totalProfit: number;
     marginPercent: number;
   } = {
-    count: 0,
-    totalClientRevenue: 0,
-    totalMarketCost: 0,
-    totalProfit: 0,
-    marginPercent: 0
-  };
+      count: 0,
+      totalClientRevenue: 0,
+      totalMarketCost: 0,
+      totalProfit: 0,
+      marginPercent: 0
+    };
 
   showToast(title: string, message: string, type: 'success' | 'error' | 'info' = 'success') {
     if (this.toastTimeout) {
@@ -119,7 +119,7 @@ export class AdminOrdersComponent implements OnInit {
     }
   }
 
-  constructor(private apiS: ApiService) {}
+  constructor(private apiS: ApiService) { }
 
   ngOnInit(): void {
     this.generateNext7Days();
@@ -357,22 +357,24 @@ export class AdminOrdersComponent implements OnInit {
   // Calculate Combined Daily Purchase List & Package Breakdown with Procurement Pricing
   recalculatePurchaseSummary() {
     const currentOrders = this.filteredOrders;
-    const productMap: { [key: string]: {
-      productId: string;
-      name: string;
-      imgUrl: string;
-      baseWeight: number;
-      baseUnit: string;
-      baseDisplay: string;
-      basePrice: number;
-      baseStockPrice: number;
-      unitName: string;
-      basePackageSize: number;
-      totalWeightInBaseUnit: number;
-      totalClientSellingPrice: number;
-      packageBreakdown: { [sizeLabel: string]: number };
-      totalOrders: number;
-    }} = {};
+    const productMap: {
+      [key: string]: {
+        productId: string;
+        name: string;
+        imgUrl: string;
+        baseWeight: number;
+        baseUnit: string;
+        baseDisplay: string;
+        basePrice: number;
+        baseStockPrice: number;
+        unitName: string;
+        basePackageSize: number;
+        totalWeightInBaseUnit: number;
+        totalClientSellingPrice: number;
+        packageBreakdown: { [sizeLabel: string]: number };
+        totalOrders: number;
+      }
+    } = {};
 
     currentOrders.forEach(order => {
       const items = this.getItemsForDate(order);
@@ -453,7 +455,7 @@ export class AdminOrdersComponent implements OnInit {
     for (const key in productMap) {
       const p = productMap[key];
       const totalQtyFormatted = Math.round(p.totalWeightInBaseUnit * 100) / 100;
-      
+
       const parts: string[] = [];
       for (const size in p.packageBreakdown) {
         parts.push(`${size}(${p.packageBreakdown[size]})`);

@@ -17,6 +17,15 @@ if (strlen($cleanMobile) !== 10) {
     sendJson(['status' => 'ERROR', 'message' => 'Please enter a valid 10-digit mobile number'], 400);
 }
 
+// Play Store test account bypass
+if ($cleanMobile === '9486140936') {
+    sendJson([
+        'status' => 'SUCCESS',
+        'sessionId' => 'PLAYSTORE_TEST_SESSION',
+        'message' => 'OTP sent successfully to +91 ' . $cleanMobile
+    ]);
+}
+
 $apiKey = '6d6b4043-bdd6-11ea-9fa5-0200cd936042';
 $url = "https://2factor.in/API/V1/{$apiKey}/SMS/{$cleanMobile}/AUTOGEN/OTP1";
 

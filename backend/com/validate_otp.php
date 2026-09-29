@@ -15,8 +15,8 @@ if (strlen($cleanMobile) === 12 && substr($cleanMobile, 0, 2) === '91') {
 }
 $cleanOtp = trim((string)$otp);
 
-// 1. Dev / Mock test OTP bypass for testing (1111)
-if ($cleanOtp === '1111') {
+// 1. Play Store test account bypass
+if ($cleanMobile === '9486140936' && $cleanOtp === '111111') {
     sendJson('SUCCESS');
 }
 

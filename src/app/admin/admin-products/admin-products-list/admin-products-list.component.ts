@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
+import * as XLSX from 'xlsx';
 import { CartService } from '../../../services/cart.service';
 
 export interface CategoryOption {
@@ -83,7 +84,7 @@ export class AdminProductsListComponent implements OnInit {
     private cartS: CartService,
     private router: Router,
     private route: ActivatedRoute
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadStoreSettings();
@@ -172,7 +173,7 @@ export class AdminProductsListComponent implements OnInit {
 
   loadProducts(): void {
     this.productsLoading = true;
-    this.apiS.postApi('products/download_products_sql.php', { table_name: 'zone2_products_new_1', cat: 'all', is_admin: 1 }).subscribe({
+    this.apiS.postApi('products/download_products_sql.php', { table_name: 'products', cat: 'all', is_admin: 1 }).subscribe({
       next: (res: any) => {
         this.productsLoading = false;
         if (Array.isArray(res)) {
@@ -195,13 +196,13 @@ export class AdminProductsListComponent implements OnInit {
   filterProducts(): void {
     let list = this.products;
     if (this.selectedCategory !== 'All') {
-      list = list.filter(p => (p.cat && p.cat.toLowerCase() === this.selectedCategory.toLowerCase()) || 
-                              (p.main_category && p.main_category.toLowerCase() === this.selectedCategory.toLowerCase()));
+      list = list.filter(p => (p.cat && p.cat.toLowerCase() === this.selectedCategory.toLowerCase()) ||
+        (p.main_category && p.main_category.toLowerCase() === this.selectedCategory.toLowerCase()));
     }
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase().trim();
-      list = list.filter(p => 
-        (p.name && p.name.toLowerCase().includes(q)) || 
+      list = list.filter(p =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
         (p.tamil_name && p.tamil_name.toLowerCase().includes(q))
       );
     }
@@ -269,7 +270,7 @@ export class AdminProductsListComponent implements OnInit {
     const isUnlim = (product.is_unlimited == 1 || product.is_unlimited === true || String(product.is_unlimited) === '1') ? 1 : 0;
     const isSub = (product.subscribe_flg == 1 || product.subscribeFlg === true || String(product.subscribe_flg) === '1') ? 1 : 0;
 
-    this.editingProduct = { 
+    this.editingProduct = {
       ...product,
       cat: product.cat || product.main_category || fallbackCat,
       weight: (product.weight !== undefined && product.weight !== null) ? product.weight : 500,
@@ -393,7 +394,7 @@ export class AdminProductsListComponent implements OnInit {
     const estimatedCost = Math.round(defaultQty * currentUnitCost);
     const profitPct = product.profit_percent !== undefined && product.profit_percent !== null ? product.profit_percent : 10;
     const gstPct = product.gst_percent !== undefined && product.gst_percent !== null ? product.gst_percent : 5;
-    
+
     this.stockPurchaseForm = {
       product_id: product.id,
       product_name: product.name,
@@ -432,14 +433,14 @@ export class AdminProductsListComponent implements OnInit {
     const currentAvgCost = parseFloat(this.selectedProductForStock?.stock_price || this.selectedProductForStock?.avg_cost) || 0;
     const addedQty = parseFloat(this.stockPurchaseForm?.quantity) || 0;
     const addedCost = parseFloat(this.stockPurchaseForm?.total_cost) || 0;
-    
+
     if (currentAvgCost <= 0 || currentStock <= 0) {
       return addedQty > 0 ? Math.round(addedCost / addedQty) : 0;
     }
-    
+
     const totalQty = currentStock + addedQty;
     if (totalQty <= 0) return 0;
-    
+
     const totalCost = (currentStock * currentAvgCost) + addedCost;
     return Math.round(totalCost / totalQty);
   }
@@ -489,7 +490,7 @@ export class AdminProductsListComponent implements OnInit {
       next: (res: any) => {
         this.addStockSubmitting = false;
         alert(res?.message || `Successfully added ${this.stockPurchaseForm.quantity} ${this.stockPurchaseForm.unit_name} to inventory!`);
-        
+
         if (this.selectedProductForStock) {
           const newQty = res?.current_stock_qty !== undefined ? res.current_stock_qty : this.getCalculatedNewStock();
           const newCost = res?.weighted_avg_cost !== undefined ? res.weighted_avg_cost : this.getCalculatedNewWeightedAvg();
@@ -513,7 +514,7 @@ export class AdminProductsListComponent implements OnInit {
           }
           this.filterProducts();
         }
-        
+
         this.closeAddStockModal();
         this.loadProducts();
       },
