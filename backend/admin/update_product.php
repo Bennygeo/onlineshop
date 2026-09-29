@@ -34,6 +34,7 @@ $allow_immediate_10 = isset($data['allow_immediate_10']) ? intval($data['allow_i
 $allow_immediate_30 = isset($data['allow_immediate_30']) ? intval($data['allow_immediate_30']) : null;
 $allow_immediate_60 = isset($data['allow_immediate_60']) ? intval($data['allow_immediate_60']) : null;
 $preferred_days = isset($data['preferred_days']) ? (is_array($data['preferred_days']) ? json_encode(array_values($data['preferred_days'])) : trim($data['preferred_days'])) : null;
+$description = array_key_exists('description', $data) ? trim($data['description']) : null;
 
 if (!$pdo) {
     sendJson(['error' => 'Database connection unavailable'], 500);
@@ -61,7 +62,8 @@ foreach ($tables as $table) {
         "ALTER TABLE {$table} ADD COLUMN allow_immediate_60 INT DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN is_unlimited TINYINT(1) DEFAULT 0",
         "ALTER TABLE {$table} ADD COLUMN subscribe_flg INT DEFAULT 0",
-        "ALTER TABLE {$table} ADD COLUMN preferred_days VARCHAR(255) DEFAULT '[]'"
+        "ALTER TABLE {$table} ADD COLUMN preferred_days VARCHAR(255) DEFAULT '[]'",
+        "ALTER TABLE {$table} ADD COLUMN description TEXT DEFAULT NULL"
     ];
     foreach ($columnDefs as $sqlDef) {
         try {
@@ -101,6 +103,7 @@ foreach ($tables as $table) {
         if ($is_unlimited !== null) { $updates[] = "is_unlimited = ?"; $params[] = $is_unlimited; }
         if ($subscribe_flg !== null) { $updates[] = "subscribe_flg = ?"; $params[] = $subscribe_flg; }
         if ($preferred_days !== null) { $updates[] = "preferred_days = ?"; $params[] = $preferred_days; }
+        if ($description !== null) { $updates[] = "description = ?"; $params[] = $description; }
 
         if (!empty($updates)) {
             $sql = "UPDATE {$table} SET " . implode(", ", $updates) . " WHERE id = ?" . ($name ? " OR name = ?" : "");

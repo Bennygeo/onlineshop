@@ -56,7 +56,8 @@ export class AdminProductAddComponent implements OnInit {
     allow_immediate_30: 0,
     allow_immediate_60: 0,
     subscribe_flg: 0,
-    preferred_days: []
+    preferred_days: [],
+    description: ''
   };
 
   constructor(
@@ -177,7 +178,8 @@ export class AdminProductAddComponent implements OnInit {
       allow_immediate_30: 0,
       allow_immediate_60: 0,
       subscribe_flg: 0,
-      preferred_days: []
+      preferred_days: [],
+      description: ''
     };
   }
 

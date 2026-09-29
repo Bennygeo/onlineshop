@@ -69,6 +69,17 @@
             <input type="text" [(ngModel)]="product.sub_cat" placeholder="e.g. General, Country, Organic, Exotic" />
           </div>
 
+          <div class="form-group full-width">
+            <label>Product Description</label>
+            <textarea
+              [(ngModel)]="product.description"
+              placeholder="Brief description shown on the product detail page (origin, freshness, usage tips, etc.)"
+              rows="3"
+              style="resize: vertical; min-height: 72px;"
+            ></textarea>
+            <small class="field-hint">Optional. Helps customers understand what they're buying.</small>
+          </div>
+
           <div class="form-group">
             <label>Pack Weight / Quantity *</label>
             <input type="number" [(ngModel)]="product.weight" placeholder="e.g. 500 or 1" min="1" />

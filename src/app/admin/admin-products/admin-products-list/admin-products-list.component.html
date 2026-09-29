@@ -419,6 +419,17 @@
           <input type="text" [(ngModel)]="editingProduct.img_url" />
         </div>
 
+        <div class="form-group full-width">
+          <label>Product Description</label>
+          <textarea
+            [(ngModel)]="editingProduct.description"
+            placeholder="Brief description shown on the product detail page (origin, freshness, usage tips, etc.)"
+            rows="3"
+            style="resize: vertical; min-height: 72px; width: 100%; box-sizing: border-box;"
+          ></textarea>
+          <small class="field-hint">Optional — shown to customers on the product detail page.</small>
+        </div>
+
         <!-- Delivery Modes Configuration -->
         <div class="form-group full-width delivery-modes-section">
           <label class="section-heading">

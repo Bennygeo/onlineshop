@@ -26,7 +26,8 @@ try {
         "allow_immediate_10 INT DEFAULT 0",
         "allow_immediate_30 INT DEFAULT 0",
         "allow_immediate_60 INT DEFAULT 0",
-        "is_unlimited TINYINT(1) DEFAULT 0"
+        "is_unlimited TINYINT(1) DEFAULT 0",
+        "description TEXT DEFAULT NULL"
     ];
 
     $allTables = ['products', 'zone1_products_new_1', 'zone2_products_new_1'];
