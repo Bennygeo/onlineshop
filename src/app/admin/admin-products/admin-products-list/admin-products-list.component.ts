@@ -62,6 +62,8 @@ export class AdminProductsListComponent implements OnInit {
   weekDaysList = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   editingProduct: any = null;
+  editImageUploading: boolean = false;
+  editImageUploadError: string = '';
 
   get totalProductsCount(): number {
     return this.products?.length || 0;
@@ -287,12 +289,55 @@ export class AdminProductsListComponent implements OnInit {
       allow_immediate_60: (product.allow_immediate_60 == 1) ? 1 : 0,
       preferred_days: pDays
     };
+    this.editImageUploading = false;
+    this.editImageUploadError = '';
     this.isEditModalOpen = true;
   }
 
   closeEditModal(): void {
     this.isEditModalOpen = false;
     this.editingProduct = null;
+    this.editImageUploading = false;
+    this.editImageUploadError = '';
+  }
+
+  onEditImageFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowed.includes(file.type)) {
+      this.editImageUploadError = 'Invalid file type. Allowed: JPG, PNG, WEBP, GIF.';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.editImageUploadError = 'File too large. Maximum 5 MB.';
+      return;
+    }
+
+    this.editImageUploading = true;
+    this.editImageUploadError = '';
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    this.apiS.uploadFile('admin/upload_product_image.php', formData).subscribe({
+      next: (res: any) => {
+        this.editImageUploading = false;
+        if (res?.url && this.editingProduct) {
+          this.editingProduct.img_url = res.url;
+        } else {
+          this.editImageUploadError = res?.error || 'Upload failed.';
+        }
+        input.value = '';
+      },
+      error: (err: any) => {
+        this.editImageUploading = false;
+        this.editImageUploadError = err?.message || 'Upload failed. Please try again.';
+        input.value = '';
+      }
+    });
   }
 
   submitUpdateProduct(): void {

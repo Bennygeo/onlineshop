@@ -342,25 +342,56 @@
         </div>
       </div>
 
-      <!-- Image URL & Preset Selection -->
+      <!-- Image Upload & Preset Selection -->
       <div class="form-card">
         <div class="card-title">
           <span class="material-icons title-icon">image</span>
           <div>
             <h3>Product Image</h3>
-            <p>Custom URL or select a ready preset icon</p>
+            <p>Upload a photo or select a preset icon</p>
           </div>
         </div>
 
         <div class="card-body">
-          <div class="form-group full-width">
-            <label>Image URL / Path</label>
-            <input type="text" [(ngModel)]="product.img_url" placeholder="assets/categories/Thinkspot_veggiesIcon.png" />
+
+          <!-- Upload Drop Zone -->
+          <div class="img-upload-zone" (click)="imgFileInput.click()" [class.uploading]="imageUploading">
+            <img *ngIf="product.img_url && !imageUploading"
+                 [src]="product.img_url"
+                 alt="Product image preview"
+                 class="img-upload-preview"
+                 onerror="this.style.display='none'" />
+            <div class="img-upload-placeholder" [class.hidden]="product.img_url && !imageUploading">
+              <span class="material-icons upload-icon">cloud_upload</span>
+              <span class="upload-label">Click to upload image</span>
+              <span class="upload-hint">JPG, PNG, WEBP, GIF · Max 5 MB</span>
+            </div>
+            <div class="img-uploading-overlay" *ngIf="imageUploading">
+              <span class="material-icons spin">sync</span>
+              <span>Uploading…</span>
+            </div>
+          </div>
+          <input #imgFileInput type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                 style="display:none" (change)="onImageFileSelected($event)" />
+
+          <!-- Error message -->
+          <div class="img-upload-error" *ngIf="imageUploadError">
+            <span class="material-icons size-15">error_outline</span>
+            <span>{{ imageUploadError }}</span>
+          </div>
+
+          <!-- Manual URL override -->
+          <div class="form-group full-width" style="margin-top: 12px;">
+            <label>Or enter Image URL manually</label>
+            <input type="text" [(ngModel)]="product.img_url"
+                   placeholder="assets/categories/Thinkspot_veggiesIcon.png"
+                   (input)="imageUploadError = ''" />
           </div>
 
           <label class="sub-label">Select Standard Preset Icon:</label>
           <div class="preset-icons-grid">
-            <button type="button" *ngFor="let p of presetImages" class="preset-icon-btn" [class.active]="product.img_url === p.url" (click)="selectPresetImage(p.url)">
+            <button type="button" *ngFor="let p of presetImages" class="preset-icon-btn"
+                    [class.active]="product.img_url === p.url" (click)="selectPresetImage(p.url)">
               <img [src]="p.url" alt="{{ p.label }}" />
               <span>{{ p.label }}</span>
             </button>

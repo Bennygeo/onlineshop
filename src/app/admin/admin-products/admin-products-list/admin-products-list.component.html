@@ -415,8 +415,39 @@
         </div>
 
         <div class="form-group full-width">
-          <label>Image URL</label>
-          <input type="text" [(ngModel)]="editingProduct.img_url" />
+          <label>Product Image</label>
+
+          <!-- Upload zone -->
+          <div class="img-upload-zone" (click)="editImgFileInput.click()" [class.uploading]="editImageUploading"
+               style="cursor:pointer;">
+            <img *ngIf="editingProduct.img_url && !editImageUploading"
+                 [src]="editingProduct.img_url"
+                 alt="Product image preview"
+                 class="img-upload-preview"
+                 onerror="this.style.display='none'" />
+            <div class="img-upload-placeholder" [class.hidden]="editingProduct.img_url && !editImageUploading">
+              <span class="material-icons upload-icon">cloud_upload</span>
+              <span class="upload-label">Click to upload image</span>
+              <span class="upload-hint">JPG, PNG, WEBP, GIF · Max 5 MB</span>
+            </div>
+            <div class="img-uploading-overlay" *ngIf="editImageUploading">
+              <span class="material-icons spin">sync</span>
+              <span>Uploading…</span>
+            </div>
+          </div>
+          <input #editImgFileInput type="file" accept="image/jpeg,image/png,image/webp,image/gif"
+                 style="display:none" (change)="onEditImageFileSelected($event)" />
+
+          <!-- Error -->
+          <div class="img-upload-error" *ngIf="editImageUploadError" style="margin-top:6px;">
+            <span class="material-icons size-15">error_outline</span>
+            <span>{{ editImageUploadError }}</span>
+          </div>
+
+          <!-- Manual URL override -->
+          <label style="margin-top:10px; display:block; font-size:12px; color:#64748b;">Or enter Image URL manually</label>
+          <input type="text" [(ngModel)]="editingProduct.img_url"
+                 placeholder="assets/categories/..." (input)="editImageUploadError = ''" />
         </div>
 
         <div class="form-group full-width">

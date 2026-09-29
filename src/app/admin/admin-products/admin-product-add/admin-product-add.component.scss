@@ -789,3 +789,103 @@
 .spin {
   animation: spin 1s linear infinite;
 }
+
+/* ── Image Upload Zone (shared between add & edit) ── */
+.img-upload-zone {
+  position: relative;
+  width: 100%;
+  min-height: 140px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.2s ease, background 0.2s ease;
+
+  &:hover {
+    border-color: #2eb9ac;
+    background: #f0fdf9;
+  }
+
+  &.uploading {
+    border-color: #2eb9ac;
+    background: #f0fdf9;
+    cursor: default;
+  }
+
+  .img-upload-preview {
+    width: 100%;
+    height: 140px;
+    object-fit: contain;
+    border-radius: 10px;
+    display: block;
+  }
+
+  .img-upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 24px;
+    text-align: center;
+
+    &.hidden {
+      display: none;
+    }
+
+    .upload-icon {
+      font-size: 36px;
+      color: #94a3b8;
+    }
+
+    .upload-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .upload-hint {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+  }
+
+  .img-uploading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: rgba(248, 250, 252, 0.92);
+    font-size: 14px;
+    color: #2eb9ac;
+    font-weight: 600;
+
+    .material-icons {
+      font-size: 28px;
+    }
+  }
+}
+
+.img-upload-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #dc2626;
+
+  .material-icons {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+}

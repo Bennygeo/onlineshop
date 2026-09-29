@@ -40,6 +40,17 @@ export class ApiService {
     return this.http.post<any>(url, body, { headers }).pipe(shareReplay(), catchError(this.handleError));
   }
 
+  /** Multipart file upload — pass a pre-built FormData object */
+  uploadFile(url: string, formData: FormData, skipLoader: boolean = false): Observable<any> {
+    url = `${environment.url}${url}`;
+    let headers = new HttpHeaders();
+    if (skipLoader) {
+      headers = headers.set('X-Skip-Loader', 'true');
+    }
+    // Do NOT set Content-Type header — the browser sets it with the boundary automatically
+    return this.http.post<any>(url, formData, { headers }).pipe(catchError(this.handleError));
+  }
+
   private handleError(error: HttpErrorResponse) {
     if (error.status === 0) {
       // A client-side or network error occurred. Handle it accordingly.

@@ -19,6 +19,8 @@ export class AdminProductAddComponent implements OnInit {
   categoryOptions: CategoryOption[] = [];
   categoriesLoading: boolean = false;
   isSubmitting: boolean = false;
+  imageUploading: boolean = false;
+  imageUploadError: string = '';
 
   unitOptions: string[] = ['grams', 'kg', 'pack', 'ltr', 'ml', 'pcs'];
   weekDaysList: string[] = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -150,6 +152,48 @@ export class AdminProductAddComponent implements OnInit {
 
   selectPresetImage(url: string): void {
     this.product.img_url = url;
+    this.imageUploadError = '';
+  }
+
+  onImageFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+
+    // Client-side validation
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowed.includes(file.type)) {
+      this.imageUploadError = 'Invalid file type. Allowed: JPG, PNG, WEBP, GIF.';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      this.imageUploadError = 'File too large. Maximum 5 MB.';
+      return;
+    }
+
+    this.imageUploading = true;
+    this.imageUploadError = '';
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    this.apiS.uploadFile('admin/upload_product_image.php', formData).subscribe({
+      next: (res: any) => {
+        this.imageUploading = false;
+        if (res?.url) {
+          this.product.img_url = res.url;
+        } else {
+          this.imageUploadError = res?.error || 'Upload failed.';
+        }
+        // Reset file input
+        input.value = '';
+      },
+      error: (err: any) => {
+        this.imageUploading = false;
+        this.imageUploadError = err?.message || 'Upload failed. Please try again.';
+        input.value = '';
+      }
+    });
   }
 
   resetForm(): void {
