@@ -122,5 +122,66 @@ export class AppComponent implements OnInit {
       }
       this.isMobile = !isLargeScreen || this.utils.isMobile();
     });
+
+    this.initPeriodicHardRefresh();
+  }
+
+  /**
+   * Automatically performs a hard reload of the app/webview every 12 hours.
+   * Preserves all user session data, login tokens, and localStorage intact.
+   */
+  private initPeriodicHardRefresh(): void {
+    const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000; // 12 hours
+    const STORAGE_KEY = 'tnk_last_hard_refresh_ts';
+
+    const checkAndRefresh = () => {
+      try {
+        const now = Date.now();
+        const lastRefreshStr = localStorage.getItem(STORAGE_KEY);
+
+        if (!lastRefreshStr) {
+          localStorage.setItem(STORAGE_KEY, now.toString());
+          return;
+        }
+
+        const lastRefresh = parseInt(lastRefreshStr, 10);
+        if (isNaN(lastRefresh) || (now - lastRefresh) >= TWELVE_HOURS_MS) {
+          // Update timestamp first to prevent any reload loops
+          localStorage.setItem(STORAGE_KEY, now.toString());
+
+          // Safety check: do not interrupt active payment or checkout flow
+          const href = window.location.href;
+          if (href.includes('/cart/payment') || href.includes('razorpay') || href.includes('payment_status')) {
+            return;
+          }
+
+          // Hard refresh webview while retaining all localStorage and sessionStorage data
+          const url = new URL(window.location.href);
+          url.searchParams.set('_r', now.toString());
+          window.location.replace(url.toString());
+        }
+      } catch (e) {
+        console.warn("Periodic webview refresh error:", e);
+      }
+    };
+
+    // 1. Check immediately on app bootstrap
+    checkAndRefresh();
+
+    // 2. Check when app resumes/becomes visible (e.g. user opens app after hours in background)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        checkAndRefresh();
+      }
+    });
+
+    window.addEventListener('focus', () => {
+      checkAndRefresh();
+    });
+
+    // 3. Periodic interval check every 5 minutes while running
+    setInterval(() => {
+      checkAndRefresh();
+    }, 5 * 60 * 1000);
   }
 }

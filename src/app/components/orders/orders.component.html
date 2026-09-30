@@ -87,9 +87,18 @@
                     <!-- Delivery & Amount Hero Banner -->
                     <div class="hero-summary-bar">
                         <div class="hero-left">
-                            <div class="delivery-badge-pill" [ngClass]="getDeliveryOptionBadge(item).class">
-                                <span class="material-icons size-14">{{ getDeliveryOptionBadge(item).icon }}</span>
-                                <span>{{ getDeliveryOptionBadge(item).label }}</span>
+                            <div class="hero-badges-wrap">
+                                <!-- Immediate / Express Delivery Option Badge (if express mode) -->
+                                <div class="delivery-badge-pill" *ngIf="item.delivery_option && item.delivery_option.startsWith('IMMEDIATE_')" [ngClass]="getDeliveryOptionBadge(item).class">
+                                    <span class="material-icons size-14">{{ getDeliveryOptionBadge(item).icon }}</span>
+                                    <span>{{ getDeliveryOptionBadge(item).label }}</span>
+                                </div>
+                                <!-- Single clean Timeslot + Date pill -->
+                                <div class="timeslot-pill-badge" *ngIf="item.delivery_slot_label || item.delivery_slot" [title]="'Timeslot: ' + getDeliverySlotLabel(item)">
+                                    <span class="material-icons size-13">{{ getDeliverySlotIcon(item) }}</span>
+                                    <span *ngIf="getDeliveryDateLabel(item)" class="slot-date-prefix">{{ getDeliveryDateLabel(item) }} &bull;</span>
+                                    <span>{{ getDeliverySlotLabel(item) }}</span>
+                                </div>
                             </div>
                             <div class="hero-timing-text" *ngIf="item.delivery_option && item.delivery_option.startsWith('IMMEDIATE_')">
                                 <span class="eta-highlight">{{ getDeliveryEtaText(item) }}</span>
@@ -99,6 +108,37 @@
                         <div class="hero-right">
                             <div class="hero-total-price">₹{{ item.order_total | number }}</div>
                             <div class="hero-items-count">{{ getOrderItemsCount(item) }} {{ getOrderItemsCount(item) === 1 ? 'Item' : 'Items' }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Live Delivery Progress Stepper (Active Orders) -->
+                    <div class="order-progress-stepper" *ngIf="item.status !== 'CANCELLED' && item.status !== 'UNDELIVERED'">
+                        <div class="step-item" [class.completed]="isOrderStepCompleted(item.status, 1)" [class.active]="isOrderStepActive(item.status, 1)">
+                            <div class="step-circle">
+                                <span class="material-icons size-13">{{ isOrderStepCompleted(item.status, 2) ? 'check' : 'inventory_2' }}</span>
+                            </div>
+                            <span class="step-label">Placed</span>
+                        </div>
+                        <div class="step-line" [class.filled]="isOrderStepCompleted(item.status, 2)"></div>
+                        <div class="step-item" [class.completed]="isOrderStepCompleted(item.status, 2)" [class.active]="isOrderStepActive(item.status, 2)">
+                            <div class="step-circle">
+                                <span class="material-icons size-13">{{ isOrderStepCompleted(item.status, 3) ? 'check' : 'takeout_dining' }}</span>
+                            </div>
+                            <span class="step-label">Packed</span>
+                        </div>
+                        <div class="step-line" [class.filled]="isOrderStepCompleted(item.status, 3)"></div>
+                        <div class="step-item" [class.completed]="isOrderStepCompleted(item.status, 3)" [class.active]="isOrderStepActive(item.status, 3)">
+                            <div class="step-circle">
+                                <span class="material-icons size-13">{{ isOrderStepCompleted(item.status, 4) ? 'check' : 'local_shipping' }}</span>
+                            </div>
+                            <span class="step-label">On the Way</span>
+                        </div>
+                        <div class="step-line" [class.filled]="isOrderStepCompleted(item.status, 4)"></div>
+                        <div class="step-item" [class.completed]="isOrderStepCompleted(item.status, 4)" [class.active]="isOrderStepActive(item.status, 4)">
+                            <div class="step-circle">
+                                <span class="material-icons size-13">home</span>
+                            </div>
+                            <span class="step-label">Delivered</span>
                         </div>
                     </div>
 
@@ -112,9 +152,11 @@
                                 +{{ getOrderItemsCount(item) - 4 }} more
                             </div>
                         </div>
-                        <div class="mode-instruction-tag">
-                            <span class="material-icons size-13">{{ getDeliveryModeIcon(item.delivery_mode) }}</span>
-                            <span>{{ getDeliveryModeText(item.delivery_mode) }}</span>
+                        <div class="meta-strip-tags">
+                            <div class="mode-instruction-tag">
+                                <span class="material-icons size-13">{{ getDeliveryModeIcon(item.delivery_mode) }}</span>
+                                <span>{{ getDeliveryModeText(item.delivery_mode) }}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -136,6 +178,27 @@
                     <!-- Expanded Accordion Content -->
                     <div class="order-expanded-wrapper" *ngIf="item.expanded">
                         <div class="expanded-divider"></div>
+
+                        <!-- 0. Prominent Timeslot & Schedule Window -->
+                        <div class="delivery-slot-schedule-card">
+                            <div class="slot-header-col">
+                                <div class="slot-icon-wrapper">
+                                    <span class="material-icons size-22">{{ getDeliverySlotIcon(item) }}</span>
+                                </div>
+                                <div class="slot-info-col">
+                                    <span class="slot-title-tag">Selected Delivery Timeslot</span>
+                                    <h4 class="slot-time-highlight">{{ getDeliverySlotLabel(item) }}</h4>
+                                    <span class="slot-subtext">Scheduled for {{ (item.delivery_date ? safeDate(item.delivery_date) : safeDate(item.created_at)) | date:'EEEE, MMM d, y' }}</span>
+                                </div>
+                            </div>
+                            <div class="slot-mode-col" *ngIf="item.delivery_mode">
+                                <span class="mode-tag-label">Delivery Preference</span>
+                                <div class="mode-tag-val">
+                                    <span class="material-icons size-14">{{ getDeliveryModeIcon(item.delivery_mode) }}</span>
+                                    <span>{{ getDeliveryModeText(item.delivery_mode) }}</span>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- 1. Ordered Items List -->
                         <div class="items-section">
@@ -357,6 +420,11 @@
                                 <span>Cancelled &bull; {{ safeDate(item.created_at) | date:'MMM d, y' }}</span>
                             </div>
 
+                            <div class="timeslot-pill-badge past-slot-pill" *ngIf="item.delivery_slot_label || item.delivery_slot" [title]="'Timeslot: ' + getDeliverySlotLabel(item)">
+                                <span class="material-icons size-13">{{ getDeliverySlotIcon(item) }}</span>
+                                <span>{{ getDeliverySlotLabel(item) }}</span>
+                            </div>
+
                             <!-- Refund notice if any -->
                             <div class="refund-inline-badge" *ngIf="item.refund_amount > 0">
                                 <span class="material-icons size-12">account_balance_wallet</span>
@@ -381,9 +449,11 @@
                             </div>
                         </div>
 
-                        <div class="address-snippet-tag" *ngIf="item.address">
-                            <span class="material-icons size-12">place</span>
-                            <span class="snippet-text">{{ item.address }}</span>
+                        <div class="meta-strip-tags">
+                            <div class="address-snippet-tag" *ngIf="item.address">
+                                <span class="material-icons size-12">place</span>
+                                <span class="snippet-text">{{ item.address }}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -405,6 +475,27 @@
                     <!-- Expanded Items Breakdown -->
                     <div class="order-expanded-wrapper" *ngIf="item.expanded">
                         <div class="expanded-divider"></div>
+
+                        <!-- 0. Prominent Timeslot & Schedule Window -->
+                        <div class="delivery-slot-schedule-card past-schedule-card" *ngIf="item.delivery_slot_label || item.delivery_slot">
+                            <div class="slot-header-col">
+                                <div class="slot-icon-wrapper">
+                                    <span class="material-icons size-22">{{ getDeliverySlotIcon(item) }}</span>
+                                </div>
+                                <div class="slot-info-col">
+                                    <span class="slot-title-tag">Delivered Timeslot</span>
+                                    <h4 class="slot-time-highlight">{{ getDeliverySlotLabel(item) }}</h4>
+                                    <span class="slot-subtext">Order Placed: {{ safeDate(item.created_at) | date:'EEEE, MMM d, y' }}</span>
+                                </div>
+                            </div>
+                            <div class="slot-mode-col" *ngIf="item.delivery_mode">
+                                <span class="mode-tag-label">Delivery Preference</span>
+                                <div class="mode-tag-val">
+                                    <span class="material-icons size-14">{{ getDeliveryModeIcon(item.delivery_mode) }}</span>
+                                    <span>{{ getDeliveryModeText(item.delivery_mode) }}</span>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="items-section">
                             <div class="items-section-header">Ordered Items ({{ getOrderItemsCount(item) }})</div>

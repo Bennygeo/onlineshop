@@ -485,7 +485,50 @@
         .hero-left {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
+
+            .hero-badges-wrap {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+
+            .timeslot-pill-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 12px;
+                font-weight: 700;
+                padding: 5px 12px;
+                border-radius: 8px;
+                background: #e0f2fe;
+                color: #0369a1;
+                border: 1.5px solid #bae6fd;
+                letter-spacing: 0.1px;
+
+                .material-icons {
+                    font-size: 15px;
+                    color: #0284c7;
+                }
+
+                .slot-date-prefix {
+                    color: #0369a1;
+                    font-weight: 800;
+                }
+
+                &.past-slot-pill {
+                    background: #f1f5f9;
+                    color: #475569;
+                    border-color: #e2e8f0;
+                    font-size: 11.5px;
+                    padding: 3px 9px;
+                    .material-icons {
+                        color: #64748b;
+                        font-size: 13px;
+                    }
+                }
+            }
 
             .delivery-badge-pill {
                 display: inline-flex;
@@ -601,6 +644,87 @@
         }
     }
 
+    /* Live Delivery Progress Stepper */
+    .order-progress-stepper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: relative;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 12px 18px;
+        margin: 10px 0 14px 0;
+
+        .step-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            z-index: 2;
+
+            .step-circle {
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                background: #ffffff;
+                border: 2px solid #cbd5e1;
+                color: #94a3b8;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                transition: all 0.25s ease;
+            }
+
+            .step-label {
+                font-size: 11px;
+                font-weight: 600;
+                color: #64748b;
+                white-space: nowrap;
+            }
+
+            &.completed {
+                .step-circle {
+                    background: #10b981;
+                    border-color: #10b981;
+                    color: #ffffff;
+                    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+                }
+                .step-label {
+                    color: #065f46;
+                    font-weight: 700;
+                }
+            }
+
+            &.active {
+                .step-circle {
+                    background: #0d9488;
+                    border-color: #0d9488;
+                    color: #ffffff;
+                    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+                }
+                .step-label {
+                    color: #0f766e;
+                    font-weight: 700;
+                }
+            }
+        }
+
+        .step-line {
+            flex: 1;
+            height: 3px;
+            background: #e2e8f0;
+            margin: 0 4px 16px 4px;
+            border-radius: 2px;
+            transition: background 0.3s ease;
+
+            &.filled {
+                background: #10b981;
+            }
+        }
+    }
+
     /* Thumbnails Preview Strip */
     .preview-thumbnails-strip {
         display: flex;
@@ -643,6 +767,26 @@
                 border-radius: 8px;
                 padding: 8px 10px;
                 line-height: 1;
+            }
+        }
+
+        .meta-strip-tags {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+
+            .slot-instruction-tag {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                color: #0369a1;
+                background: #f0f9ff;
+                padding: 3px 8px;
+                border-radius: 6px;
+                border: 1px solid #e0f2fe;
             }
         }
 
@@ -773,6 +917,120 @@
             height: 1px;
             background: #e2e8f0;
             margin-bottom: 16px;
+        }
+
+        /* Prominent Timeslot & Schedule Window Card */
+        .delivery-slot-schedule-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            border: 1.5px solid #a7f3d0;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            gap: 16px;
+            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.05);
+
+            &.past-schedule-card {
+                background: #f8fafc;
+                border-color: #e2e8f0;
+                box-shadow: none;
+
+                .slot-header-col .slot-icon-wrapper {
+                    background: #f1f5f9;
+                    color: #64748b;
+                }
+                .slot-time-highlight {
+                    color: #334155;
+                }
+            }
+
+            .slot-header-col {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+
+                .slot-icon-wrapper {
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 10px;
+                    background: #d1fae5;
+                    color: #059669;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                .slot-info-col {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2px;
+
+                    .slot-title-tag {
+                        font-size: 11px;
+                        font-weight: 700;
+                        text-transform: uppercase;
+                        color: #059669;
+                        letter-spacing: 0.5px;
+                    }
+
+                    .slot-time-highlight {
+                        font-size: 15px;
+                        font-weight: 700;
+                        color: #0f172a;
+                        margin: 0;
+                        line-height: 1.3;
+                    }
+
+                    .slot-subtext {
+                        font-size: 12px;
+                        color: #64748b;
+                        font-weight: 500;
+                    }
+                }
+            }
+
+            .slot-mode-col {
+                text-align: right;
+                flex-shrink: 0;
+
+                .mode-tag-label {
+                    display: block;
+                    font-size: 10.5px;
+                    font-weight: 700;
+                    color: #64748b;
+                    text-transform: uppercase;
+                    margin-bottom: 2px;
+                }
+
+                .mode-tag-val {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #0f172a;
+                    background: #ffffff;
+                    padding: 3px 8px;
+                    border-radius: 6px;
+                    border: 1px solid #e2e8f0;
+                }
+            }
+
+            @media (max-width: 600px) {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+
+                .slot-mode-col {
+                    text-align: left;
+                    width: 100%;
+                    padding-top: 6px;
+                    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+                }
+            }
         }
 
         .items-section {

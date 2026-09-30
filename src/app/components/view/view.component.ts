@@ -193,8 +193,8 @@ export class ViewComponent implements OnInit, OnDestroy {
   groceryPerks = [
     { icon: 'bolt', title: '8-11 AM Delivery', desc: 'Fresh at doorstep' },
     { icon: 'payments', title: 'COD', desc: 'Pay at door' },
-    { icon: 'vehicle', title: 'Free Delivery', desc: 'Within 1 km' },
-    { icon: 'leave', title: 'FYI', desc: `Every ${this.cartS.storeSettings?.weekly_off_day} we closed.` },
+    { icon: 'two_wheeler', title: 'Free Delivery', desc: 'Within 1 km' },
+    { icon: 'airline_seat_flat', title: 'FYI', desc: `Every ${this.cartS.storeSettings?.weekly_off_day} we closed.` },
   ];
 
   activeSlideIndex: number = 0;
@@ -419,6 +419,13 @@ export class ViewComponent implements OnInit, OnDestroy {
 
     this.subs.add(
       this.cartS.cartUpdateEvent.subscribe(() => {
+        this.cartBarVisibilityFlg = (this.cartS.cartDetails.totalItems > 0);
+        this.syncAllProductUnits();
+      })
+    );
+
+    this.subs.add(
+      this.cartS.notifyCartEvent.subscribe(() => {
         this.cartBarVisibilityFlg = (this.cartS.cartDetails.totalItems > 0);
         this.syncAllProductUnits();
       })

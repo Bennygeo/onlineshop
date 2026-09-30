@@ -65,7 +65,7 @@ export class AdminProductAddComponent implements OnInit {
   constructor(
     private apiS: ApiService,
     private router: Router
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadCategories();

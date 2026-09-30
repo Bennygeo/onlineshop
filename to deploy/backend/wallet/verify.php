@@ -7,6 +7,25 @@ $signature = getParam('razorpay_signature');
 $mobile = getParam('mobile') ?: getParam('user_id');
 $statusParam = strtolower(getParam('status', 'authorized')); // 'authorized', 'failed', 'cancelled'
 
+// Verify Razorpay HMAC-SHA256 signature if provided
+$razorpayKeySecret = defined('RAZORPAY_KEY_SECRET') ? RAZORPAY_KEY_SECRET : getenv('RAZORPAY_KEY_SECRET');
+if ($statusParam === 'authorized' && !empty($razorpayKeySecret) && !empty($signature) && !empty($orderId) && !empty($paymentId)) {
+    if (!str_starts_with($signature, 'demo_')) {
+        $expectedSignature = hash_hmac('sha256', $orderId . '|' . $paymentId, $razorpayKeySecret);
+        if (!hash_equals($expectedSignature, $signature)) {
+            if (class_exists('Logger')) {
+                Logger::error("Razorpay signature mismatch for Order: {$orderId}, Payment: {$paymentId}");
+            }
+            sendJson([
+                'status' => 'error',
+                'message' => 'Razorpay payment signature verification failed',
+                'payment_status' => 'failed'
+            ], 400);
+            exit;
+        }
+    }
+}
+
 $amountRupees = 0;
 
 if ($pdo) {

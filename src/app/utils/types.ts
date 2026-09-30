@@ -97,6 +97,7 @@ export type Product = {
     changeInProduct?: Subject<Product>;
 
     subs_options?: SubsOptions;
+    description?: string;
 
     // Extended product details properties
     origin?: string;
@@ -445,4 +446,16 @@ export interface StoreSettings {
     enable_razorpay?: string;
     enable_cod?: string;
     [key: string]: any;
+}
+
+export interface DeliveryTimeSlot {
+    id: string;
+    label: string;
+    subLabel?: string;
+    startTime: string;
+    endTime: string;
+    maxLimit: number;
+    bookedCount: number;
+    isFull: boolean;
+    isAnytime?: boolean;
 }

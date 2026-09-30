@@ -69,7 +69,8 @@ if (!move_uploaded_file($tmpPath, $destPath)) {
 }
 
 // Return the public URL path (relative to the Angular app root)
-$publicUrl = 'assets/uploads/products/' . $filename;
+// $publicUrl = 'assets/uploads/products/' . $filename;
+$publicUrl = '/uploads/products/' . $filename;
 
 sendJson([
     'status'  => 'SUCCESS',

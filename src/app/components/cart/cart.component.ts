@@ -87,6 +87,10 @@ export class CartComponent {
     }
     if (val <= 0) {
       this.product.units = 0;
+      this.product.quantity = 0;
+    } else {
+      this.product.units = val;
+      this.product.quantity = val;
     }
     if (this.product.subscribe) {
       this.product.subs_options = {

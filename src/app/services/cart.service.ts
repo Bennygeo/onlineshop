@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, debounceTime, distinctUntilChanged, fromEvent, map, Observable, Observer, ReplaySubject, Subject, throwError, of, tap, shareReplay, catchError, finalize } from 'rxjs';
 import { DateE } from '../utils/custom-classes';
-import { AddressAction, CartAndTarget, CartDateWise, CartDetails, CartProductTable, CartType, HeroBanner, OrderInfo, OrderMainTable, Product, StoreSettings, SubProductType, Wallet, WindowSize } from '../utils/types';
+import { AddressAction, CartAndTarget, CartDateWise, CartDetails, CartProductTable, CartType, DeliveryTimeSlot, HeroBanner, OrderInfo, OrderMainTable, Product, StoreSettings, SubProductType, Wallet, WindowSize } from '../utils/types';
 import { ApiService } from './api.service';
 import { NavigationEnd, NavigationStart, Router } from '@angular/router';
 import { LoginService } from './login.service';
@@ -10,12 +10,93 @@ import { StorageService } from './storage.service';
 import { LoaderService } from './loader.service';
 import { CouponService, UserCoupon } from './coupon.service';
 
-export const STD_DELIVERY_CHARGES: number = 38;
-export const STD_DELIVERY_CHARGES_ZONE1: number = 50;
-export const STD_DELIVERY_CHARGES_ZONE2: number = 50;
+export const STD_DELIVERY_CHARGES: number = 30;
+export const IMMEDIATE_FREE_DELIVERY_THRESHOLD: number = 250;
+export const STD_DELIVERY_CHARGES_ZONE1: number = 30;
+export const STD_DELIVERY_CHARGES_ZONE2: number = 30;
 
 export const STD_GST_PERCENT: number = 5;
 export const STD_TAX_FEE: number = 0;
+
+export const DEFAULT_DELIVERY_TIME_SLOTS: DeliveryTimeSlot[] = [
+  {
+    id: 'SLOT_0800_0830',
+    label: '8:00 AM – 8:30 AM',
+    subLabel: 'Early Morning Slot',
+    startTime: '08:00',
+    endTime: '08:30',
+    maxLimit: 5,
+    bookedCount: 0,
+    isFull: false,
+    isAnytime: false
+  },
+  {
+    id: 'SLOT_0830_0900',
+    label: '8:30 AM – 9:00 AM',
+    subLabel: 'Morning Slot',
+    startTime: '08:30',
+    endTime: '09:00',
+    maxLimit: 5,
+    bookedCount: 0,
+    isFull: false,
+    isAnytime: false
+  },
+  {
+    id: 'SLOT_0900_0930',
+    label: '9:00 AM – 9:30 AM',
+    subLabel: 'Morning Slot',
+    startTime: '09:00',
+    endTime: '09:30',
+    maxLimit: 5,
+    bookedCount: 0,
+    isFull: false,
+    isAnytime: false
+  },
+  {
+    id: 'SLOT_0930_1000',
+    label: '9:30 AM – 10:00 AM',
+    subLabel: 'Mid Morning Slot',
+    startTime: '09:30',
+    endTime: '10:00',
+    maxLimit: 5,
+    bookedCount: 0,
+    isFull: false,
+    isAnytime: false
+  },
+  {
+    id: 'SLOT_1000_1030',
+    label: '10:00 AM – 10:30 AM',
+    subLabel: 'Late Morning Slot',
+    startTime: '10:00',
+    endTime: '10:30',
+    maxLimit: 5,
+    bookedCount: 0,
+    isFull: false,
+    isAnytime: false
+  },
+  {
+    id: 'SLOT_1030_1100',
+    label: '10:30 AM – 11:00 AM',
+    subLabel: 'Late Morning Slot',
+    startTime: '10:30',
+    endTime: '11:00',
+    maxLimit: 5,
+    bookedCount: 0,
+    isFull: false,
+    isAnytime: false
+  },
+  {
+    id: 'SLOT_ANYTIME',
+    label: 'Anytime Delivery',
+    subLabel: 'Delivered between 7:00 AM – 11:00 AM',
+    startTime: '07:00',
+    endTime: '11:00',
+    maxLimit: 999,
+    bookedCount: 0,
+    isFull: false,
+    isAnytime: true
+  }
+];
 
 export const DEFAULT_HERO_BANNERS: HeroBanner[] = [
   {
@@ -180,7 +261,7 @@ export class CartService {
   allProductsLoaded: boolean = false;
   loadedProductsZone: string = '';
   private productsFetchObservable$: Observable<Product[]> | null = null;
-  readonly PRODUCTS_CACHE_TTL_MS: number = 60 * 60 * 1000; // 1 hour
+  readonly PRODUCTS_CACHE_TTL_MS: number = 15 * 60 * 1000; // 15 minutes
   lastProductsFetchTime: number = 0;
   private productsRefreshIntervalId: any = null;
 
@@ -599,6 +680,98 @@ export class CartService {
     }
   }
 
+  getDeliveryModeDetails() {
+    return this.calculateOrderStandardDelivery();
+  }
+
+  // Delivery Time Slot Management (30-min intervals between 8:00 AM - 11:00 AM, Max 5 orders limit per slot + Anytime option)
+  deliveryTimeSlots: DeliveryTimeSlot[] = JSON.parse(JSON.stringify(DEFAULT_DELIVERY_TIME_SLOTS));
+  selectedDeliveryTimeSlot: DeliveryTimeSlot = this.deliveryTimeSlots.find(s => s.isAnytime) || this.deliveryTimeSlots[0];
+  deliverySlotsEvent: BehaviorSubject<DeliveryTimeSlot[]> = new BehaviorSubject<DeliveryTimeSlot[]>(this.deliveryTimeSlots);
+
+  private lastSlotFetchTime: { [date: string]: number } = {};
+  private slotFetchInProgress: { [date: string]: boolean } = {};
+  private slotFetchDebounceTimer: any = null;
+  private readonly SLOT_CACHE_TTL_MS = 60000; // 60 seconds throttle window
+
+  refreshDeliveryTimeSlots(deliveryDateStr?: string, force: boolean = false) {
+    const targetDate = deliveryDateStr || (this.deliveryDate ? `${this.deliveryDate.getFullYear()}-${String(this.deliveryDate.getMonth() + 1).padStart(2, '0')}-${String(this.deliveryDate.getDate()).padStart(2, '0')}` : '');
+    if (!targetDate) return;
+
+    const slotCountsKey = `tnkspt_slot_counts_${targetDate}`;
+    let bookedCounts: { [slotId: string]: number } = {};
+    try {
+      bookedCounts = this.storageS.getItem(slotCountsKey) || {};
+    } catch (e) {}
+
+    // Instantly apply local cache for immediate UI responsiveness
+    this.applySlotCounts(bookedCounts);
+
+    const now = Date.now();
+    const lastFetch = this.lastSlotFetchTime[targetDate] || 0;
+
+    // Skip duplicate network fetch if within cache TTL or already in flight
+    if (!force && (now - lastFetch < this.SLOT_CACHE_TTL_MS || this.slotFetchInProgress[targetDate])) {
+      return;
+    }
+
+    // Debounce rapid bursts of calls into a single network request
+    if (this.slotFetchDebounceTimer) {
+      clearTimeout(this.slotFetchDebounceTimer);
+    }
+
+    this.slotFetchDebounceTimer = setTimeout(() => {
+      if (this.slotFetchInProgress[targetDate]) return;
+      this.slotFetchInProgress[targetDate] = true;
+
+      this.apiS.getApi('orders/get_delivery_slots.php', { date: targetDate }, true).subscribe({
+        next: (res: any) => {
+          this.slotFetchInProgress[targetDate] = false;
+          this.lastSlotFetchTime[targetDate] = Date.now();
+          if (res && res.slot_counts) {
+            bookedCounts = { ...bookedCounts, ...res.slot_counts };
+            this.storageS.setItem(slotCountsKey, bookedCounts);
+            this.applySlotCounts(bookedCounts);
+          }
+        },
+        error: () => {
+          this.slotFetchInProgress[targetDate] = false;
+          this.applySlotCounts(bookedCounts);
+        }
+      });
+    }, 150);
+  }
+
+  applySlotCounts(bookedCounts: { [slotId: string]: number }) {
+    this.deliveryTimeSlots = DEFAULT_DELIVERY_TIME_SLOTS.map(slot => {
+      const booked = Number(bookedCounts[slot.id] || 0);
+      const isFull = !slot.isAnytime && (booked >= slot.maxLimit);
+      return {
+        ...slot,
+        bookedCount: booked,
+        isFull
+      };
+    });
+
+    const savedSlotId = (this.storageS.getItem("tnkspt_selected_slot")) ? this.storageS.getItem("tnkspt_selected_slot").id : 'SLOT_ANYTIME';
+    let matched = this.deliveryTimeSlots.find(s => s.id === savedSlotId && !s.isFull);
+    if (!matched) {
+      matched = this.deliveryTimeSlots.find(s => s.isAnytime) || this.deliveryTimeSlots.find(s => !s.isFull) || this.deliveryTimeSlots[0];
+    }
+    this.selectedDeliveryTimeSlot = matched;
+    this.deliverySlotsEvent.next(this.deliveryTimeSlots);
+  }
+
+  selectDeliveryTimeSlot(slot: DeliveryTimeSlot): boolean {
+    if (!slot || slot.isFull) {
+      return false;
+    }
+    this.selectedDeliveryTimeSlot = slot;
+    this.storageS.setItem("tnkspt_selected_slot", { id: slot.id, label: slot.label });
+    this.deliverySlotsEvent.next(this.deliveryTimeSlots);
+    return true;
+  }
+
   currentPage: string = "";
 
   private windowSizeSubject = new BehaviorSubject<WindowSize>({
@@ -849,6 +1022,7 @@ export class CartService {
     }
     const nextOp = DateE.getNextOperatingDeliveryDate(this.deliveryDate, this.storeSettings?.weekly_off_day);
     this.deliveryDate = new DateE(nextOp);
+    this.refreshDeliveryTimeSlots();
     this.notifyCartEvent.next();
   }
 
@@ -1177,46 +1351,79 @@ export class CartService {
       let _quantity = Math.min(val || 1, maxStock);
       if (_quantity <= 0) {
         _quantity = 0;
+        product.units = 0;
+        product.quantity = 0;
         if (pid) delete this.cartProducts[pid];
         if (product.id) delete this.cartProducts[product.id];
         return;
       }
       product["units"] = _quantity;
-      let weight = product["weight"] * _quantity;
-      //if product weight greater than or equal to 1000, then convert into kg.
-      if (product["unit_name"] == "grams" || product["unit_name"] == "g" || product["unit_name"] == "kg") {
+      product["quantity"] = _quantity;
+
+      if (!product['base_weight']) {
+        product['base_weight'] = Number(product['weight'] || 500);
+      }
+      if (!product['base_unit_name']) {
+        product['base_unit_name'] = product['unit_name'] || 'grams';
+      }
+
+      let weight = Number(product['base_weight']) * _quantity;
+      let uName = product['base_unit_name'] || 'grams';
+      if (uName === "kg") {
+        product["updated_weight"] = weight;
+        product["unit_name"] = "kg";
+      } else if (uName === "grams" || uName === "g") {
         if (weight >= 1000) {
-          weight = weight / 1000;
-          product["original_unit_name"] = "grams";
+          product["updated_weight"] = weight / 1000;
           product["unit_name"] = "kg";
-        } else if (weight < 1000 && weight > 200) {
+        } else {
+          product["updated_weight"] = weight;
           product["unit_name"] = "grams";
-          product["original_unit_name"] = "grams";
         }
-      }
-
-      if (product["unit_name"] == "ml" || product["unit_name"] == "ltr" || product["unit_name"] == "ltrs") {
+      } else if (uName === "ltr" || uName === "ltrs") {
+        product["updated_weight"] = weight;
+        product["unit_name"] = "ltr";
+      } else if (uName === "ml") {
         if (weight >= 1000) {
-          weight = weight / 1000;
-          product["original_unit_name"] = "ml";
+          product["updated_weight"] = weight / 1000;
           product["unit_name"] = "ltr";
-        } else if (weight < 1000 && weight > 200) {
+        } else {
+          product["updated_weight"] = weight;
           product["unit_name"] = "ml";
-          product["original_unit_name"] = "ltrs";
         }
+      } else {
+        product['updated_weight'] = weight;
       }
 
-      product['updated_weight'] = weight;
-
-      if (!product['unit_price'] || isNaN(Number(product['unit_price'])) || Number(product['unit_price']) <= 0) {
-        product['unit_price'] = Number(product['price'] || 0);
+      // Base unit price resolution
+      let baseUnitPrice = Number(product['unit_price']);
+      if (!baseUnitPrice || isNaN(baseUnitPrice) || baseUnitPrice <= 0) {
+        const liveMatch = this.cartLiveProducts[pid] || this.productsList.find(p => p.id === pid || p.id === product.id);
+        if (liveMatch && Number(liveMatch['unit_price'] || liveMatch['price']) > 0) {
+          baseUnitPrice = Number(liveMatch['unit_price'] || liveMatch['price']);
+        } else if (product.units > 1 && Number(product.price) > 0) {
+          baseUnitPrice = Math.round(Number(product.price) / product.units);
+        } else {
+          baseUnitPrice = Number(product.price || 0);
+        }
+        product['unit_price'] = baseUnitPrice;
       }
-      if (!product['unit_original_price']) {
-        product['unit_original_price'] = Number(product['original_price'] || product['unit_price'] || 0);
+
+      let origUnitPrice = Number(product['unit_original_price']);
+      if (!origUnitPrice || isNaN(origUnitPrice) || origUnitPrice <= 0) {
+        const liveMatch = this.cartLiveProducts[pid] || this.productsList.find(p => p.id === pid || p.id === product.id);
+        if (liveMatch && Number(liveMatch['unit_original_price'] || liveMatch['original_price']) > 0) {
+          origUnitPrice = Number(liveMatch['unit_original_price'] || liveMatch['original_price']);
+        } else if (product.units > 1 && Number(product.original_price) > 0) {
+          origUnitPrice = Math.round(Number(product.original_price) / product.units);
+        } else {
+          origUnitPrice = Number(product.original_price || baseUnitPrice);
+        }
+        product['unit_original_price'] = origUnitPrice;
       }
 
-      product["price"] = Math.round(Number(product['unit_price'] || 0) * _quantity);
-      product['original_price'] = Math.round(Number(product['unit_original_price'] || product['unit_price'] || 0) * _quantity);
+      product["price"] = Math.round(baseUnitPrice * _quantity);
+      product['original_price'] = Math.round(origUnitPrice * _quantity);
       if (product['original_price'] > product['price']) {
         product['offer_percentage'] = -Math.round(((Number(product['price']) / Number(product['original_price'])) * 100) - 100);
       } else {
@@ -1258,7 +1465,7 @@ export class CartService {
 
       for (var i = 0; i < this.productsList.length; i++) {
         if (pid && (this.productsList[i].id === pid || this.productsList[i].id === product.id)) {
-          this.productsList[i] = { ...this.productsList[i], ...product };
+          this.productsList[i] = { ...this.productsList[i], ...product, units: _quantity, quantity: _quantity };
           break;
         }
       }
@@ -1411,34 +1618,146 @@ export class CartService {
   }
 
   startHourlyProductsRefresh(): void {
+    console.log("startHourlyProductsRefresh 1");
+
     if (this.productsRefreshIntervalId) {
       clearInterval(this.productsRefreshIntervalId);
     }
-    // Check every 5 minutes if 1 hour has elapsed since last fetch
+    // Check every 15 seconds if cache TTL has elapsed, and silently refresh products in background
     this.productsRefreshIntervalId = setInterval(() => {
-      const now = Date.now();
-      if (this.lastProductsFetchTime > 0 && (now - this.lastProductsFetchTime) >= this.PRODUCTS_CACHE_TTL_MS) {
-        this.refreshProducts().subscribe();
-      }
-    }, 5 * 60 * 1000);
+      console.log("startHourlyProductsRefresh 2");
 
-    // Also auto-refresh when tab gains focus / visibility after being idle or sleeping > 1 hr
+      const now = Date.now();
+      // if (this.lastProductsFetchTime > 0 && (now - this.lastProductsFetchTime) >= this.PRODUCTS_CACHE_TTL_MS) {
+      console.log('[CartService Auto-Refresh] TTL reached, triggering silent background fetch...');
+      this.triggerSilentProductsBackgroundFetch();
+      // }
+    }, 120 * 1000);
+
+    // Also auto-refresh silently when tab gains focus / visibility after being idle or sleeping
     if (typeof document !== 'undefined' && document.addEventListener) {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
           const now = Date.now();
           if (this.lastProductsFetchTime > 0 && (now - this.lastProductsFetchTime) >= this.PRODUCTS_CACHE_TTL_MS) {
-            this.refreshProducts().subscribe();
+            console.log('[CartService Auto-Refresh] Tab active after TTL expiry, triggering silent background fetch...');
+            this.triggerSilentProductsBackgroundFetch();
           }
         }
       });
     }
   }
 
+  /**
+   * Performs an asynchronous, silent background fetch of all products without showing full-screen spinners or resetting UI state
+   */
+  triggerSilentProductsBackgroundFetch(): void {
+    const targetZone = this.loadedProductsZone || this.loginS.user?.zone || 'zone1';
+    this.apiS.postApi('products/download_products_sql.php', {
+      table_name: this.zoneTablePicker(targetZone),
+      cat: 'all'
+    }, true).subscribe({
+      next: (data: any) => {
+        this.lastProductsFetchTime = Date.now();
+        if (Array.isArray(data) && data.length > 0) {
+          this.mergeSilentProducts(data);
+          console.log('[CartService Auto-Refresh] Silent product refresh completed successfully with', data.length, 'products.');
+        }
+      },
+      error: (err) => console.warn('[CartService Auto-Refresh] Silent product refresh error:', err)
+    });
+  }
+
   refreshProducts(): Observable<Product[]> {
     this.allProductsLoaded = false;
     this.productsFetchObservable$ = null;
     return this.read_products(this.loginS.user?.zone || this.loadedProductsZone || 'zone1', 'all', true);
+  }
+
+  /**
+   * Silently updates products in memory and notifies subscribers without showing loaders or interrupting user actions.
+   */
+  handleSilentProductSync(syncEvent: any): void {
+    if (!syncEvent) return;
+
+    if (syncEvent.action === 'refresh' || !syncEvent.product) {
+      this.triggerSilentProductsBackgroundFetch();
+      return;
+    }
+
+    const updatedProd = syncEvent.product;
+    if (!updatedProd || updatedProd.id === undefined) return;
+
+    this.mergeSilentProducts([updatedProd]);
+  }
+
+  public mergeSilentProducts(incomingList: any[]): void {
+    if (!Array.isArray(incomingList) || incomingList.length === 0) return;
+
+    let cartPriceUpdated = false;
+    for (let i = 0; i < incomingList.length; i++) {
+      const incoming = incomingList[i];
+      const existingIdx = this.productsList.findIndex(p => String(p.id) === String(incoming.id) ||
+        (p.name && incoming.name && p.name.toLowerCase() === incoming.name.toLowerCase()));
+
+      if (existingIdx !== -1) {
+        const curUnits = this.cartProducts[incoming.id]?.units || this.productsList[existingIdx].units || 0;
+        const newPrice = Number(incoming.price !== undefined && incoming.price !== null ? incoming.price : (this.productsList[existingIdx].price || 0));
+        const newOrigPrice = Number(incoming.original_price !== undefined && incoming.original_price !== null ? incoming.original_price : (incoming.price || this.productsList[existingIdx].original_price || newPrice));
+
+        const updatedItem = {
+          ...this.productsList[existingIdx],
+          ...incoming,
+          price: newPrice,
+          unit_price: newPrice,
+          original_price: newOrigPrice,
+          unit_original_price: newOrigPrice,
+          units: curUnits
+        };
+
+        this.productsList[existingIdx] = updatedItem;
+
+        if (this.cartProducts[incoming.id]) {
+          this.cartProducts[incoming.id] = {
+            ...this.cartProducts[incoming.id],
+            ...updatedItem
+          };
+          this.updateProduct(this.cartProducts[incoming.id], curUnits);
+          cartPriceUpdated = true;
+        }
+      } else {
+        const itemPrice = Number(incoming.price || 0);
+        const itemOrigPrice = Number(incoming.original_price || itemPrice);
+        const newItem = {
+          ...incoming,
+          price: itemPrice,
+          unit_price: itemPrice,
+          original_price: itemOrigPrice,
+          unit_original_price: itemOrigPrice,
+          units: 0
+        };
+
+        if (this.cartProducts[incoming.id]) {
+          newItem.units = this.cartProducts[incoming.id].units;
+          this.cartProducts[incoming.id] = { ...this.cartProducts[incoming.id], ...newItem };
+          this.updateProduct(this.cartProducts[incoming.id], newItem.units);
+          cartPriceUpdated = true;
+        }
+        this.productsList.push(newItem);
+      }
+    }
+
+    if (cartPriceUpdated) {
+      this.calculateCart(this.cartProducts);
+      this.storageS.setItem("tnkspt_cart_products", this.cartProducts);
+    }
+
+    // Clone array reference so Angular template change detection detects updated product elements
+    this.productsList = [...this.productsList];
+
+    // Broadcast updated products list silently to all components
+    this.productsDownloadedEvent.next(this.productsList);
+    this.notifyCartEvent.next();
   }
 
   applyCartData(cartProducts: any, observer?: Observer<string>) {
@@ -1691,12 +2010,27 @@ export class CartService {
       }
     }
 
-    let deliveryChargeTotal = STD_DELIVERY_CHARGES;
-    if (this.cartDetails.total >= 200) {
+    // Delivery Charge Calculation Rule:
+    // 1. Next Day (Tomorrow) & Scheduled Morning Deliveries are 100% FREE (₹0).
+    // 2. Immediate Deliveries (10, 30, 60 mins): FREE for orders >= ₹250, otherwise ₹30.
+    const deliveryMode = this.getDeliveryModeDetails();
+    let deliveryChargeTotal = 0;
+
+    if (deliveryMode && deliveryMode.isImmediate) {
+      if (this.cartDetails.total >= IMMEDIATE_FREE_DELIVERY_THRESHOLD) {
+        deliveryChargeTotal = 0;
+      } else {
+        deliveryChargeTotal = STD_DELIVERY_CHARGES;
+      }
+    } else {
+      // Next day (Tomorrow / Scheduled) delivery is always free
       deliveryChargeTotal = 0;
     }
-    //Check the number of days delivery available
-    deliveryChargeTotal = Object.keys(this.cartProductsDateWise).length * deliveryChargeTotal;
+
+    // Multiply by shipment groups if immediate delivery has multiple dates
+    if (deliveryChargeTotal > 0) {
+      deliveryChargeTotal = Object.keys(this.cartProductsDateWise).length * deliveryChargeTotal;
+    }
 
     const subTotalAfterDiscount = Math.max(0, this.cartDetails.total - couponDiscount);
     const gstPercent = STD_GST_PERCENT;
@@ -1864,6 +2198,8 @@ export class CartService {
         "items_count": this.cartDetails.totalItems,
         "delivery_date": this.deliveryDate ? `${this.deliveryDate.getFullYear()}-${String(this.deliveryDate.getMonth() + 1).padStart(2, '0')}-${String(this.deliveryDate.getDate()).padStart(2, '0')}` : '',
         "delivery_option": this.selectedDeliveryOption || "NEXT_DAY_7AM",
+        "delivery_slot": this.selectedDeliveryTimeSlot?.id || 'SLOT_ANYTIME',
+        "delivery_slot_label": this.selectedDeliveryTimeSlot?.label || 'Anytime Delivery',
         "coupon": this.orderInformation.selectedCoupon?.code || ((this.loginS?.referrrarinfo?.referrer && this.loginS.referrrarinfo.referrer !== 'xxxx') ? 'WELCOME25' : ''),
         "coupon_offer": this.orderInformation.selectedCoupon?.offer || '',
         "coupon_discount": this.orderInformation.couponDiscount || 0,
@@ -1879,6 +2215,16 @@ export class CartService {
         this.orderID = undefined;
         if (this.orderInformation.selectedCoupon)
           this.updateUserCoupon(this.orderInformation.selectedCoupon);
+
+        // Increment booked slot count for target delivery date (5 orders limit tracking)
+        if (this.selectedDeliveryTimeSlot && !this.selectedDeliveryTimeSlot.isAnytime) {
+          const targetDate = this.deliveryDate ? `${this.deliveryDate.getFullYear()}-${String(this.deliveryDate.getMonth() + 1).padStart(2, '0')}-${String(this.deliveryDate.getDate()).padStart(2, '0')}` : '';
+          const slotCountsKey = `tnkspt_slot_counts_${targetDate}`;
+          const bookedCounts = this.storageS.getItem(slotCountsKey) || {};
+          bookedCounts[this.selectedDeliveryTimeSlot.id] = (Number(bookedCounts[this.selectedDeliveryTimeSlot.id]) || 0) + 1;
+          this.storageS.setItem(slotCountsKey, bookedCounts);
+          this.refreshDeliveryTimeSlots(targetDate);
+        }
 
         // Update real-time product stock levels from order deduction
         if (res && res.updated_stocks) {
@@ -1968,7 +2314,20 @@ export class CartService {
     const resetProd = (p: any) => {
       if (!p) return;
       p.units = 0;
+      p.quantity = 0;
       p.subscribe = false;
+      if (p.unit_price) {
+        p.price = Number(p.unit_price);
+      }
+      if (p.unit_original_price) {
+        p.original_price = Number(p.unit_original_price);
+      }
+      if (p.base_weight) {
+        p.updated_weight = p.base_weight;
+      }
+      if (p.base_unit_name) {
+        p.unit_name = p.base_unit_name;
+      }
       if (p.subs_options) {
         p.subs_options.units = 0;
         p.subs_options.multiDaySelected = [];
@@ -1980,6 +2339,8 @@ export class CartService {
 
     if (this.productsList && this.productsList.length > 0) {
       this.productsList.forEach(resetProd);
+      this.productsList = this.productsList.map(p => ({ ...p }));
+      this.productsDownloadedEvent.next(this.productsList);
     }
     if (this.cartProducts) {
       Object.keys(this.cartProducts).forEach(id => resetProd(this.cartProducts[id]));
@@ -2004,6 +2365,7 @@ export class CartService {
     this.storageS.removeItem("tnkspt_cart_products");
     this.calculateCart(this.cartProducts);
     this.cartUpdateEvent.next({ cart: this.cartProducts, product: undefined, unit: 0 });
+    this.notifyCartEvent.next();
   }
 
   /*

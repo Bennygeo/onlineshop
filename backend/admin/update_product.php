@@ -33,8 +33,8 @@ $allow_next_day = isset($data['allow_next_day']) ? intval($data['allow_next_day'
 $allow_immediate_10 = isset($data['allow_immediate_10']) ? intval($data['allow_immediate_10']) : null;
 $allow_immediate_30 = isset($data['allow_immediate_30']) ? intval($data['allow_immediate_30']) : null;
 $allow_immediate_60 = isset($data['allow_immediate_60']) ? intval($data['allow_immediate_60']) : null;
-$preferred_days = isset($data['preferred_days']) ? (is_array($data['preferred_days']) ? json_encode(array_values($data['preferred_days'])) : trim($data['preferred_days'])) : null;
 $description = array_key_exists('description', $data) ? trim($data['description']) : null;
+$index_num = isset($data['index_num']) ? intval($data['index_num']) : (isset($data['index']) ? intval($data['index']) : null);
 
 if (!$pdo) {
     sendJson(['error' => 'Database connection unavailable'], 500);
@@ -104,6 +104,7 @@ foreach ($tables as $table) {
         if ($subscribe_flg !== null) { $updates[] = "subscribe_flg = ?"; $params[] = $subscribe_flg; }
         if ($preferred_days !== null) { $updates[] = "preferred_days = ?"; $params[] = $preferred_days; }
         if ($description !== null) { $updates[] = "description = ?"; $params[] = $description; }
+        if ($index_num !== null) { $updates[] = "index_num = ?"; $params[] = $index_num; }
 
         if (!empty($updates)) {
             $sql = "UPDATE {$table} SET " . implode(", ", $updates) . " WHERE id = ?" . ($name ? " OR name = ?" : "");

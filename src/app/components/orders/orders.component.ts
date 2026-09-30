@@ -217,6 +217,21 @@ export class OrdersComponent implements OnInit, OnDestroy {
     }
   }
 
+  getDeliveryDateLabel(item: any): string {
+    if (!item) return '';
+    const d = item.delivery_date ? this.safeDate(item.delivery_date) : this.safeDate(item.created_at);
+    if (!d || isNaN(d.getTime())) return '';
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`;
+  }
+
   getDeliveryEtaText(item: any): string {
     const opt = String(item?.delivery_option || 'NEXT_DAY_7AM').toUpperCase();
     if (opt.startsWith('IMMEDIATE_')) {
@@ -248,6 +263,50 @@ export class OrdersComponent implements OnInit, OnDestroy {
       }
     }
     return 'Tomorrow by 7:00 AM IST';
+  }
+
+  getDeliverySlotLabel(item: any): string {
+    if (!item) return 'Anytime Delivery';
+    if (item.delivery_slot_label && item.delivery_slot_label !== 'undefined' && item.delivery_slot_label !== 'null') {
+      return item.delivery_slot_label;
+    }
+    const slotId = item.delivery_slot;
+    if (slotId === 'SLOT_6_9') return 'Morning (6:00 AM - 9:00 AM)';
+    if (slotId === 'SLOT_9_12') return 'Late Morning (9:00 AM - 12:00 PM)';
+    if (slotId === 'SLOT_12_15') return 'Afternoon (12:00 PM - 3:00 PM)';
+    if (slotId === 'SLOT_15_18') return 'Evening (3:00 PM - 6:00 PM)';
+    if (slotId === 'SLOT_18_21') return 'Night (6:00 PM - 9:00 PM)';
+    if (slotId === 'SLOT_ANYTIME') return 'Anytime Delivery';
+    return slotId || 'Anytime Delivery';
+  }
+
+  getDeliverySlotIcon(item: any): string {
+    const slotId = item?.delivery_slot || '';
+    if (slotId === 'SLOT_6_9') return 'wb_twilight';
+    if (slotId === 'SLOT_9_12') return 'wb_sunny';
+    if (slotId === 'SLOT_12_15') return 'light_mode';
+    if (slotId === 'SLOT_15_18') return 'wb_cloudy';
+    if (slotId === 'SLOT_18_21') return 'nights_stay';
+    return 'schedule';
+  }
+
+  getOrderStepIndex(status: string): number {
+    const s = String(status || '').toUpperCase();
+    switch (s) {
+      case 'PLACED': return 1;
+      case 'PACKED': return 2;
+      case 'OUT_FOR_DELIVERY': return 3;
+      case 'DELIVERED': return 4;
+      default: return 1;
+    }
+  }
+
+  isOrderStepCompleted(status: string, step: number): boolean {
+    return this.getOrderStepIndex(status) >= step;
+  }
+
+  isOrderStepActive(status: string, step: number): boolean {
+    return this.getOrderStepIndex(status) === step;
   }
 
   getOrderThumbnails(order: any): Array<{ img: string, name: string }> {

@@ -168,8 +168,10 @@
   flex: 1;
   max-width: 1920px;
   width: 100%;
+  min-width: 0;
   margin: 0 auto;
   position: relative;
+  overflow-x: hidden;
 }
 
 .admin-sidebar {
@@ -386,9 +388,13 @@
 
 .admin-content-area {
   flex: 1;
-  padding: 28px 32px;
-  overflow-y: auto;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  padding: 24px 28px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* Mobile Drawer Overlay */

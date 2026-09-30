@@ -10,7 +10,7 @@ import { CouponService, UserCoupon } from 'src/app/services/coupon.service';
 import { LoginService } from 'src/app/services/login.service';
 import { RazorpayService } from 'src/app/services/razorpay.service';
 import { StorageService } from 'src/app/services/storage.service';
-import { AddressAction, CartDateWise, CartType, OrderInfo, Product, Wallet } from 'src/app/utils/types';
+import { AddressAction, CartDateWise, CartType, DeliveryTimeSlot, OrderInfo, Product, Wallet } from 'src/app/utils/types';
 import { DateE } from 'src/app/utils/custom-classes';
 
 @Component({
@@ -519,6 +519,22 @@ export class CartListComponent implements OnInit, OnDestroy {
   setInstructionIndex(index) {
     this.selectedInstructionIndex = index;
     this.storageS.setItem("tnkspt_delivery_mode", { index: this.selectedInstructionIndex });
+  }
+
+  get deliveryTimeSlots(): DeliveryTimeSlot[] {
+    return this.cartService.deliveryTimeSlots;
+  }
+
+  get selectedDeliveryTimeSlot(): DeliveryTimeSlot {
+    return this.cartService.selectedDeliveryTimeSlot;
+  }
+
+  selectTimeSlot(slot: DeliveryTimeSlot): void {
+    if (slot.isFull) {
+      alert(`The ${slot.label} delivery time slot is full (maximum 5 orders limit reached). Please choose another slot or select Anytime Delivery.`);
+      return;
+    }
+    this.cartService.selectDeliveryTimeSlot(slot);
   }
 
   payOnlineAction() {

@@ -35,7 +35,12 @@ export class ApiService {
 
     let body = new FormData();
     for (let key in params) {
-      body.append(key, params[key]);
+      const val = params[key];
+      if (typeof val === 'object' && val !== null && !(val instanceof Blob) && !(val instanceof File)) {
+        body.append(key, JSON.stringify(val));
+      } else if (val !== undefined && val !== null) {
+        body.append(key, val);
+      }
     }
     return this.http.post<any>(url, body, { headers }).pipe(shareReplay(), catchError(this.handleError));
   }

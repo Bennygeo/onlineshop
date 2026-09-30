@@ -16,6 +16,7 @@ import { AdminUsersComponent } from './admin-users/admin-users.component';
 import { AdminBannersComponent } from './admin-banners/admin-banners.component';
 import { AdminReportsComponent } from './admin-reports/admin-reports.component';
 import { AdminZonesComponent } from './admin-zones/admin-zones.component';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { SharedModule } from '../shared/shared.module';
 
 @NgModule({
@@ -39,6 +40,7 @@ import { SharedModule } from '../shared/shared.module';
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    DragDropModule,
     AdminRoutingModule,
     SharedModule
   ]

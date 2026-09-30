@@ -6,6 +6,11 @@
       <p>View, search, edit live prices, stock levels, delivery modes, and procurement history.</p>
     </div>
     <div class="header-actions">
+      <button class="action-btn-reorder" [class.active]="isReorderMode" (click)="toggleReorderMode()"
+        title="Adjust custom display ordering">
+        <span class="material-icons">drag_indicator</span>
+        <span>{{ isReorderMode ? 'Done Reordering' : 'Reorder Products' }}</span>
+      </button>
       <button class="action-btn-secondary" (click)="goToCategories()" title="Manage product categories">
         <span class="material-icons">category</span>
         <span>Manage Categories</span>
@@ -21,6 +26,40 @@
     </div>
   </div>
 
+  <!-- Reordering Mode & Save Notification Bar -->
+  <div class="reorder-banner" *ngIf="isReorderMode || isOrderChanged">
+    <div class="reorder-banner-info">
+      <div class="reorder-icon">
+        <span class="material-icons">swap_vert</span>
+      </div>
+      <div class="reorder-text">
+        <div class="reorder-title">
+          <span>Custom Product Ordering Mode</span>
+          <span class="reorder-badge" *ngIf="isOrderChanged">Unsaved Changes</span>
+        </div>
+        <p>
+          Drag items using the <span class="grip-sample">⠿</span> grip handle, or use <strong>▲ ▼</strong> step buttons to adjust display positions. Position changes determine exact order in customer catalog.
+        </p>
+      </div>
+    </div>
+    <div class="reorder-banner-actions">
+      <button class="btn-reset-order" (click)="resetProductOrder()" [disabled]="!isOrderChanged || isSavingOrder" title="Reset to previous saved order">
+        <span class="material-icons size-16">undo</span>
+        <span>Reset</span>
+      </button>
+      <button class="btn-save-order" (click)="saveProductOrder()" [disabled]="isSavingOrder" [class.pulse-btn]="isOrderChanged" title="Save this custom ordering">
+        <span class="material-icons size-16" [class.spin]="isSavingOrder">{{ isSavingOrder ? 'sync' : 'check_circle' }}</span>
+        <span>{{ isSavingOrder ? 'Saving Order...' : 'Save Custom Order' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Order Success Notification Banner -->
+  <div class="order-success-banner" *ngIf="reorderSuccessMsg">
+    <span class="material-icons">check_circle</span>
+    <span>{{ reorderSuccessMsg }}</span>
+  </div>
+
   <!-- Weekly Leave & Store Operations Settings Card -->
   <div class="store-leave-card">
     <div class="leave-card-content">
@@ -29,7 +68,9 @@
       </div>
       <div class="leave-info-text">
         <h4>Weekly Store Leave Day</h4>
-        <p>Give yourself and your team a scheduled rest day. Selecting a day (e.g. Friday) will automatically shift orders placed the day before (Thursday) for morning delivery on Saturday (7:00 AM IST) and notify customers on the Home page.</p>
+        <p>Give yourself and your team a scheduled rest day. Selecting a day (e.g. Friday) will automatically shift
+          orders placed the day before (Thursday) for morning delivery on Saturday (7:00 AM IST) and notify customers on
+          the Home page.</p>
       </div>
     </div>
     <div class="leave-card-action">
@@ -49,7 +90,8 @@
   <div class="controls-bar">
     <div class="search-input-box">
       <span class="material-icons">search</span>
-      <input type="text" placeholder="Search product name or Tamil name..." [(ngModel)]="searchQuery" (input)="filterProducts()" />
+      <input type="text" placeholder="Search product name or Tamil name..." [(ngModel)]="searchQuery"
+        (input)="filterProducts()" />
       <button class="clear-search-btn" *ngIf="searchQuery" (click)="searchQuery = ''; filterProducts()">
         <span class="material-icons size-16">close</span>
       </button>
@@ -97,86 +139,140 @@
     <table class="admin-table">
       <thead>
         <tr>
-          <th>Product</th>
+          <th class="col-drag-header"># Order</th>
+          <th class="col-sticky-left">Product</th>
           <th>Category</th>
-          <th>Unit / Weight</th>
-          <th>Selling Price</th>
-          <th>MRP</th>
-          <th>GST</th>
-          <th>Delivery Days</th>
-          <th>Stock Qty</th>
-          <th>Avg Cost</th>
-          <th>Inventory</th>
+          <th>Unit & GST</th>
+          <th>Pricing</th>
+          <th>Delivery Schedule</th>
+          <th>Stock & Inventory</th>
           <th>Visibility</th>
           <th>Subscription</th>
-          <th>Actions</th>
+          <th class="col-sticky-right text-right">Actions</th>
         </tr>
       </thead>
-      <tbody>
-        <tr *ngFor="let p of filteredProducts">
-          <td>
-            <div class="product-cell">
-              <img [src]="p.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ p.name }}" class="prod-thumb" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
-              <div class="prod-text">
-                <span class="prod-name">{{ p.name }}</span>
-                <span class="prod-tamil" *ngIf="p.tamil_name">{{ p.tamil_name }}</span>
-                <small class="prod-id">ID: {{ p.id }}</small>
+      <tbody cdkDropList (cdkDropListDropped)="onProductDrop($event)">
+        <tr *ngFor="let p of filteredProducts; let idx = index" cdkDrag [cdkDragData]="p" [class.row-disabled]="p.disabled">
+          <!-- Order & Drag Handle Cell -->
+          <td class="col-drag-handle">
+            <div class="drag-order-cell">
+              <span class="drag-handle-grip" cdkDragHandle title="Drag to adjust position">
+                <span class="material-icons">drag_indicator</span>
+              </span>
+              <span class="order-pos-badge" (click)="moveToPositionPrompt(p, idx)" title="Click to jump to position">
+                #{{ idx + 1 }}
+              </span>
+              <div class="order-stepper-btns">
+                <button type="button" class="btn-step up" [disabled]="idx === 0" (click)="moveProduct(idx, 'up')" title="Move Up">
+                  <span class="material-icons">keyboard_arrow_up</span>
+                </button>
+                <button type="button" class="btn-step down" [disabled]="idx === filteredProducts.length - 1" (click)="moveProduct(idx, 'down')" title="Move Down">
+                  <span class="material-icons">keyboard_arrow_down</span>
+                </button>
               </div>
             </div>
           </td>
-          <td><span class="cat-badge">{{ getCategoryLabel(p.cat || p.main_category) }}</span></td>
-          <td><span class="unit-badge">{{ p.weight }} {{ p.unit_name || 'grams' }}</span></td>
-          <td><span class="price-val">₹ {{ p.price }}</span></td>
-          <td><span class="orig-price-val">₹ {{ p.original_price }}</span></td>
-          <td><span class="gst-badge">{{ p.gst_percent !== undefined ? p.gst_percent : 5 }}%</span></td>
+
+          <!-- Product Cell (Sticky Left) -->
+          <td class="col-sticky-left">
+            <div class="product-cell">
+              <img [src]="p.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ p.name }}"
+                class="prod-thumb" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+              <div class="prod-text">
+                <span class="prod-name" [title]="p.name">{{ p.name }}</span>
+                <span class="prod-tamil" *ngIf="p.tamil_name">{{ p.tamil_name }}</span>
+                <small class="prod-id">ID: #{{ p.id }}</small>
+              </div>
+            </div>
+          </td>
+
+          <!-- Category -->
+          <td>
+            <span class="cat-badge">{{ getCategoryLabel(p.cat || p.main_category) }}</span>
+          </td>
+
+          <!-- Unit & GST -->
+          <td>
+            <div class="unit-gst-stack">
+              <span class="unit-badge">{{ p.weight }} {{ p.unit_name || 'g' }}</span>
+              <span class="gst-sub">GST: {{ p.gst_percent !== undefined ? p.gst_percent : 5 }}%</span>
+            </div>
+          </td>
+
+          <!-- Pricing & MRP -->
+          <td>
+            <div class="pricing-stack">
+              <span class="price-val">₹ {{ p.price }}</span>
+              <span class="orig-price-val" *ngIf="p.original_price && p.original_price > p.price">
+                MRP: ₹{{ p.original_price }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Delivery Days -->
           <td>
             <span class="pref-days-badge" [class.custom-schedule]="getPreferredDaysBadge(p) !== 'All Days'">
               <span class="material-icons size-13">event_available</span>
               {{ getPreferredDaysBadge(p) }}
             </span>
           </td>
+
+          <!-- Stock Level & Status -->
           <td>
-            <div class="stock-qty-cell">
-              <span *ngIf="p.is_unlimited == 1 || p.is_unlimited === true" class="stock-qty-badge unlimited-stock" title="Directly purchased from market next morning">
-                <span class="material-icons size-14">all_inclusive</span>
-                <span>Market Sourced</span>
-              </span>
-              <span *ngIf="!(p.is_unlimited == 1 || p.is_unlimited === true)" class="stock-qty-badge" [class.low-stock]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0" [class.zero-stock]="(p.stock_qty || 0) <= 0">
-                <span class="material-icons size-14">{{ (p.stock_qty || 0) > 0 ? 'inventory' : 'production_quantity_limits' }}</span>
-                <span>{{ p.stock_qty !== undefined ? p.stock_qty : 0 }} {{ p.unit_name || 'kg' }}</span>
-              </span>
-            </div>
-          </td>
-          <td>
-            <div class="avg-cost-cell">
-              <span class="avg-cost-val">₹ {{ (p.stock_price !== undefined ? p.stock_price : (p.avg_cost || 0)) | number:'1.2-2' }}</span>
-              <small class="cost-unit-label">/ {{ p.unit_name || 'kg' }}</small>
-            </div>
-          </td>
-          <td>
-            <button class="status-toggle-btn" [class.in-stock]="p.in_stock !== false && p.in_stock !== 0" [class.out-of-stock]="p.in_stock === false || p.in_stock === 0" (click)="toggleStockStatus(p)" [title]="(p.in_stock !== false && p.in_stock !== 0) ? 'Click to mark Out of Stock' : 'Click to mark In Stock'">
-              <span class="material-icons size-14">{{ (p.in_stock !== false && p.in_stock !== 0) ? 'check_circle' : 'remove_shopping_cart' }}</span>
-              {{ (p.in_stock !== false && p.in_stock !== 0) ? 'In Stock' : 'Out of Stock' }}
-            </button>
-          </td>
-          <td>
-            <button class="visibility-toggle-btn" [class.visible-active]="!p.disabled" [class.visible-disabled]="p.disabled" (click)="toggleVisibilityStatus(p)" [title]="p.disabled ? 'Currently Hidden from Customers. Click to Enable' : 'Currently Visible to Customers. Click to Disable'">
-              <span class="material-icons size-14">{{ p.disabled ? 'visibility_off' : 'visibility' }}</span>
-              {{ p.disabled ? 'Hidden (Disabled)' : 'Visible (Active)' }}
-            </button>
-          </td>
-          <td>
-            <button class="sub-toggle-btn" [class.sub-enabled]="p.subscribe_flg == 1 || p.subscribeFlg === true" [class.sub-disabled]="!(p.subscribe_flg == 1 || p.subscribeFlg === true)" (click)="toggleSubscriptionStatus(p)" [title]="(p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'Subscription is Enabled. Click to Disable' : 'Subscription is Disabled. Click to Enable'">
-              <span class="material-icons size-14">{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'event_available' : 'event_busy' }}</span>
-              {{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'Sub Enabled' : 'No Subs' }}
-            </button>
-          </td>
-          <td>
-            <div class="table-actions-cell">
-              <button class="stock-action-btn" (click)="openAddStockModal(p)" title="Add Stock & Record Purchase for {{ p.name }}">
-                <span class="material-icons">add_box</span> + Stock
+            <div class="stock-status-stack">
+              <div class="stock-qty-cell">
+                <span *ngIf="p.is_unlimited == 1 || p.is_unlimited === true" class="stock-qty-badge unlimited-stock"
+                  title="Directly purchased from market next morning">
+                  <span class="material-icons size-13">all_inclusive</span>
+                  <span>Market Sourced</span>
+                </span>
+                <span *ngIf="!(p.is_unlimited == 1 || p.is_unlimited === true)" class="stock-qty-badge"
+                  [class.low-stock]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0"
+                  [class.zero-stock]="(p.stock_qty || 0) <= 0">
+                  <span class="material-icons size-13">{{ (p.stock_qty || 0) > 0 ? 'inventory' : 'production_quantity_limits' }}</span>
+                  <span>{{ p.stock_qty !== undefined ? p.stock_qty : 0 }} {{ p.unit_name || 'kg' }}</span>
+                </span>
+              </div>
+              <button class="status-toggle-btn" [class.in-stock]="p.in_stock !== false && p.in_stock !== 0"
+                [class.out-of-stock]="p.in_stock === false || p.in_stock === 0" (click)="toggleStockStatus(p)"
+                [title]="(p.in_stock !== false && p.in_stock !== 0) ? 'Click to mark Out of Stock' : 'Click to mark In Stock'">
+                <span class="material-icons size-13">{{ (p.in_stock !== false && p.in_stock !== 0) ? 'check_circle' : 'remove_shopping_cart' }}</span>
+                <span>{{ (p.in_stock !== false && p.in_stock !== 0) ? 'In Stock' : 'Out of Stock' }}</span>
               </button>
-              <button class="history-action-btn" (click)="openPurchaseHistoryModal(p)" title="View Purchase & Cost History for {{ p.name }}">
+            </div>
+          </td>
+
+          <!-- Visibility Toggle -->
+          <td>
+            <button class="visibility-toggle-btn" [class.visible-active]="!p.disabled"
+              [class.visible-disabled]="p.disabled" (click)="toggleVisibilityStatus(p)"
+              [title]="p.disabled ? 'Currently Hidden from Customers. Click to Enable' : 'Currently Visible to Customers. Click to Disable'">
+              <span class="material-icons size-13">{{ p.disabled ? 'visibility_off' : 'visibility' }}</span>
+              <span>{{ p.disabled ? 'Hidden' : 'Active' }}</span>
+            </button>
+          </td>
+
+          <!-- Subscription Toggle -->
+          <td>
+            <button class="sub-toggle-btn" [class.sub-enabled]="p.subscribe_flg == 1 || p.subscribeFlg === true"
+              [class.sub-disabled]="!(p.subscribe_flg == 1 || p.subscribeFlg === true)"
+              (click)="toggleSubscriptionStatus(p)"
+              [title]="(p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'Subscription is Enabled. Click to Disable' : 'Subscription is Disabled. Click to Enable'">
+              <span class="material-icons size-13">{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'event_available' : 'event_busy' }}</span>
+              <span>{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'Sub Enabled' : 'No Subs' }}</span>
+            </button>
+          </td>
+
+          <!-- Actions (Sticky Right) -->
+          <td class="col-sticky-right text-right">
+            <div class="table-actions-cell">
+              <button class="stock-action-btn" (click)="openAddStockModal(p)"
+                title="Add Stock & Record Purchase for {{ p.name }}">
+                <span class="material-icons">add_box</span>
+                <span>+ Stock</span>
+              </button>
+              <button class="history-action-btn" (click)="openPurchaseHistoryModal(p)"
+                title="View Purchase & Cost History for {{ p.name }}">
                 <span class="material-icons">history</span>
               </button>
               <button class="edit-btn" (click)="openEditModal(p)" title="Edit Product">
@@ -186,20 +282,40 @@
           </td>
         </tr>
         <tr *ngIf="filteredProducts.length === 0">
-          <td colspan="13" class="no-data">No products found matching criteria.</td>
+          <td colspan="10" class="no-data">No products found matching criteria.</td>
         </tr>
       </tbody>
     </table>
   </div>
 
   <!-- Mobile Products Card Feed (Optimized for Phones & Tablets < 992px) -->
-  <div class="admin-product-cards-mobile" *ngIf="!productsLoading">
-    <div class="mobile-product-card" *ngFor="let p of filteredProducts" [class.is-disabled]="p.disabled">
-      
+  <div class="admin-product-cards-mobile" cdkDropList (cdkDropListDropped)="onProductDrop($event)" *ngIf="!productsLoading">
+    <div class="mobile-product-card" *ngFor="let p of filteredProducts; let idx = index" cdkDrag [cdkDragData]="p" [class.is-disabled]="p.disabled">
+
+      <!-- Position & Drag Grip Row -->
+      <div class="card-reorder-bar">
+        <div class="mobile-drag-grip" cdkDragHandle title="Touch & drag to reorder">
+          <span class="material-icons drag-icon">drag_indicator</span>
+          <span class="mobile-pos-badge" (click)="moveToPositionPrompt(p, idx)" title="Click to jump to position">#{{ idx + 1 }}</span>
+        </div>
+        <div class="mobile-order-stepper">
+          <button type="button" class="m-step-btn" [disabled]="idx === 0" (click)="moveProduct(idx, 'up')" title="Move Up">
+            <span class="material-icons">keyboard_arrow_up</span>
+          </button>
+          <button type="button" class="m-step-btn" [disabled]="idx === filteredProducts.length - 1" (click)="moveProduct(idx, 'down')" title="Move Down">
+            <span class="material-icons">keyboard_arrow_down</span>
+          </button>
+          <button type="button" class="m-step-jump" (click)="moveToPositionPrompt(p, idx)" title="Jump to position">
+            Jump
+          </button>
+        </div>
+      </div>
+
       <!-- Top Row: Thumbnail + Product Name + Tamil Name + Category Tag -->
       <div class="card-header-row">
         <div class="thumb-wrap">
-          <img [src]="p.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ p.name }}" class="card-thumb" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+          <img [src]="p.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ p.name }}" class="card-thumb"
+            onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
         </div>
         <div class="card-title-block">
           <div class="title-cat-line">
@@ -238,16 +354,17 @@
             <span class="material-icons size-13">all_inclusive</span> Market Sourced
           </span>
           <span *ngIf="!(p.is_unlimited == 1 || p.is_unlimited === true)" class="mobile-stock-badge"
-                [class.low]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0"
-                [class.out]="(p.stock_qty || 0) <= 0">
-            <span class="material-icons size-13">{{ (p.stock_qty || 0) > 0 ? 'inventory' : 'production_quantity_limits' }}</span>
+            [class.low]="(p.stock_qty || 0) <= 5 && (p.stock_qty || 0) > 0" [class.out]="(p.stock_qty || 0) <= 0">
+            <span class="material-icons size-13">{{ (p.stock_qty || 0) > 0 ? 'inventory' : 'production_quantity_limits'
+              }}</span>
             <span>Stock: {{ p.stock_qty !== undefined ? p.stock_qty : 0 }} {{ p.unit_name || 'kg' }}</span>
           </span>
         </div>
 
         <div class="cost-indicator">
           <span class="cost-label">Avg Cost:</span>
-          <span class="cost-amount">₹ {{ (p.stock_price !== undefined ? p.stock_price : (p.avg_cost || 0)) | number:'1.2-2' }}</span>
+          <span class="cost-amount">₹ {{ (p.stock_price !== undefined ? p.stock_price : (p.avg_cost || 0)) |
+            number:'1.2-2' }}</span>
         </div>
       </div>
 
@@ -259,27 +376,25 @@
 
       <!-- Quick 1-Tap Toggle Switches -->
       <div class="card-toggles-row">
-        <button class="mobile-toggle-btn stock-toggle" 
-                [class.in-stock]="p.in_stock !== false && p.in_stock !== 0" 
-                [class.out-of-stock]="p.in_stock === false || p.in_stock === 0" 
-                (click)="toggleStockStatus(p)">
-          <span class="material-icons size-15">{{ (p.in_stock !== false && p.in_stock !== 0) ? 'check_circle' : 'remove_shopping_cart' }}</span>
+        <button class="mobile-toggle-btn stock-toggle" [class.in-stock]="p.in_stock !== false && p.in_stock !== 0"
+          [class.out-of-stock]="p.in_stock === false || p.in_stock === 0" (click)="toggleStockStatus(p)">
+          <span class="material-icons size-15">{{ (p.in_stock !== false && p.in_stock !== 0) ? 'check_circle' :
+            'remove_shopping_cart' }}</span>
           <span>{{ (p.in_stock !== false && p.in_stock !== 0) ? 'In Stock' : 'Out of Stock' }}</span>
         </button>
 
-        <button class="mobile-toggle-btn visibility-toggle" 
-                [class.visible-active]="!p.disabled" 
-                [class.visible-disabled]="p.disabled" 
-                (click)="toggleVisibilityStatus(p)">
+        <button class="mobile-toggle-btn visibility-toggle" [class.visible-active]="!p.disabled"
+          [class.visible-disabled]="p.disabled" (click)="toggleVisibilityStatus(p)">
           <span class="material-icons size-15">{{ p.disabled ? 'visibility_off' : 'visibility' }}</span>
           <span>{{ p.disabled ? 'Hidden' : 'Live' }}</span>
         </button>
 
-        <button class="mobile-toggle-btn subscription-toggle" 
-                [class.sub-active]="p.subscribe_flg == 1 || p.subscribeFlg === true" 
-                [class.sub-disabled]="!(p.subscribe_flg == 1 || p.subscribeFlg === true)" 
-                (click)="toggleSubscriptionStatus(p)">
-          <span class="material-icons size-15">{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'event_available' : 'event_busy' }}</span>
+        <button class="mobile-toggle-btn subscription-toggle"
+          [class.sub-active]="p.subscribe_flg == 1 || p.subscribeFlg === true"
+          [class.sub-disabled]="!(p.subscribe_flg == 1 || p.subscribeFlg === true)"
+          (click)="toggleSubscriptionStatus(p)">
+          <span class="material-icons size-15">{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'event_available'
+            : 'event_busy' }}</span>
           <span>{{ (p.subscribe_flg == 1 || p.subscribeFlg === true) ? 'Subs On' : 'Subs Off' }}</span>
         </button>
       </div>
@@ -381,10 +496,11 @@
           <label class="section-heading">
             <span class="material-icons">inventory_2</span> Stock Management Mode
           </label>
-          
+
           <div class="stock-radio-cards-grid">
             <label class="stock-radio-card" [class.selected]="editingProduct.is_unlimited == 1">
-              <input type="radio" name="edit_stock_mode" [value]="1" [ngModel]="editingProduct.is_unlimited" (ngModelChange)="editingProduct.is_unlimited = 1" />
+              <input type="radio" name="edit_stock_mode" [value]="1" [ngModel]="editingProduct.is_unlimited"
+                (ngModelChange)="editingProduct.is_unlimited = 1" />
               <div class="radio-card-body">
                 <div class="radio-card-title">
                   <span class="material-icons">all_inclusive</span>
@@ -395,7 +511,8 @@
             </label>
 
             <label class="stock-radio-card" [class.selected]="editingProduct.is_unlimited == 0">
-              <input type="radio" name="edit_stock_mode" [value]="0" [ngModel]="editingProduct.is_unlimited" (ngModelChange)="editingProduct.is_unlimited = 0" />
+              <input type="radio" name="edit_stock_mode" [value]="0" [ngModel]="editingProduct.is_unlimited"
+                (ngModelChange)="editingProduct.is_unlimited = 0" />
               <div class="radio-card-body">
                 <div class="radio-card-title">
                   <span class="material-icons">inventory</span>
@@ -414,51 +531,66 @@
           <small class="field-hint">Unit: {{ editingProduct.unit_name || 'kg' }}</small>
         </div>
 
-        <div class="form-group full-width">
-          <label>Product Image</label>
 
-          <!-- Upload zone -->
-          <div class="img-upload-zone" (click)="editImgFileInput.click()" [class.uploading]="editImageUploading"
-               style="cursor:pointer;">
-            <img *ngIf="editingProduct.img_url && !editImageUploading"
-                 [src]="editingProduct.img_url"
-                 alt="Product image preview"
-                 class="img-upload-preview"
-                 onerror="this.style.display='none'" />
-            <div class="img-upload-placeholder" [class.hidden]="editingProduct.img_url && !editImageUploading">
-              <span class="material-icons upload-icon">cloud_upload</span>
-              <span class="upload-label">Click to upload image</span>
-              <span class="upload-hint">JPG, PNG, WEBP, GIF · Max 5 MB</span>
-            </div>
-            <div class="img-uploading-overlay" *ngIf="editImageUploading">
-              <span class="material-icons spin">sync</span>
-              <span>Uploading…</span>
-            </div>
-          </div>
-          <input #editImgFileInput type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-                 style="display:none" (change)="onEditImageFileSelected($event)" />
-
-          <!-- Error -->
-          <div class="img-upload-error" *ngIf="editImageUploadError" style="margin-top:6px;">
-            <span class="material-icons size-15">error_outline</span>
-            <span>{{ editImageUploadError }}</span>
-          </div>
-
-          <!-- Manual URL override -->
-          <label style="margin-top:10px; display:block; font-size:12px; color:#64748b;">Or enter Image URL manually</label>
-          <input type="text" [(ngModel)]="editingProduct.img_url"
-                 placeholder="assets/categories/..." (input)="editImageUploadError = ''" />
-        </div>
 
         <div class="form-group full-width">
           <label>Product Description</label>
-          <textarea
-            [(ngModel)]="editingProduct.description"
+          <textarea [(ngModel)]="editingProduct.description"
             placeholder="Brief description shown on the product detail page (origin, freshness, usage tips, etc.)"
-            rows="3"
-            style="resize: vertical; min-height: 72px; width: 100%; box-sizing: border-box;"
-          ></textarea>
+            rows="3" style="resize: vertical; min-height: 72px; width: 100%; box-sizing: border-box;"></textarea>
           <small class="field-hint">Optional — shown to customers on the product detail page.</small>
+        </div>
+
+        <!-- ── Product Image Upload ── -->
+        <div class="form-group full-width">
+          <label class="section-heading">
+            <span class="material-icons">image</span> Product Image
+          </label>
+
+          <!-- Drop / Click Zone -->
+          <div class="img-upload-zone"
+               (click)="editImgFileInput.click()"
+               [class.uploading]="editImageUploading"
+               style="cursor:pointer;">
+            <img *ngIf="editingProduct.img_url && !editImageUploading"
+                 [src]="editingProduct.img_url"
+                 alt="Current product image"
+                 class="img-upload-preview"
+                 onerror="this.style.display='none'" />
+            <div class="img-upload-placeholder"
+                 [class.hidden]="editingProduct.img_url && !editImageUploading">
+              <span class="material-icons upload-icon">cloud_upload</span>
+              <span class="upload-label">Click to upload image</span>
+              <span class="upload-hint">JPG, PNG, WEBP, GIF &middot; Max 5 MB</span>
+            </div>
+            <div class="img-uploading-overlay" *ngIf="editImageUploading">
+              <span class="material-icons spin">sync</span>
+              <span>Uploading&hellip;</span>
+            </div>
+          </div>
+
+          <!-- Hidden file input -->
+          <input #editImgFileInput type="file"
+                 accept="image/jpeg,image/png,image/webp,image/gif"
+                 style="display:none"
+                 (change)="onEditImageFileSelected($event)" />
+
+          <!-- Upload error -->
+          <div class="img-upload-error" *ngIf="editImageUploadError" style="margin-top:8px;">
+            <span class="material-icons">error_outline</span>
+            {{ editImageUploadError }}
+          </div>
+
+          <!-- Manual URL override -->
+          <div style="margin-top:10px;">
+            <label style="font-size:12px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">
+              Or enter Image URL directly
+            </label>
+            <input type="text" [(ngModel)]="editingProduct.img_url"
+                   placeholder="assets/categories/icon.png or /uploads/products/img.jpg"
+                   (input)="editImageUploadError = ''"
+                   style="width:100%;box-sizing:border-box;" />
+          </div>
         </div>
 
         <!-- Delivery Modes Configuration -->
@@ -468,7 +600,8 @@
           </label>
           <div class="delivery-modes-grid">
             <label class="delivery-toggle-card" [class.selected]="editingProduct.allow_next_day == 1">
-              <input type="checkbox" [ngModel]="editingProduct.allow_next_day == 1" (ngModelChange)="editingProduct.allow_next_day = $event ? 1 : 0" />
+              <input type="checkbox" [ngModel]="editingProduct.allow_next_day == 1"
+                (ngModelChange)="editingProduct.allow_next_day = $event ? 1 : 0" />
               <div class="toggle-card-body">
                 <div class="toggle-card-title">
                   <span class="material-icons">wb_sunny</span> Next Morning (7 AM)
@@ -478,7 +611,8 @@
             </label>
 
             <label class="delivery-toggle-card" [class.selected]="editingProduct.allow_immediate_10 == 1">
-              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_10 == 1" (ngModelChange)="editingProduct.allow_immediate_10 = $event ? 1 : 0" />
+              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_10 == 1"
+                (ngModelChange)="editingProduct.allow_immediate_10 = $event ? 1 : 0" />
               <div class="toggle-card-body">
                 <div class="toggle-card-title">
                   <span class="material-icons">bolt</span> 10 Mins Delivery
@@ -488,7 +622,8 @@
             </label>
 
             <label class="delivery-toggle-card" [class.selected]="editingProduct.allow_immediate_30 == 1">
-              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_30 == 1" (ngModelChange)="editingProduct.allow_immediate_30 = $event ? 1 : 0" />
+              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_30 == 1"
+                (ngModelChange)="editingProduct.allow_immediate_30 = $event ? 1 : 0" />
               <div class="toggle-card-body">
                 <div class="toggle-card-title">
                   <span class="material-icons">speed</span> 30 Mins Delivery
@@ -498,7 +633,8 @@
             </label>
 
             <label class="delivery-toggle-card" [class.selected]="editingProduct.allow_immediate_60 == 1">
-              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_60 == 1" (ngModelChange)="editingProduct.allow_immediate_60 = $event ? 1 : 0" />
+              <input type="checkbox" [ngModel]="editingProduct.allow_immediate_60 == 1"
+                (ngModelChange)="editingProduct.allow_immediate_60 = $event ? 1 : 0" />
               <div class="toggle-card-body">
                 <div class="toggle-card-title">
                   <span class="material-icons">schedule</span> 60 Mins Delivery
@@ -515,14 +651,18 @@
             <label class="section-heading">
               <span class="material-icons">event_note</span> Preferred Delivery Days
             </label>
-            <button type="button" class="btn-all-days" (click)="setAllDaysPreferred(editingProduct)" [class.active]="!editingProduct.preferred_days || editingProduct.preferred_days.length === 0">
+            <button type="button" class="btn-all-days" (click)="setAllDaysPreferred(editingProduct)"
+              [class.active]="!editingProduct.preferred_days || editingProduct.preferred_days.length === 0">
               <span class="material-icons size-14">all_inclusive</span> All Days (No Restriction)
             </button>
           </div>
-          <p class="section-desc">Choose specific days of the week this item is delivered (Mon–Sun). Outside these days, orders forward-schedule to the next valid day.</p>
+          <p class="section-desc">Choose specific days of the week this item is delivered (Mon–Sun). Outside these days,
+            orders forward-schedule to the next valid day.</p>
           <div class="weekday-chips-grid">
-            <button type="button" *ngFor="let day of weekDaysList" class="weekday-chip" [class.selected]="isDaySelected(editingProduct, day)" (click)="togglePreferredDay(editingProduct, day)">
-              <span class="material-icons chip-icon">{{ isDaySelected(editingProduct, day) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            <button type="button" *ngFor="let day of weekDaysList" class="weekday-chip"
+              [class.selected]="isDaySelected(editingProduct, day)" (click)="togglePreferredDay(editingProduct, day)">
+              <span class="material-icons chip-icon">{{ isDaySelected(editingProduct, day) ? 'check_circle' :
+                'radio_button_unchecked' }}</span>
               <span class="chip-day-name">{{ day }}</span>
             </button>
           </div>
@@ -559,11 +699,14 @@
         <div class="current-stock-overview">
           <div class="overview-item">
             <span class="overview-label">Current Stock</span>
-            <span class="overview-value">{{ selectedProductForStock?.stock_qty || 0 }} {{ selectedProductForStock?.unit_name || 'kg' }}</span>
+            <span class="overview-value">{{ selectedProductForStock?.stock_qty || 0 }} {{
+              selectedProductForStock?.unit_name || 'kg' }}</span>
           </div>
           <div class="overview-item">
             <span class="overview-label">Current Weighted Avg Cost</span>
-            <span class="overview-value cost-highlight">₹ {{ (selectedProductForStock?.stock_price || selectedProductForStock?.avg_cost || 0) | number:'1.0-0' }} <small>/ {{ selectedProductForStock?.unit_name || 'kg' }}</small></span>
+            <span class="overview-value cost-highlight">₹ {{ (selectedProductForStock?.stock_price ||
+              selectedProductForStock?.avg_cost || 0) | number:'1.0-0' }} <small>/ {{ selectedProductForStock?.unit_name
+                || 'kg' }}</small></span>
           </div>
           <div class="overview-item">
             <span class="overview-label">Current Selling Price</span>
@@ -580,7 +723,8 @@
           <div class="form-group">
             <label>Purchased Quantity *</label>
             <div class="input-with-addon">
-              <input type="number" [(ngModel)]="stockPurchaseForm.quantity" placeholder="e.g. 10" min="0.1" step="any" />
+              <input type="number" [(ngModel)]="stockPurchaseForm.quantity" placeholder="e.g. 10" min="0.1"
+                step="any" />
               <span class="addon-badge">{{ stockPurchaseForm.unit_name || 'kg' }}</span>
             </div>
           </div>
@@ -589,7 +733,8 @@
             <label>Total Batch Purchase Cost (₹) *</label>
             <div class="input-with-addon">
               <span class="addon-prefix">₹</span>
-              <input type="number" [(ngModel)]="stockPurchaseForm.total_cost" placeholder="e.g. 500" min="0" step="any" />
+              <input type="number" [(ngModel)]="stockPurchaseForm.total_cost" placeholder="e.g. 500" min="0"
+                step="any" />
             </div>
             <small class="field-hint" *ngIf="getCalculatedUnitCost() > 0">
               Unit Cost: <strong>₹ {{ getCalculatedUnitCost() }}</strong> / {{ stockPurchaseForm.unit_name }}
@@ -599,7 +744,8 @@
           <div class="form-group">
             <label>Profit Margin (%)</label>
             <div class="input-with-addon">
-              <input type="number" [(ngModel)]="stockPurchaseForm.profit_percent" placeholder="e.g. 10" min="0" step="0.5" />
+              <input type="number" [(ngModel)]="stockPurchaseForm.profit_percent" placeholder="e.g. 10" min="0"
+                step="0.5" />
               <span class="addon-badge">%</span>
             </div>
           </div>
@@ -607,14 +753,16 @@
           <div class="form-group">
             <label>GST Rate (%)</label>
             <div class="input-with-addon">
-              <input type="number" [(ngModel)]="stockPurchaseForm.gst_percent" placeholder="e.g. 5" min="0" step="0.5" />
+              <input type="number" [(ngModel)]="stockPurchaseForm.gst_percent" placeholder="e.g. 5" min="0"
+                step="0.5" />
               <span class="addon-badge">%</span>
             </div>
           </div>
 
           <div class="form-group">
             <label>Vendor / Supplier Name</label>
-            <input type="text" [(ngModel)]="stockPurchaseForm.vendor_name" placeholder="e.g. Koyambedu Mandi, Local Farm" />
+            <input type="text" [(ngModel)]="stockPurchaseForm.vendor_name"
+              placeholder="e.g. Koyambedu Mandi, Local Farm" />
           </div>
 
           <div class="form-group">
@@ -624,7 +772,8 @@
 
           <div class="form-group full-width">
             <label>Notes / Batch Info</label>
-            <input type="text" [(ngModel)]="stockPurchaseForm.notes" placeholder="e.g. Grade A fresh lot, invoice #1042" />
+            <input type="text" [(ngModel)]="stockPurchaseForm.notes"
+              placeholder="e.g. Grade A fresh lot, invoice #1042" />
           </div>
         </div>
 
@@ -642,7 +791,8 @@
             <span class="step-op">+</span>
             <div class="step-item">
               <span class="step-lbl">Profit ({{ stockPurchaseForm.profit_percent || 0 }}%)</span>
-              <span class="step-val text-profit">+ ₹ {{ (getCalculatedBaseWithProfit() - getCalculatedNewWeightedAvg()) | number:'1.0-0' }}</span>
+              <span class="step-val text-profit">+ ₹ {{ (getCalculatedBaseWithProfit() - getCalculatedNewWeightedAvg())
+                | number:'1.0-0' }}</span>
             </div>
             <span class="step-op">+</span>
             <div class="step-item">
@@ -693,7 +843,8 @@
             <span class="stat-title">Purchase Batches</span>
           </div>
           <div class="stat-card">
-            <span class="stat-num">{{ getHistorySummary().totalQty }} {{ selectedProductForHistory?.unit_name || 'kg' }}</span>
+            <span class="stat-num">{{ getHistorySummary().totalQty }} {{ selectedProductForHistory?.unit_name || 'kg'
+              }}</span>
             <span class="stat-title">Total Stock Inward</span>
           </div>
           <div class="stat-card">
@@ -728,7 +879,8 @@
                 <td><span class="history-date">{{ item.purchase_date | date:'dd MMM yyyy, hh:mm a' }}</span></td>
                 <td><span class="history-qty-badge">+ {{ item.quantity }} {{ item.unit_name || 'kg' }}</span></td>
                 <td><span class="history-cost">₹ {{ item.total_cost | number:'1.2-2' }}</span></td>
-                <td><span class="history-unit-cost">₹ {{ item.cost_per_unit | number:'1.2-2' }} / {{ item.unit_name || 'kg' }}</span></td>
+                <td><span class="history-unit-cost">₹ {{ item.cost_per_unit | number:'1.2-2' }} / {{ item.unit_name ||
+                    'kg' }}</span></td>
                 <td><span class="history-vendor">{{ item.vendor_name || '—' }}</span></td>
                 <td><span class="history-notes">{{ item.notes || '—' }}</span></td>
               </tr>
@@ -739,7 +891,8 @@
         <div class="history-empty-state" *ngIf="!purchaseHistoryLoading && purchaseHistory.length === 0">
           <span class="material-icons">inventory</span>
           <h4>No Purchase History Recorded Yet</h4>
-          <p>No previous stock purchases were logged for this product. Use the "+ Add Stock" button to record your first inventory purchase.</p>
+          <p>No previous stock purchases were logged for this product. Use the "+ Add Stock" button to record your first
+            inventory purchase.</p>
         </div>
       </div>
 

@@ -80,6 +80,18 @@ if (!defined('GEMINI_API_KEY')) {
     define('GEMINI_API_KEY', getenv('GEMINI_API_KEY') ?: '');
 }
 
+// Razorpay Live Configuration
+if (!defined('RAZORPAY_KEY_ID')) {
+    define('RAZORPAY_KEY_ID', getenv('RAZORPAY_KEY_ID') ?: 'rzp_live_TiEgDp750m6kGt');
+}
+if (!defined('RAZORPAY_KEY_SECRET')) {
+    define('RAZORPAY_KEY_SECRET', getenv('RAZORPAY_KEY_SECRET') ?: '69gu00Kt8WH9uc7UmzDAY2MW');
+}
+if (!defined('RAZORPAY_WEBHOOK_SECRET')) {
+    define('RAZORPAY_WEBHOOK_SECRET', getenv('RAZORPAY_WEBHOOK_SECRET') ?: 'DF8MWWC7_VzmnV9');
+}
+
+
 try {
     if ($isLocal) {
         $host   = 'localhost';
@@ -493,6 +505,8 @@ function ensureSchemaColumns($pdo) {
             "delivery_option VARCHAR(50) DEFAULT 'next_day'",
             "delivery_expected_at VARCHAR(100) DEFAULT ''",
             "delivery_cutoff_ist VARCHAR(100) DEFAULT ''",
+            "delivery_slot VARCHAR(50) DEFAULT 'SLOT_ANYTIME'",
+            "delivery_slot_label VARCHAR(100) DEFAULT 'Anytime Delivery'",
             "order_source VARCHAR(50) DEFAULT 'CLIENT_WEB'",
             "created_by VARCHAR(100) DEFAULT NULL",
             "delivered_at DATETIME NULL",

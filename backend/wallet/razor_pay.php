@@ -64,7 +64,7 @@ if ($pdo) {
     }
 }
 
-$testKey = $razorpayKeyId ?: 'rzp_test_1DP5mmOlF5G5ag';
+$testKey = $razorpayKeyId ?: 'rzp_live_TiEgDp750m6kGt';
 
 sendJson([
     'key' => $testKey,

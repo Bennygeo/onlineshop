@@ -3,6 +3,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../../services/api.service';
 import * as XLSX from 'xlsx';
 import { CartService } from '../../../services/cart.service';
+import { CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
 
 export interface CategoryOption {
   id?: number;
@@ -22,6 +23,13 @@ export class AdminProductsListComponent implements OnInit {
   filteredProducts: any[] = [];
   searchQuery: string = '';
   selectedCategory: string = 'All';
+
+  // Custom Product Ordering / Drag and Drop state
+  isReorderMode: boolean = false;
+  isOrderChanged: boolean = false;
+  isSavingOrder: boolean = false;
+  reorderSuccessMsg: string = '';
+  originalOrderBackup: any[] = [];
 
   // Standard Unit Options
   unitOptions: string[] = ['grams', 'kg', 'pack', 'ltr', 'ml', 'pcs'];
@@ -180,6 +188,7 @@ export class AdminProductsListComponent implements OnInit {
         this.productsLoading = false;
         if (Array.isArray(res)) {
           this.products = res;
+          this.products.sort((a, b) => (Number(a.index_num || a.index || 99999)) - (Number(b.index_num || b.index || 99999)));
           this.filterProducts();
         }
       },
@@ -208,7 +217,115 @@ export class AdminProductsListComponent implements OnInit {
         (p.tamil_name && p.tamil_name.toLowerCase().includes(q))
       );
     }
-    this.filteredProducts = list;
+    this.filteredProducts = [...list];
+    if (this.isReorderMode && this.originalOrderBackup.length === 0) {
+      this.originalOrderBackup = JSON.parse(JSON.stringify(this.filteredProducts));
+    }
+  }
+
+  // ── Drag & Drop / Reordering Methods ──
+  toggleReorderMode(): void {
+    this.isReorderMode = !this.isReorderMode;
+    if (this.isReorderMode) {
+      this.originalOrderBackup = JSON.parse(JSON.stringify(this.filteredProducts));
+    } else {
+      if (this.isOrderChanged) {
+        if (confirm('You have unsaved product ordering changes. Do you want to discard them?')) {
+          this.resetProductOrder();
+        }
+      }
+    }
+  }
+
+  onProductDrop(event: CdkDragDrop<any[]>): void {
+    if (event.previousIndex === event.currentIndex) return;
+    moveItemInArray(this.filteredProducts, event.previousIndex, event.currentIndex);
+    this.updateSequentialIndexes();
+    this.isOrderChanged = true;
+  }
+
+  moveProduct(index: number, direction: 'up' | 'down'): void {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= this.filteredProducts.length) return;
+    moveItemInArray(this.filteredProducts, index, targetIndex);
+    this.updateSequentialIndexes();
+    this.isOrderChanged = true;
+  }
+
+  moveToPositionPrompt(product: any, currentIndex: number): void {
+    const currentPos = currentIndex + 1;
+    const input = prompt(`Enter new display position for "${product.name}" (1 to ${this.filteredProducts.length}):`, currentPos.toString());
+    if (!input) return;
+    const targetPos = parseInt(input.trim(), 10);
+    if (isNaN(targetPos) || targetPos < 1 || targetPos > this.filteredProducts.length || targetPos === currentPos) {
+      return;
+    }
+    const targetIndex = targetPos - 1;
+    moveItemInArray(this.filteredProducts, currentIndex, targetIndex);
+    this.updateSequentialIndexes();
+    this.isOrderChanged = true;
+  }
+
+  updateSequentialIndexes(): void {
+    this.filteredProducts.forEach((p, idx) => {
+      p.index_num = idx + 1;
+      p.index = idx + 1;
+    });
+  }
+
+  resetProductOrder(): void {
+    if (this.originalOrderBackup && this.originalOrderBackup.length > 0) {
+      this.filteredProducts = JSON.parse(JSON.stringify(this.originalOrderBackup));
+      this.isOrderChanged = false;
+    } else {
+      this.loadProducts();
+      this.isOrderChanged = false;
+    }
+  }
+
+  saveProductOrder(): void {
+    if (this.filteredProducts.length === 0) return;
+    this.isSavingOrder = true;
+    this.reorderSuccessMsg = '';
+
+    const orderPayload = this.filteredProducts.map((p, idx) => ({
+      id: p.id,
+      index_num: idx + 1
+    }));
+
+    this.apiS.postApi('admin/update_product_order.php', {
+      orders: JSON.stringify(orderPayload),
+      data: JSON.stringify(orderPayload)
+    }).subscribe({
+      next: (res: any) => {
+        this.isSavingOrder = false;
+        this.isOrderChanged = false;
+        this.originalOrderBackup = JSON.parse(JSON.stringify(this.filteredProducts));
+        this.reorderSuccessMsg = res?.message || 'Product ordering saved successfully!';
+        setTimeout(() => {
+          this.reorderSuccessMsg = '';
+        }, 4000);
+        this.syncProductsOrderWithFiltered();
+      },
+      error: (err: any) => {
+        this.isSavingOrder = false;
+        alert('Failed to save product ordering: ' + (err?.error?.error || err?.message || 'Server error'));
+      }
+    });
+  }
+
+  syncProductsOrderWithFiltered(): void {
+    const orderMap = new Map<string, number>();
+    this.filteredProducts.forEach((p, idx) => {
+      orderMap.set(p.id, idx + 1);
+    });
+    this.products.forEach(p => {
+      if (orderMap.has(p.id)) {
+        p.index_num = orderMap.get(p.id);
+        p.index = orderMap.get(p.id);
+      }
+    });
+    this.products.sort((a, b) => (Number(a.index_num || 99999)) - (Number(b.index_num || 99999)));
   }
 
   // Preferred days helper methods

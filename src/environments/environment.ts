@@ -6,6 +6,9 @@ export const environment = {
   production: false,
   url: "http://localhost:8000/",
 
+  // Razorpay Config
+  razorpayKey: "rzp_live_TiEgDp750m6kGt",
+
   //firebase config
   apiKey: "AIzaSyAtKyPbKrEfRlFLGYFJIDktXXQn1qTYjQw",
   authDomain: "thinkspot-5cd95.firebaseapp.com",

@@ -24,6 +24,8 @@ try {
         "ALTER TABLE orders ADD COLUMN delivery_option VARCHAR(50) DEFAULT 'next_day'",
         "ALTER TABLE orders ADD COLUMN delivery_expected_at VARCHAR(100) DEFAULT ''",
         "ALTER TABLE orders ADD COLUMN delivery_cutoff_ist VARCHAR(100) DEFAULT ''",
+        "ALTER TABLE orders ADD COLUMN delivery_slot VARCHAR(50) DEFAULT 'SLOT_ANYTIME'",
+        "ALTER TABLE orders ADD COLUMN delivery_slot_label VARCHAR(100) DEFAULT 'Anytime Delivery'",
         "ALTER TABLE orders ADD COLUMN referral_code VARCHAR(50) DEFAULT NULL",
         "ALTER TABLE orders ADD COLUMN referred_by VARCHAR(100) DEFAULT NULL",
         "ALTER TABLE users ADD COLUMN referred_by VARCHAR(50) DEFAULT NULL",
@@ -50,8 +52,10 @@ try {
             SELECT o.order_id, o.mobile, o.address_json, o.total_amount, o.payment_type, 
                    COALESCE(o.order_source, 'CLIENT_WEB') AS order_source, 
                    o.created_by, o.status, o.delivery_date, o.delivery_inst, o.delivery_mode, 
-                   o.delivery_option, o.delivery_expected_at, o.delivery_cutoff_ist, o.created_at, 
-                   o.delivered_at, o.undelivered_reason, o.refund_amount, o.refund_notes, o.assigned_to,
+                   o.delivery_option, o.delivery_expected_at, o.delivery_cutoff_ist, 
+                   COALESCE(o.delivery_slot, 'SLOT_ANYTIME') AS delivery_slot,
+                   COALESCE(o.delivery_slot_label, 'Anytime Delivery') AS delivery_slot_label,
+                   o.created_at, o.delivered_at, o.undelivered_reason, o.refund_amount, o.refund_notes, o.assigned_to,
                    COALESCE(o.coupon, '') AS coupon,
                    COALESCE(o.coupon_discount, 0.00) AS coupon_discount,
                    COALESCE(o.referral_code, u.referred_by, '') AS referral_code,
@@ -100,6 +104,8 @@ try {
         $ord['coupon_discount'] = round((float)($ord['coupon_discount'] ?? 0));
         $ord['referral_code'] = $ord['referral_code'] ?? '';
         $ord['referred_by'] = $ord['referred_by'] ?? '';
+        $ord['delivery_slot'] = $ord['delivery_slot'] ?? 'SLOT_ANYTIME';
+        $ord['delivery_slot_label'] = $ord['delivery_slot_label'] ?? 'Anytime Delivery';
     }
     
     sendJson($orders);

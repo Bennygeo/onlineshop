@@ -219,6 +219,8 @@ $alterCols = [
     "ALTER TABLE orders ADD COLUMN delivery_option VARCHAR(50) DEFAULT 'NEXT_DAY_7AM'",
     "ALTER TABLE orders ADD COLUMN delivery_expected_at DATETIME DEFAULT NULL",
     "ALTER TABLE orders ADD COLUMN delivery_cutoff_ist VARCHAR(50) DEFAULT '12:00 Midnight IST'",
+    "ALTER TABLE orders ADD COLUMN delivery_slot VARCHAR(50) DEFAULT 'SLOT_ANYTIME'",
+    "ALTER TABLE orders ADD COLUMN delivery_slot_label VARCHAR(100) DEFAULT 'Anytime Delivery'",
     "ALTER TABLE orders ADD COLUMN address_json TEXT DEFAULT NULL",
     "ALTER TABLE order_items ADD COLUMN product_name VARCHAR(255) DEFAULT ''",
     "ALTER TABLE order_items ADD COLUMN subscriptionType VARCHAR(50) DEFAULT 'none'",
@@ -626,6 +628,9 @@ try {
             $grpExpectedAt = $delivery_expected_at ?: ($grpDate . ' 07:00:00');
         }
 
+        $delivery_slot = isset($details['delivery_slot']) ? trim($details['delivery_slot']) : 'SLOT_ANYTIME';
+        $delivery_slot_label = isset($details['delivery_slot_label']) ? trim($details['delivery_slot_label']) : 'Anytime Delivery';
+
         if ($groupIndex === 0 && $existing && $existing['status'] === 'CART') {
             $stmtUpd = $pdo->prepare("
                 UPDATE orders 
@@ -633,6 +638,7 @@ try {
                     order_source = ?, created_by = ?,
                     status = 'PLACED', delivery_date = ?, delivery_inst = ?, delivery_mode = ?, 
                     delivery_option = ?, delivery_expected_at = ?, delivery_cutoff_ist = ?,
+                    delivery_slot = ?, delivery_slot_label = ?,
                     gst_amount = ?, cgst = ?, sgst = ?, gst_percent = ?,
                     coupon = ?, coupon_discount = ?, referral_code = ?, referred_by = ?
                 WHERE order_id = ?
@@ -642,20 +648,22 @@ try {
                 $order_source, $created_by,
                 $grpDate, $delivery_inst, $delivery_mode, 
                 $delivery_option, $grpExpectedAt, $delivery_cutoff_ist,
+                $delivery_slot, $delivery_slot_label,
                 $gst_amount, $cgst, $sgst, $gst_percent,
                 $coupon, $coupon_discount, $referral_code, $referred_by, $currOrderId
             ]);
         } else {
             $stmtIns = $pdo->prepare("
                 INSERT INTO orders 
-                (order_id, mobile, address_json, total_amount, payment_type, order_source, created_by, status, delivery_date, delivery_inst, delivery_mode, delivery_option, delivery_expected_at, delivery_cutoff_ist, gst_amount, cgst, sgst, gst_percent, coupon, coupon_discount, referral_code, referred_by) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'PLACED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (order_id, mobile, address_json, total_amount, payment_type, order_source, created_by, status, delivery_date, delivery_inst, delivery_mode, delivery_option, delivery_expected_at, delivery_cutoff_ist, delivery_slot, delivery_slot_label, gst_amount, cgst, sgst, gst_percent, coupon, coupon_discount, referral_code, referred_by) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'PLACED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmtIns->execute([
                 $currOrderId, $mobile, $address_json, $grpTotal, $payment_type, 
                 $order_source, $created_by,
                 $grpDate, $delivery_inst, $delivery_mode, 
                 $delivery_option, $grpExpectedAt, $delivery_cutoff_ist,
+                $delivery_slot, $delivery_slot_label,
                 $gst_amount, $cgst, $sgst, $gst_percent,
                 $coupon, $coupon_discount, $referral_code, $referred_by
             ]);

@@ -1,397 +1,501 @@
 <div class="add-product-page">
-  <!-- Top Navigation & Header -->
-  <div class="add-header-row">
-    <div class="header-left">
-      <button class="back-link-btn" (click)="goBack()">
-        <span class="material-icons">arrow_back</span>
-        <span>Back to Catalog</span>
-      </button>
-      <h2>Add New Product</h2>
-      <p>Configure complete product details, live pricing, delivery slots, and inventory settings.</p>
-    </div>
 
-    <div class="header-actions">
-      <button type="button" class="btn-reset" (click)="resetForm()" [disabled]="isSubmitting">
+  <!-- ── Page Header ── -->
+  <div class="page-header">
+    <div class="page-header__left">
+      <button class="back-btn" (click)="goBack()">
+        <span class="material-icons">arrow_back_ios</span>
+        <span>Products</span>
+      </button>
+      <div class="page-header__title-group">
+        <h1 class="page-header__title">Add New Product</h1>
+        <p class="page-header__subtitle">Configure product details, pricing, inventory &amp; delivery settings</p>
+      </div>
+    </div>
+    <div class="page-header__actions">
+      <button type="button" class="action-btn action-btn--ghost" (click)="resetForm()" [disabled]="isSubmitting">
         <span class="material-icons">restart_alt</span>
-        <span>Reset Form</span>
+        <span>Reset</span>
       </button>
-      <button type="button" class="btn-create-another" (click)="submitProduct(true)" [disabled]="isSubmitting">
+      <button type="button" class="action-btn action-btn--outline" (click)="submitProduct(true)" [disabled]="isSubmitting">
         <span class="material-icons">add_box</span>
-        <span>Save & Add Another</span>
+        <span>Save &amp; Add Another</span>
       </button>
-      <button type="button" class="btn-submit" (click)="submitProduct(false)" [disabled]="isSubmitting">
+      <button type="button" class="action-btn action-btn--primary" (click)="submitProduct(false)" [disabled]="isSubmitting">
         <span class="material-icons" *ngIf="!isSubmitting">check_circle</span>
         <span class="material-icons spin" *ngIf="isSubmitting">sync</span>
-        <span>{{ isSubmitting ? 'Saving...' : 'Add Product to Store' }}</span>
+        <span>{{ isSubmitting ? 'Saving...' : 'Add to Store' }}</span>
       </button>
     </div>
   </div>
 
-  <div class="add-product-layout">
-    <!-- Main Form Column -->
+  <!-- ── Two-Column Layout ── -->
+  <div class="product-layout">
+
+    <!-- LEFT: Main Form -->
     <div class="form-column">
-      
-      <!-- Card 1: Essential Product Information -->
+
+      <!-- Card 1: Basic Info -->
       <div class="form-card">
-        <div class="card-title">
-          <span class="material-icons title-icon">info</span>
+        <div class="form-card__header">
+          <div class="form-card__icon-wrap">
+            <span class="material-icons">inventory_2</span>
+          </div>
           <div>
-            <h3>Basic Information</h3>
-            <p>Product names, category classification, and regional identification</p>
+            <h2 class="form-card__title">Basic Information</h2>
+            <p class="form-card__subtitle">Names, category, description &amp; pack size</p>
           </div>
         </div>
-
-        <div class="card-body form-grid">
-          <div class="form-group full-width">
-            <label>Product Name (English) *</label>
-            <input type="text" [(ngModel)]="product.name" placeholder="e.g. Fresh Organic Tomatoes" required />
-            <small class="field-hint">Display name shown on storefront search & home cards</small>
-          </div>
-
-          <div class="form-group">
-            <label>Regional / Tamil Name</label>
-            <input type="text" [(ngModel)]="product.tamil_name" placeholder="e.g. நாட்டு தக்காளி" />
-            <small class="field-hint">Enables search in regional language</small>
-          </div>
-
-          <div class="form-group">
-            <div class="label-with-link">
-              <label>Category *</label>
-              <a routerLink="/admin/products/categories" class="quick-link">+ Manage Categories</a>
-            </div>
-            <select [(ngModel)]="product.cat">
-              <option *ngFor="let c of categoryOptions" [value]="c.key">{{ c.label }}</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Sub Category</label>
-            <input type="text" [(ngModel)]="product.sub_cat" placeholder="e.g. General, Country, Organic, Exotic" />
-          </div>
-
-          <div class="form-group full-width">
-            <label>Product Description</label>
-            <textarea
-              [(ngModel)]="product.description"
-              placeholder="Brief description shown on the product detail page (origin, freshness, usage tips, etc.)"
-              rows="3"
-              style="resize: vertical; min-height: 72px;"
-            ></textarea>
-            <small class="field-hint">Optional. Helps customers understand what they're buying.</small>
-          </div>
-
-          <div class="form-group">
-            <label>Pack Weight / Quantity *</label>
-            <input type="number" [(ngModel)]="product.weight" placeholder="e.g. 500 or 1" min="1" />
-          </div>
-
-          <div class="form-group">
-            <label>Unit of Measurement *</label>
-            <select [(ngModel)]="product.unit_name">
-              <option *ngFor="let u of unitOptions" [value]="u">{{ u }}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 2: Pricing, Cost & Profit Margin Calculator -->
-      <div class="form-card">
-        <div class="card-title">
-          <span class="material-icons title-icon">payments</span>
-          <div>
-            <h3>Pricing & Margins</h3>
-            <p>Wholesale cost, targeted profit margin, GST, selling price and MRP</p>
-          </div>
-        </div>
-
-        <div class="card-body">
+        <div class="form-card__body">
           <div class="form-grid">
-            <div class="form-group">
-              <label>Stock Cost Price (₹)</label>
-              <div class="input-addon">
-                <span class="prefix">₹</span>
-                <input type="number" [(ngModel)]="product.stock_price" placeholder="80" min="0" step="any" />
-              </div>
-              <small class="field-hint">Your procurement cost</small>
+            <div class="field full-span">
+              <label class="field__label">Product Name (English) <span class="req">*</span></label>
+              <input class="field__input" type="text" [(ngModel)]="product.name"
+                placeholder="e.g. Fresh Organic Tomatoes" />
+              <span class="field__hint">Display name shown on storefront search &amp; home cards</span>
             </div>
 
-            <div class="form-group">
-              <label>Target Profit Margin (%)</label>
-              <div class="input-addon">
-                <input type="number" [(ngModel)]="product.profit_percent" placeholder="20" min="0" step="0.5" />
-                <span class="suffix">%</span>
-              </div>
-              <small class="field-hint">Desired profit over cost</small>
+            <div class="field">
+              <label class="field__label">Regional / Tamil Name</label>
+              <input class="field__input" type="text" [(ngModel)]="product.tamil_name"
+                placeholder="e.g. நாட்டு தக்காளி" />
+              <span class="field__hint">Enables search in regional language</span>
             </div>
 
-            <div class="form-group">
-              <label>GST Rate (%) *</label>
-              <div class="input-addon">
-                <input type="number" [(ngModel)]="product.gst_percent" placeholder="5" min="0" step="0.5" />
-                <span class="suffix">%</span>
+            <div class="field">
+              <div class="field__label-row">
+                <label class="field__label">Category <span class="req">*</span></label>
+                <a routerLink="/admin/products/categories" class="field__link">
+                  <span class="material-icons">add</span>Manage
+                </a>
               </div>
-              <small class="field-hint">e.g. 0%, 5%, 12%, 18%</small>
+              <select class="field__input field__select" [(ngModel)]="product.cat">
+                <option *ngFor="let c of categoryOptions" [value]="c.key">{{ c.label }}</option>
+              </select>
             </div>
 
-            <div class="form-group">
-              <label>Selling Price (₹) *</label>
-              <div class="input-addon highlight-field">
-                <span class="prefix">₹</span>
-                <input type="number" [(ngModel)]="product.price" placeholder="100" min="0" step="any" required />
-              </div>
-              <small class="field-hint">Live price charged to customer</small>
+            <div class="field">
+              <label class="field__label">Sub Category</label>
+              <input class="field__input" type="text" [(ngModel)]="product.sub_cat"
+                placeholder="e.g. General, Organic, Exotic" />
             </div>
 
-            <div class="form-group">
-              <label>Original MRP (₹)</label>
-              <div class="input-addon">
-                <span class="prefix">₹</span>
-                <input type="number" [(ngModel)]="product.original_price" placeholder="120" min="0" step="any" />
-              </div>
-              <small class="field-hint">Crossed-out anchor price</small>
+            <div class="field full-span">
+              <label class="field__label">Product Description</label>
+              <textarea class="field__input field__textarea" [(ngModel)]="product.description"
+                placeholder="Brief description shown on product detail page (origin, freshness, usage tips...)"
+                rows="3"></textarea>
+              <span class="field__hint">Optional. Helps customers understand what they're buying.</span>
             </div>
 
-            <div class="form-group">
-              <label>Display Discount Tag (%)</label>
-              <div class="input-addon">
-                <input type="number" [(ngModel)]="product.show_off_percent" placeholder="15" min="0" />
-                <span class="suffix">% OFF</span>
-              </div>
+            <div class="field">
+              <label class="field__label">Pack Weight / Quantity <span class="req">*</span></label>
+              <input class="field__input" type="number" [(ngModel)]="product.weight"
+                placeholder="e.g. 500 or 1" min="1" />
             </div>
-          </div>
 
-          <!-- Dynamic Calculation Banner -->
-          <div class="pricing-calc-box">
-            <div class="calc-header-row">
-              <span class="calc-title"><span class="material-icons">calculate</span> Auto Price Calculation</span>
-              <button type="button" class="btn-apply-calc" (click)="applyCalculatedPricing()">
-                <span class="material-icons size-14">check</span>
-                <span>Apply Calculated Pricing (₹ {{ calculatedSuggestedPrice }})</span>
-              </button>
-            </div>
-            <div class="calc-breakdown-row">
-              <div class="breakdown-item">
-                <span class="b-lbl">Base Cost</span>
-                <span class="b-val">₹ {{ product.stock_price || 0 }}</span>
-              </div>
-              <span class="b-op">+</span>
-              <div class="breakdown-item">
-                <span class="b-lbl">Profit ({{ product.profit_percent || 0 }}%)</span>
-                <span class="b-val text-green">+ ₹ {{ (calculatedBaseWithProfit - (product.stock_price || 0)) }}</span>
-              </div>
-              <span class="b-op">+</span>
-              <div class="breakdown-item">
-                <span class="b-lbl">GST ({{ product.gst_percent || 0 }}%)</span>
-                <span class="b-val text-gst">+ ₹ {{ calculatedGstAmount }}</span>
-              </div>
-              <span class="b-op">=</span>
-              <div class="breakdown-item highlight">
-                <span class="b-lbl">Suggested Price</span>
-                <span class="b-val text-final">₹ {{ calculatedSuggestedPrice }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card 3: Stock Management Mode -->
-      <div class="form-card">
-        <div class="card-title">
-          <span class="material-icons title-icon">inventory_2</span>
-          <div>
-            <h3>Inventory & Stock Tracking</h3>
-            <p>Choose between morning market sourcing or physical stock tracking</p>
-          </div>
-        </div>
-
-        <div class="card-body">
-          <div class="stock-modes-grid">
-            <label class="stock-card" [class.selected]="product.is_unlimited == 1">
-              <input type="radio" name="stock_mode" [value]="1" [ngModel]="product.is_unlimited" (ngModelChange)="product.is_unlimited = 1" />
-              <div class="card-content">
-                <div class="card-heading">
-                  <span class="material-icons">all_inclusive</span>
-                  <span>Market Sourced (Default)</span>
-                </div>
-                <p>Purchased fresh from mandi next morning. No quantity limit or stock count needed.</p>
-              </div>
-            </label>
-
-            <label class="stock-card" [class.selected]="product.is_unlimited == 0">
-              <input type="radio" name="stock_mode" [value]="0" [ngModel]="product.is_unlimited" (ngModelChange)="product.is_unlimited = 0" />
-              <div class="card-content">
-                <div class="card-heading">
-                  <span class="material-icons">inventory</span>
-                  <span>Track Physical Stock</span>
-                </div>
-                <p>Keep a physical stock count in units. Product marks Out of Stock automatically when count hits 0.</p>
-              </div>
-            </label>
-          </div>
-
-          <div class="stock-qty-row" *ngIf="product.is_unlimited == 0">
-            <div class="form-group">
-              <label>Initial Available Stock Quantity *</label>
-              <div class="input-addon">
-                <input type="number" [(ngModel)]="product.stock_qty" placeholder="50" min="0" step="any" />
-                <span class="suffix">{{ product.unit_name || 'kg' }}</span>
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Stock Status</label>
-              <select [(ngModel)]="product.in_stock">
-                <option [value]="1">In Stock (Available)</option>
-                <option [value]="0">Out of Stock</option>
+            <div class="field">
+              <label class="field__label">Unit of Measurement <span class="req">*</span></label>
+              <select class="field__input field__select" [(ngModel)]="product.unit_name">
+                <option *ngFor="let u of unitOptions" [value]="u">{{ u }}</option>
               </select>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Card 4: Delivery Fulfillment & Preferred Days -->
+      <!-- Card 2: Pricing -->
       <div class="form-card">
-        <div class="card-title">
-          <span class="material-icons title-icon">local_shipping</span>
+        <div class="form-card__header">
+          <div class="form-card__icon-wrap form-card__icon-wrap--amber">
+            <span class="material-icons">payments</span>
+          </div>
           <div>
-            <h3>Delivery Slots & Schedule</h3>
-            <p>Define which express speed slots and days of the week this item is available</p>
+            <h2 class="form-card__title">Pricing &amp; Margins</h2>
+            <p class="form-card__subtitle">Cost, profit margin, GST, selling price &amp; MRP</p>
           </div>
         </div>
+        <div class="form-card__body">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field__label">Stock Cost Price (&#8377;)</label>
+              <div class="input-addon">
+                <span class="input-addon__affix">&#8377;</span>
+                <input type="number" [(ngModel)]="product.stock_price" placeholder="80" min="0" step="any" />
+              </div>
+              <span class="field__hint">Your procurement / wholesale cost</span>
+            </div>
 
-        <div class="card-body">
-          <label class="sub-label">Eligible Delivery Slots</label>
-          <div class="slots-grid">
-            <label class="slot-chip" [class.checked]="product.allow_next_day == 1">
-              <input type="checkbox" [ngModel]="product.allow_next_day == 1" (ngModelChange)="product.allow_next_day = $event ? 1 : 0" />
-              <span class="material-icons">wb_sunny</span>
-              <span>Next Morning (7 AM)</span>
-            </label>
+            <div class="field">
+              <label class="field__label">Target Profit Margin (%)</label>
+              <div class="input-addon">
+                <input type="number" [(ngModel)]="product.profit_percent" placeholder="20" min="0" step="0.5" />
+                <span class="input-addon__affix">%</span>
+              </div>
+              <span class="field__hint">Desired profit over cost price</span>
+            </div>
 
-            <label class="slot-chip" [class.checked]="product.allow_immediate_10 == 1">
-              <input type="checkbox" [ngModel]="product.allow_immediate_10 == 1" (ngModelChange)="product.allow_immediate_10 = $event ? 1 : 0" />
-              <span class="material-icons">bolt</span>
-              <span>10 Mins Instant</span>
-            </label>
+            <div class="field">
+              <label class="field__label">GST Rate (%) <span class="req">*</span></label>
+              <div class="input-addon">
+                <input type="number" [(ngModel)]="product.gst_percent" placeholder="5" min="0" step="0.5" />
+                <span class="input-addon__affix">%</span>
+              </div>
+              <span class="field__hint">e.g. 0%, 5%, 12%, 18%</span>
+            </div>
 
-            <label class="slot-chip" [class.checked]="product.allow_immediate_30 == 1">
-              <input type="checkbox" [ngModel]="product.allow_immediate_30 == 1" (ngModelChange)="product.allow_immediate_30 = $event ? 1 : 0" />
-              <span class="material-icons">speed</span>
-              <span>30 Mins Express</span>
-            </label>
+            <div class="field">
+              <label class="field__label">Selling Price (&#8377;) <span class="req">*</span></label>
+              <div class="input-addon input-addon--highlight">
+                <span class="input-addon__affix">&#8377;</span>
+                <input type="number" [(ngModel)]="product.price" placeholder="100" min="0" step="any" required />
+              </div>
+              <span class="field__hint">Live price charged to customer</span>
+            </div>
 
-            <label class="slot-chip" [class.checked]="product.allow_immediate_60 == 1">
-              <input type="checkbox" [ngModel]="product.allow_immediate_60 == 1" (ngModelChange)="product.allow_immediate_60 = $event ? 1 : 0" />
-              <span class="material-icons">schedule</span>
-              <span>60 Mins Standard</span>
-            </label>
+            <div class="field">
+              <label class="field__label">Original MRP (&#8377;)</label>
+              <div class="input-addon">
+                <span class="input-addon__affix">&#8377;</span>
+                <input type="number" [(ngModel)]="product.original_price" placeholder="120" min="0" step="any" />
+              </div>
+              <span class="field__hint">Crossed-out anchor price</span>
+            </div>
+
+            <div class="field">
+              <label class="field__label">Display Discount Tag</label>
+              <div class="input-addon">
+                <input type="number" [(ngModel)]="product.show_off_percent" placeholder="15" min="0" />
+                <span class="input-addon__affix">% OFF</span>
+              </div>
+            </div>
           </div>
 
-          <div class="preferred-days-block">
-            <div class="pref-header-row">
-              <label class="sub-label">Preferred Delivery Days</label>
-              <button type="button" class="btn-all-days" (click)="setAllDaysPreferred()" [class.active]="!product.preferred_days || product.preferred_days.length === 0">
-                <span class="material-icons size-14">all_inclusive</span> All Days (No Restriction)
+          <!-- Pricing Calculator Banner -->
+          <div class="calc-banner">
+            <div class="calc-banner__header">
+              <span class="calc-banner__label">
+                <span class="material-icons">calculate</span>
+                Auto Price Calculation
+              </span>
+              <button type="button" class="calc-banner__apply-btn" (click)="applyCalculatedPricing()">
+                <span class="material-icons">auto_fix_high</span>
+                Apply &#8377; {{ calculatedSuggestedPrice }}
               </button>
             </div>
-            <p class="field-hint">Select specific days if this item is delivered only on certain days (e.g. Wednesday & Saturday).</p>
-            <div class="weekday-chips-grid">
-              <button type="button" *ngFor="let day of weekDaysList" class="day-chip" [class.selected]="isDaySelected(day)" (click)="togglePreferredDay(day)">
-                <span class="material-icons size-16">{{ isDaySelected(day) ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                <span>{{ day }}</span>
-              </button>
-            </div>
-            <div class="pref-status-pill">
-              <span class="material-icons size-14">info</span>
-              <span>Current Delivery Schedule: <strong>{{ getPreferredDaysBadge() }}</strong></span>
+            <div class="calc-banner__breakdown">
+              <div class="calc-item">
+                <span class="calc-item__label">Base Cost</span>
+                <span class="calc-item__value">&#8377; {{ product.stock_price || 0 }}</span>
+              </div>
+              <span class="calc-operator">+</span>
+              <div class="calc-item">
+                <span class="calc-item__label">Profit ({{ product.profit_percent || 0 }}%)</span>
+                <span class="calc-item__value calc-item__value--green">+&#8377; {{ (calculatedBaseWithProfit - (product.stock_price || 0)) }}</span>
+              </div>
+              <span class="calc-operator">+</span>
+              <div class="calc-item">
+                <span class="calc-item__label">GST ({{ product.gst_percent || 0 }}%)</span>
+                <span class="calc-item__value calc-item__value--blue">+&#8377; {{ calculatedGstAmount }}</span>
+              </div>
+              <span class="calc-operator">=</span>
+              <div class="calc-item calc-item--final">
+                <span class="calc-item__label">Suggested Price</span>
+                <span class="calc-item__value calc-item__value--teal">&#8377; {{ calculatedSuggestedPrice }}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-    </div>
+      <!-- Card 3: Inventory -->
+      <div class="form-card">
+        <div class="form-card__header">
+          <div class="form-card__icon-wrap form-card__icon-wrap--violet">
+            <span class="material-icons">warehouse</span>
+          </div>
+          <div>
+            <h2 class="form-card__title">Inventory &amp; Stock</h2>
+            <p class="form-card__subtitle">Choose between market-sourced or physical stock tracking</p>
+          </div>
+        </div>
+        <div class="form-card__body">
+          <div class="stock-mode-grid">
 
-    <!-- Right Sidebar Column: Preview & Quick Assets -->
+            <label class="stock-mode-card" [class.stock-mode-card--selected]="product.is_unlimited == 1">
+              <input type="radio" name="stock_mode" [value]="1" [ngModel]="product.is_unlimited"
+                (ngModelChange)="product.is_unlimited = 1" />
+              <div class="stock-mode-card__icon">
+                <span class="material-icons">all_inclusive</span>
+              </div>
+              <div class="stock-mode-card__content">
+                <span class="stock-mode-card__name">Market Sourced</span>
+                <span class="stock-mode-card__desc">Purchased fresh from mandi each morning. No stock count needed.</span>
+              </div>
+              <span class="material-icons stock-mode-card__check">
+                {{ product.is_unlimited == 1 ? 'check_circle' : 'radio_button_unchecked' }}
+              </span>
+            </label>
+
+            <label class="stock-mode-card" [class.stock-mode-card--selected]="product.is_unlimited == 0">
+              <input type="radio" name="stock_mode" [value]="0" [ngModel]="product.is_unlimited"
+                (ngModelChange)="product.is_unlimited = 0" />
+              <div class="stock-mode-card__icon">
+                <span class="material-icons">inventory</span>
+              </div>
+              <div class="stock-mode-card__content">
+                <span class="stock-mode-card__name">Track Physical Stock</span>
+                <span class="stock-mode-card__desc">Count units on hand. Auto marks Out of Stock when count hits 0.</span>
+              </div>
+              <span class="material-icons stock-mode-card__check">
+                {{ product.is_unlimited == 0 ? 'check_circle' : 'radio_button_unchecked' }}
+              </span>
+            </label>
+
+          </div>
+
+          <div class="stock-qty-panel" *ngIf="product.is_unlimited == 0">
+            <div class="form-grid">
+              <div class="field">
+                <label class="field__label">Initial Stock Quantity <span class="req">*</span></label>
+                <div class="input-addon">
+                  <input type="number" [(ngModel)]="product.stock_qty" placeholder="50" min="0" step="any" />
+                  <span class="input-addon__affix">{{ product.unit_name || 'kg' }}</span>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field__label">Stock Status</label>
+                <select class="field__input field__select" [(ngModel)]="product.in_stock">
+                  <option [value]="1">In Stock (Available)</option>
+                  <option [value]="0">Out of Stock</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 4: Delivery Slots -->
+      <div class="form-card">
+        <div class="form-card__header">
+          <div class="form-card__icon-wrap form-card__icon-wrap--blue">
+            <span class="material-icons">local_shipping</span>
+          </div>
+          <div>
+            <h2 class="form-card__title">Delivery Slots &amp; Schedule</h2>
+            <p class="form-card__subtitle">Express speed slots and preferred delivery days for this item</p>
+          </div>
+        </div>
+        <div class="form-card__body">
+
+          <p class="section-label">
+            <span class="material-icons">flash_on</span>
+            Eligible Delivery Speed Slots
+          </p>
+
+          <div class="delivery-slots-grid">
+
+            <label class="slot-card" [class.slot-card--active]="product.allow_next_day == 1">
+              <input type="checkbox" [ngModel]="product.allow_next_day == 1"
+                (ngModelChange)="product.allow_next_day = $event ? 1 : 0" />
+              <div class="slot-card__body">
+                <div class="slot-card__icon-wrap slot-card__icon-wrap--sunrise">
+                  <span class="material-icons">wb_sunny</span>
+                </div>
+                <div class="slot-card__text">
+                  <span class="slot-card__name">Next Morning</span>
+                  <span class="slot-card__time">7:00 AM Delivery</span>
+                  <span class="slot-card__desc">Fresh market sourced overnight</span>
+                </div>
+                <span class="slot-card__toggle-pill">
+                  <span class="slot-card__toggle-knob"></span>
+                </span>
+              </div>
+            </label>
+
+            <label class="slot-card" [class.slot-card--active]="product.allow_immediate_10 == 1">
+              <input type="checkbox" [ngModel]="product.allow_immediate_10 == 1"
+                (ngModelChange)="product.allow_immediate_10 = $event ? 1 : 0" />
+              <div class="slot-card__body">
+                <div class="slot-card__icon-wrap slot-card__icon-wrap--red">
+                  <span class="material-icons">bolt</span>
+                </div>
+                <div class="slot-card__text">
+                  <span class="slot-card__name">10 Mins Delivery</span>
+                  <span class="slot-card__time">Ultra Express</span>
+                  <span class="slot-card__desc">Instant local delivery slot</span>
+                </div>
+                <span class="slot-card__toggle-pill">
+                  <span class="slot-card__toggle-knob"></span>
+                </span>
+              </div>
+            </label>
+
+            <label class="slot-card" [class.slot-card--active]="product.allow_immediate_30 == 1">
+              <input type="checkbox" [ngModel]="product.allow_immediate_30 == 1"
+                (ngModelChange)="product.allow_immediate_30 = $event ? 1 : 0" />
+              <div class="slot-card__body">
+                <div class="slot-card__icon-wrap slot-card__icon-wrap--orange">
+                  <span class="material-icons">speed</span>
+                </div>
+                <div class="slot-card__text">
+                  <span class="slot-card__name">30 Mins Delivery</span>
+                  <span class="slot-card__time">Express Slot</span>
+                  <span class="slot-card__desc">30-minute express delivery</span>
+                </div>
+                <span class="slot-card__toggle-pill">
+                  <span class="slot-card__toggle-knob"></span>
+                </span>
+              </div>
+            </label>
+
+            <label class="slot-card" [class.slot-card--active]="product.allow_immediate_60 == 1">
+              <input type="checkbox" [ngModel]="product.allow_immediate_60 == 1"
+                (ngModelChange)="product.allow_immediate_60 = $event ? 1 : 0" />
+              <div class="slot-card__body">
+                <div class="slot-card__icon-wrap slot-card__icon-wrap--indigo">
+                  <span class="material-icons">schedule</span>
+                </div>
+                <div class="slot-card__text">
+                  <span class="slot-card__name">60 Mins Delivery</span>
+                  <span class="slot-card__time">Standard Slot</span>
+                  <span class="slot-card__desc">1-hour standard delivery</span>
+                </div>
+                <span class="slot-card__toggle-pill">
+                  <span class="slot-card__toggle-knob"></span>
+                </span>
+              </div>
+            </label>
+
+          </div>
+
+          <!-- Preferred Days -->
+          <div class="preferred-days">
+            <div class="preferred-days__header">
+              <p class="section-label" style="margin:0">
+                <span class="material-icons">calendar_today</span>
+                Preferred Delivery Days
+              </p>
+              <button type="button" class="all-days-btn"
+                [class.all-days-btn--active]="!product.preferred_days || product.preferred_days.length === 0"
+                (click)="setAllDaysPreferred()">
+                <span class="material-icons">all_inclusive</span>
+                All Days
+              </button>
+            </div>
+            <p class="field__hint" style="margin: 6px 0 14px;">
+              Select specific days if this item is only delivered on certain days (e.g. Wed &amp; Sat).
+            </p>
+            <div class="weekday-grid">
+              <button type="button" *ngFor="let day of weekDaysList" class="day-pill"
+                [class.day-pill--selected]="isDaySelected(day)"
+                (click)="togglePreferredDay(day)">
+                <span class="material-icons">{{ isDaySelected(day) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                <span>{{ day.slice(0, 3) }}</span>
+              </button>
+            </div>
+            <div class="schedule-badge">
+              <span class="material-icons">event_available</span>
+              <span>Schedule: <strong>{{ getPreferredDaysBadge() }}</strong></span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+    <!-- End Left Column -->
+
+    <!-- RIGHT: Sidebar -->
     <div class="side-column">
-      
-      <!-- Storefront Card Live Preview -->
+
+      <!-- Live Preview -->
       <div class="preview-card">
-        <h4 class="preview-title">
-          <span class="material-icons">visibility</span> Storefront Preview
-        </h4>
-        <div class="storefront-mockup">
-          <div class="mockup-img-wrap">
-            <img [src]="product.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'" alt="{{ product.name || 'Product Image' }}" onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
-            <span class="mockup-discount-badge" *ngIf="product.original_price > product.price">
+        <div class="preview-card__header">
+          <span class="material-icons">phonelink</span>
+          <span>Storefront Preview</span>
+          <span class="live-badge">
+            <span class="live-badge__dot"></span>
+            Live
+          </span>
+        </div>
+        <div class="product-mockup">
+          <div class="product-mockup__img-wrap">
+            <img [src]="product.img_url || 'assets/categories/Thinkspot_veggiesIcon.png'"
+              alt="{{ product.name || 'Product' }}"
+              onerror="this.src='assets/categories/Thinkspot_veggiesIcon.png'" />
+            <span class="product-mockup__badge" *ngIf="product.original_price > product.price">
               {{ Math.round(((product.original_price - product.price) / product.original_price) * 100) }}% OFF
             </span>
           </div>
-          <div class="mockup-body">
-            <span class="mockup-cat">{{ product.cat || 'Vegetables' }}</span>
-            <h5 class="mockup-name">{{ product.name || 'Sample Product Name' }}</h5>
-            <span class="mockup-tamil" *ngIf="product.tamil_name">{{ product.tamil_name }}</span>
-            <div class="mockup-weight">{{ product.weight }} {{ product.unit_name || 'grams' }}</div>
-            <div class="mockup-price-row">
-              <span class="mockup-price">₹ {{ product.price || 0 }}</span>
-              <span class="mockup-mrp" *ngIf="product.original_price">₹ {{ product.original_price }}</span>
+          <div class="product-mockup__body">
+            <span class="product-mockup__cat">{{ product.cat || 'Vegetables' }}</span>
+            <h3 class="product-mockup__name">{{ product.name || 'Sample Product Name' }}</h3>
+            <span class="product-mockup__tamil" *ngIf="product.tamil_name">{{ product.tamil_name }}</span>
+            <span class="product-mockup__weight">{{ product.weight }} {{ product.unit_name || 'grams' }}</span>
+            <div class="product-mockup__price-row">
+              <span class="product-mockup__price">&#8377; {{ product.price || 0 }}</span>
+              <span class="product-mockup__mrp" *ngIf="product.original_price">&#8377; {{ product.original_price }}</span>
             </div>
-            <div class="mockup-stock-tag">
-              <span class="tag-dot in"></span>
+            <div class="product-mockup__stock">
+              <span class="stock-dot"></span>
               <span>{{ product.is_unlimited == 1 ? 'Market Sourced' : (product.stock_qty + ' ' + (product.unit_name || 'kg') + ' In Stock') }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Image Upload & Preset Selection -->
+      <!-- Image Upload -->
       <div class="form-card">
-        <div class="card-title">
-          <span class="material-icons title-icon">image</span>
+        <div class="form-card__header">
+          <div class="form-card__icon-wrap form-card__icon-wrap--pink">
+            <span class="material-icons">image</span>
+          </div>
           <div>
-            <h3>Product Image</h3>
-            <p>Upload a photo or select a preset icon</p>
+            <h2 class="form-card__title">Product Image</h2>
+            <p class="form-card__subtitle">Upload a photo or pick a preset icon</p>
           </div>
         </div>
+        <div class="form-card__body">
 
-        <div class="card-body">
-
-          <!-- Upload Drop Zone -->
-          <div class="img-upload-zone" (click)="imgFileInput.click()" [class.uploading]="imageUploading">
+          <div class="img-dropzone" (click)="imgFileInput.click()" [class.img-dropzone--uploading]="imageUploading">
             <img *ngIf="product.img_url && !imageUploading"
-                 [src]="product.img_url"
-                 alt="Product image preview"
-                 class="img-upload-preview"
-                 onerror="this.style.display='none'" />
-            <div class="img-upload-placeholder" [class.hidden]="product.img_url && !imageUploading">
-              <span class="material-icons upload-icon">cloud_upload</span>
-              <span class="upload-label">Click to upload image</span>
-              <span class="upload-hint">JPG, PNG, WEBP, GIF · Max 5 MB</span>
+              [src]="product.img_url" alt="Preview"
+              class="img-dropzone__preview"
+              onerror="this.style.display='none'" />
+            <div class="img-dropzone__placeholder" [class.img-dropzone__placeholder--hidden]="product.img_url && !imageUploading">
+              <span class="material-icons">cloud_upload</span>
+              <span class="img-dropzone__label">Click to upload</span>
+              <span class="img-dropzone__hint">JPG, PNG, WEBP, GIF &#xB7; Max 5 MB</span>
             </div>
-            <div class="img-uploading-overlay" *ngIf="imageUploading">
+            <div class="img-dropzone__overlay" *ngIf="imageUploading">
               <span class="material-icons spin">sync</span>
-              <span>Uploading…</span>
+              <span>Uploading&#x2026;</span>
             </div>
           </div>
           <input #imgFileInput type="file" accept="image/jpeg,image/png,image/webp,image/gif"
-                 style="display:none" (change)="onImageFileSelected($event)" />
+            style="display:none" (change)="onImageFileSelected($event)" />
 
-          <!-- Error message -->
-          <div class="img-upload-error" *ngIf="imageUploadError">
-            <span class="material-icons size-15">error_outline</span>
-            <span>{{ imageUploadError }}</span>
+          <div class="img-error" *ngIf="imageUploadError">
+            <span class="material-icons">error_outline</span>
+            {{ imageUploadError }}
           </div>
 
-          <!-- Manual URL override -->
-          <div class="form-group full-width" style="margin-top: 12px;">
-            <label>Or enter Image URL manually</label>
-            <input type="text" [(ngModel)]="product.img_url"
-                   placeholder="assets/categories/Thinkspot_veggiesIcon.png"
-                   (input)="imageUploadError = ''" />
+          <div class="field" style="margin-top: 14px;">
+            <label class="field__label">Or paste Image URL</label>
+            <input class="field__input" type="text" [(ngModel)]="product.img_url"
+              placeholder="assets/categories/icon.png"
+              (input)="imageUploadError = ''" />
           </div>
 
-          <label class="sub-label">Select Standard Preset Icon:</label>
-          <div class="preset-icons-grid">
-            <button type="button" *ngFor="let p of presetImages" class="preset-icon-btn"
-                    [class.active]="product.img_url === p.url" (click)="selectPresetImage(p.url)">
+          <p class="section-label" style="margin-top:18px; margin-bottom:10px;">
+            <span class="material-icons">photo_library</span>
+            Preset Icons
+          </p>
+          <div class="preset-grid">
+            <button type="button" *ngFor="let p of presetImages" class="preset-btn"
+              [class.preset-btn--active]="product.img_url === p.url"
+              (click)="selectPresetImage(p.url)">
               <img [src]="p.url" alt="{{ p.label }}" />
               <span>{{ p.label }}</span>
             </button>
@@ -399,31 +503,50 @@
         </div>
       </div>
 
-      <!-- Quick Toggles -->
+      <!-- Visibility and Features -->
       <div class="form-card">
-        <div class="card-title">
-          <span class="material-icons title-icon">tune</span>
+        <div class="form-card__header">
+          <div class="form-card__icon-wrap form-card__icon-wrap--slate">
+            <span class="material-icons">tune</span>
+          </div>
           <div>
-            <h3>Visibility & Features</h3>
+            <h2 class="form-card__title">Visibility &amp; Features</h2>
           </div>
         </div>
+        <div class="form-card__body">
+          <div class="toggle-list">
 
-        <div class="card-body toggle-list">
-          <label class="toggle-row">
-            <div>
-              <span class="toggle-name">Storefront Visibility</span>
-              <span class="toggle-desc">Show product on customer app & search</span>
+            <div class="toggle-item">
+              <div class="toggle-item__text">
+                <span class="toggle-item__icon toggle-item__icon--green material-icons">visibility</span>
+                <div>
+                  <span class="toggle-item__name">Storefront Visibility</span>
+                  <span class="toggle-item__desc">Show on customer app &amp; search results</span>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [ngModel]="product.disabled === 0"
+                  (ngModelChange)="product.disabled = $event ? 0 : 1" />
+                <span class="switch__track"></span>
+              </label>
             </div>
-            <input type="checkbox" [ngModel]="product.disabled === 0" (ngModelChange)="product.disabled = $event ? 0 : 1" />
-          </label>
 
-          <label class="toggle-row">
-            <div>
-              <span class="toggle-name">Subscription Plan</span>
-              <span class="toggle-desc">Allow customer daily/weekly repeat orders</span>
+            <div class="toggle-item">
+              <div class="toggle-item__text">
+                <span class="toggle-item__icon toggle-item__icon--amber material-icons">autorenew</span>
+                <div>
+                  <span class="toggle-item__name">Subscription Plan</span>
+                  <span class="toggle-item__desc">Allow daily / weekly repeat orders</span>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" [ngModel]="product.subscribe_flg == 1"
+                  (ngModelChange)="product.subscribe_flg = $event ? 1 : 0" />
+                <span class="switch__track"></span>
+              </label>
             </div>
-            <input type="checkbox" [ngModel]="product.subscribe_flg == 1" (ngModelChange)="product.subscribe_flg = $event ? 1 : 0" />
-          </label>
+
+          </div>
         </div>
       </div>
 

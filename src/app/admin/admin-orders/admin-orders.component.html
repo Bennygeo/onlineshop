@@ -156,10 +156,16 @@
               </td>
               <td><b>{{ o.mobile }}</b></td>
               <td>
-                <span class="date-badge">
-                  <span class="material-icons">today</span>
-                  {{ o.delivery_date || (o.created_at | date:'yyyy-MM-dd') }}
-                </span>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                  <span class="date-badge">
+                    <span class="material-icons">today</span>
+                    {{ o.delivery_date || (o.created_at | date:'yyyy-MM-dd') }}
+                  </span>
+                  <span class="slot-badge" *ngIf="o.delivery_slot_label || o.delivery_slot" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                    <span class="material-icons" style="font-size: 12px;">schedule</span>
+                    {{ o.delivery_slot_label || o.delivery_slot }}
+                  </span>
+                </div>
               </td>
               <td>
                 <div class="addr-cell">
@@ -206,6 +212,22 @@
             <tr *ngIf="o.expanded" class="items-expanded-row">
               <td colspan="9">
                 <div class="items-expanded-card">
+                  <!-- Timeslot & Delivery Info Header -->
+                  <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; background: #f0fdf4; padding: 10px 14px; border-radius: 8px; border: 1px solid #bbf7d0;">
+                    <span *ngIf="o.delivery_slot_label || o.delivery_slot" style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 700; color: #065f46;">
+                      <span class="material-icons" style="font-size: 16px; color: #059669;">schedule</span>
+                      Timeslot: {{ o.delivery_slot_label || o.delivery_slot }}
+                    </span>
+                    <span *ngIf="o.delivery_mode" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #334155;">
+                      <span class="material-icons" style="font-size: 15px; color: #64748b;">door_front</span>
+                      Preference: {{ o.delivery_mode }}
+                    </span>
+                    <span *ngIf="o.delivery_inst" style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #475569;">
+                      <span class="material-icons" style="font-size: 15px; color: #d97706;">notes</span>
+                      Note: <em>{{ o.delivery_inst }}</em>
+                    </span>
+                  </div>
+
                   <div class="expanded-header">
                     <h4>Items List for Order #{{ o.order_id || o.id }}</h4>
                     <span class="items-total-tag">{{ getItemsForDate(o).length }} Product(s)</span>
@@ -288,6 +310,11 @@
             <span class="m-date-chip">
               <span class="material-icons">today</span>
               <span>{{ o.delivery_date || (o.created_at | date:'MMM d') }}</span>
+            </span>
+
+            <span class="m-date-chip" *ngIf="o.delivery_slot_label || o.delivery_slot" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;">
+              <span class="material-icons">schedule</span>
+              <span>{{ o.delivery_slot_label || o.delivery_slot }}</span>
             </span>
           </div>
 

@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { Component, OnInit, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, OnInit, EventEmitter, Input, Output, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 
 import { Subject } from 'rxjs';
 import { ApiService } from 'src/app/services/api.service';
@@ -44,7 +44,8 @@ export class ProductComponent implements OnInit, OnChanges {
     private _productService: ProductService,
     private datePipe: DatePipe,
     private loginS: LoginService,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private cdr: ChangeDetectorRef
   ) {
   }
 
@@ -64,8 +65,37 @@ export class ProductComponent implements OnInit, OnChanges {
       this.init();
     });
 
-    console.log("benny", this.product["delivery_date_enhanced"]);
+    this.cartS.notifyCartEvent.subscribe(() => {
+      if (!this.product) return;
+      const pid = this.product.id || (this.product as any).productID || (this.product as any).product_id;
+      const inCart = this.cartS.cartProducts[pid];
+      if (!inCart) {
+        this.product.units = 0;
+        this.product.quantity = 0;
+      } else {
+        this.product.units = inCart.units || inCart.quantity || 0;
+        this.product.quantity = this.product.units;
+      }
+      this.init();
+      try {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      } catch (e) {}
+    });
 
+    this.cartS.productsDownloadedEvent.subscribe((prods) => {
+      if (!this.product || !prods) return;
+      const pid = this.product.id || (this.product as any).productID || (this.product as any).product_id;
+      const matched = prods.find(p => p.id === pid);
+      if (matched) {
+        this.product = { ...this.product, ...matched };
+        this.init();
+        try {
+          this.cdr.markForCheck();
+          this.cdr.detectChanges();
+        } catch (e) {}
+      }
+    });
 
     this.product.changeInProduct.subscribe({
       next: (product: Product) => {
@@ -102,23 +132,76 @@ export class ProductComponent implements OnInit, OnChanges {
     const inStockFlag = isUnlimited || (this.product['in_stock'] !== false && String(this.product['in_stock']) !== '0' && this.product['in_stock'] !== 0);
     this.product.in_stock = inStockFlag && hasStock;
 
-    const _quantity = (this.product.units * 1) || 1;
+    const currentUnits = Number(this.product.units || (this.product as any).quantity || 0);
+    this.product.units = currentUnits;
+    this.product.quantity = currentUnits;
 
-    if (!this.product['updated_weight']) this.product['updated_weight'] = this.product["weight"];
-
-    let basePrice = Number(this.product['unit_price'] || this.product['price'] || 0);
-    if (!this.product['unit_price'] || isNaN(Number(this.product['unit_price'])) || Number(this.product['unit_price']) <= 0) {
+    // Base unit price: Read unit_price first, fallback to base catalog price
+    let basePrice = Number(this.product['unit_price']);
+    if (!basePrice || isNaN(basePrice) || basePrice <= 0) {
+      if (currentUnits > 1 && Number(this.product['price']) > 0) {
+        basePrice = Math.round(Number(this.product['price']) / currentUnits);
+      } else {
+        basePrice = Number(this.product['price'] || 0);
+      }
       this.product['unit_price'] = basePrice;
     }
-    let origPrice = Number(this.product['unit_original_price'] || this.product['original_price'] || basePrice);
-    if (!this.product['unit_original_price'] || isNaN(Number(this.product['unit_original_price']))) {
+
+    let origPrice = Number(this.product['unit_original_price']);
+    if (!origPrice || isNaN(origPrice) || origPrice <= 0) {
+      if (currentUnits > 1 && Number(this.product['original_price']) > 0) {
+        origPrice = Math.round(Number(this.product['original_price']) / currentUnits);
+      } else {
+        origPrice = Number(this.product['original_price'] || basePrice);
+      }
       this.product['unit_original_price'] = origPrice;
     }
 
-    this.product['price'] = Math.round(basePrice * _quantity);
-    this.product['original_price'] = Math.round(origPrice * _quantity);
+    if (!this.product['base_weight']) {
+      this.product['base_weight'] = Number(this.product['weight'] || 500);
+    }
+    if (!this.product['base_unit_name']) {
+      this.product['base_unit_name'] = this.product['unit_name'] || 'grams';
+    }
+
+    const multiplier = currentUnits > 0 ? currentUnits : 1;
+    this.product['price'] = Math.round(basePrice * multiplier);
+    this.product['original_price'] = Math.round(origPrice * multiplier);
     if (isNaN(Number(this.product['original_price']))) {
       this.product['original_price'] = this.product['price'];
+    }
+
+    let weight = Number(this.product['base_weight']) * multiplier;
+    let uName = this.product['base_unit_name'] || 'grams';
+    if (uName === "kg") {
+      // Already in kg — keep it as kg regardless of numeric value
+      this.product['updated_weight'] = weight;
+      this.product['unit_name'] = "kg";
+    } else if (uName === "grams" || uName === "g") {
+      // Auto-upgrade grams → kg only when total weight reaches 1000g
+      if (weight >= 1000) {
+        this.product['updated_weight'] = weight / 1000;
+        this.product['unit_name'] = "kg";
+      } else {
+        this.product['updated_weight'] = weight;
+        this.product['unit_name'] = "grams";
+      }
+    } else if (uName === "ltr" || uName === "ltrs") {
+      // Already in ltr — keep it as ltr
+      this.product['updated_weight'] = weight;
+      this.product['unit_name'] = "ltr";
+    } else if (uName === "ml") {
+      // Auto-upgrade ml → ltr only when total reaches 1000ml
+      if (weight >= 1000) {
+        this.product['updated_weight'] = weight / 1000;
+        this.product['unit_name'] = "ltr";
+      } else {
+        this.product['updated_weight'] = weight;
+        this.product['unit_name'] = "ml";
+      }
+    } else {
+      // pack, pcs, etc. — display as-is
+      this.product['updated_weight'] = weight;
     }
 
     if (!this.product['subs_options']) this.product.subs_options = {
@@ -183,6 +266,11 @@ export class ProductComponent implements OnInit, OnChanges {
         this.product.delivery_date_enhanced = isActuallyTomorrow ? "Tomorrow" : "Scheduled";
       }
     }
+
+    try {
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
+    } catch (e) {}
   }
 
   plusMinusValue(val) {

@@ -144,23 +144,26 @@ export class ProductListComponent implements OnInit, OnDestroy {
     //Triggered when products downloaded from the server
     this.cartS.productsDownloadedEvent.subscribe((products: Array<Product>) => {
 
-      this.productsOptions.products = products;
+      this.productsOptions.products = [...(products || [])];
 
       this.menus.activeMenu = this.menus.activeMenu || this.menus.defaultMenu;
       //setup default active menu
       // this._utils.getElement("#" + this.menus.activeMenu).click();
 
       let renderResult = this.renderProducts();
-      this.productsOptions.productsCategoryWise = renderResult.productsCategoryWise;
+      this.productsOptions.productsCategoryWise = { ...renderResult.productsCategoryWise };
 
       //update cart value with live products list
-      this.productsOptions.productsCategoryWise = this.cartS.updateCartValuesWithProduct(renderResult.productsCategoryWise);
-      this.menus.subCategoryList = renderResult.subCategories;
+      this.productsOptions.productsCategoryWise = this.cartS.updateCartValuesWithProduct(this.productsOptions.productsCategoryWise);
+      this.menus.subCategoryList = [...renderResult.subCategories];
 
       this.productsOptions.loadingFlg = false;
 
       this.productService.menu_position();
       this.location.replaceState(`/products/category/${encodeURIComponent(this.menus.activeMenu)}`);
+      try {
+        this.cdr.detectChanges();
+      } catch (e) {}
     });
 
     this.cartS.productsExistEvent.subscribe((res: string) => {
@@ -172,6 +175,17 @@ export class ProductListComponent implements OnInit, OnDestroy {
       this.menus.subCategoryList = renderResult.subCategories;
 
       this.productsOptions.loadingFlg = false;
+    });
+
+    this.cartS.notifyCartEvent.subscribe(() => {
+      this.productsOptions.products = this.cartS.productsList || [];
+      const renderResult = this.renderProducts();
+      this.productsOptions.productsCategoryWise = this.cartS.updateCartValuesWithProduct(renderResult.productsCategoryWise);
+      this.menus.subCategoryList = renderResult.subCategories;
+      try {
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      } catch (e) {}
     });
 
     let productContHeight: string = "";

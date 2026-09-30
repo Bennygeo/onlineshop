@@ -195,6 +195,56 @@
             </div>
         </div>
 
+        <!-- Choose Delivery Time Slot (30-min intervals 8:00 AM - 11:00 AM, max 5 orders limit per slot + Anytime option) -->
+        <div class="cart-section-card timeslot-section-card" *ngIf="!cartService.getDeliveryModeDetails()?.isImmediate">
+            <div class="section-card-header">
+                <div class="section-header-title">
+                    <span class="material-icons section-icon">schedule</span>
+                    <span>Choose Delivery Time Slot</span>
+                </div>
+                <span class="slot-header-pill">Tomorrow Morning</span>
+            </div>
+
+            <div class="timeslots-container">
+                <div class="timeslots-grid">
+                    <div class="timeslot-card" *ngFor="let slot of deliveryTimeSlots"
+                        [class.active]="selectedDeliveryTimeSlot?.id === slot.id"
+                        [class.slot-full]="slot.isFull"
+                        [class.anytime-slot]="slot.isAnytime"
+                        (click)="selectTimeSlot(slot)">
+                        <div class="slot-radio">
+                            <span class="radio-dot" *ngIf="selectedDeliveryTimeSlot?.id === slot.id"></span>
+                        </div>
+                        <div class="slot-info">
+                            <div class="slot-label-row">
+                                <span class="material-icons slot-clock-icon">{{ slot.isAnytime ? 'all_inclusive' : 'schedule' }}</span>
+                                <span class="slot-time-text">{{ slot.label }}</span>
+                            </div>
+                            <div class="slot-sub-text" *ngIf="slot.subLabel">{{ slot.subLabel }}</div>
+                        </div>
+                        <div class="slot-status-wrap">
+                            <span class="slot-badge full-badge" *ngIf="slot.isFull">
+                                <span class="material-icons size-12">lock</span> Full (5/5)
+                            </span>
+                            <span class="slot-badge avail-badge" *ngIf="!slot.isFull && !slot.isAnytime && (slot.maxLimit - slot.bookedCount) <= 2">
+                                {{ slot.maxLimit - slot.bookedCount }} left
+                            </span>
+                            <span class="slot-badge open-badge" *ngIf="!slot.isFull && !slot.isAnytime && (slot.maxLimit - slot.bookedCount) > 2">
+                                Available
+                            </span>
+                            <span class="slot-badge flex-badge" *ngIf="slot.isAnytime">
+                                Anytime
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="slot-limit-info-note">
+                    <span class="material-icons size-14">info</span>
+                    <span>Morning slots are strictly limited to 5 orders per half-hour window to guarantee fresh on-time delivery.</span>
+                </div>
+            </div>
+        </div>
+
         <!-- Delivery Instructions & Special Requests -->
         <div class="cart-section-card instructions-section-card">
             <div class="section-card-header">
@@ -349,6 +399,13 @@
                         <span>Delivery Partner Fee</span>
                         <span *ngIf="hasMultipleDeliveries()" class="shipment-count-tag">({{ deliveryGroupCount }}
                             Shipments)</span>
+                        <div class="delivery-sub-hint" *ngIf="cartService.getDeliveryModeDetails()?.isImmediate">
+                            <span *ngIf="orderInformation.totalDeliveryCharges > 0" class="text-hint">Add ₹{{ 250 - orderInformation.subTotal }} more for FREE Delivery</span>
+                            <span *ngIf="orderInformation.totalDeliveryCharges === 0" class="text-success">Orders ₹250+ Free Delivery</span>
+                        </div>
+                        <div class="delivery-sub-hint" *ngIf="!cartService.getDeliveryModeDetails()?.isImmediate">
+                            <span class="text-success">Tomorrow 7:00 AM Delivery is FREE</span>
+                        </div>
                     </td>
                     <td class="bill-col-value">
                         <span *ngIf="orderInformation.totalDeliveryCharges > 0">₹{{orderInformation.totalDeliveryCharges
@@ -532,29 +589,76 @@
 </div>
 
 <!-- Complete Payment Modal -->
-<div class="popup_parent" *ngIf="payFlg" [@fadeInOut]>
-    <div class="popup_cont">
-        <div class="head">Complete Payment</div>
-        <p>Wallet balance: <b>₹{{(loginS.user?.wallet || 0) | number}}</b>.<br>Pay <b>₹{{cartService.remainingToPay |
-                number}}</b> to complete and place your order.</p>
-        <img [src]="'assets/cart/wallet.png'" alt="Wallet" />
+<div class="popup_parent complete-payment-overlay" *ngIf="payFlg" [@fadeInOut] (click)="payFlg = false">
+    <div class="popup_cont complete-payment-modal-card" (click)="$event.stopPropagation()">
+        <!-- Close Button -->
+        <button type="button" class="payment-modal-close-btn" (click)="payFlg = false" aria-label="Close modal">
+            <span class="material-icons">close</span>
+        </button>
 
-        <div class="flex-box" *ngIf="cartService.enableRazorpay">
-            <div class="tnkspt_secondary_btn cancel-btn" (click)="addMoneyToWalletAction()">Add Custom Money</div>
-            <div class="tnkspt_primary_btn view-btn" (click)="payOnlineAction()">Pay ₹{{this.cartService.remainingToPay
-                | number}} & Checkout</div>
+        <!-- Header -->
+        <div class="payment-modal-header">
+            <div class="payment-modal-icon-badge">
+                <span class="material-icons">account_balance_wallet</span>
+            </div>
+            <div class="payment-modal-title-group">
+                <h3 class="payment-modal-title">Complete Payment</h3>
+                <span class="payment-modal-subtitle">Fast & Secure Checkout</span>
+            </div>
         </div>
 
-        <div class="online-disabled-alert" *ngIf="!cartService.enableRazorpay"
-            style="background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin: 12px 0;">
-            <span>Online payment via Razorpay is temporarily disabled. Please choose Cash on Delivery below to place
-                your order.</span>
+        <!-- Wallet Balance Summary Card -->
+        <div class="payment-balance-card">
+            <div class="balance-row">
+                <span class="balance-label">Current Wallet Balance</span>
+                <span class="balance-val current-balance">₹{{(loginS.user?.wallet || 0) | number:'1.0-2'}}</span>
+            </div>
+            <div class="balance-divider"></div>
+            <div class="balance-row due-row">
+                <div class="due-label-wrap">
+                    <span class="due-label">Amount Required to Pay</span>
+                    <span class="due-hint">Auto-credits wallet & places order</span>
+                </div>
+                <span class="balance-val due-amount">₹{{cartService.remainingToPay | number:'1.0-2'}}</span>
+            </div>
         </div>
 
-        <div class="modal-cod-option" (click)="payWithCODAction()" *ngIf="cartService.enableCod">
-            <span class="material-icons"
-                style="font-size: 18px; color: #0d9488; vertical-align: middle;">payments</span>
-            <span>Or choose <strong>COD</strong> to pay upon arrival &rarr;</span>
+        <!-- Online Payment Action Buttons -->
+        <div class="payment-actions-group" *ngIf="cartService.enableRazorpay">
+            <button type="button" class="btn-pay-online-primary" (click)="payOnlineAction()">
+                <span class="material-icons">lock</span>
+                <span>Pay ₹{{cartService.remainingToPay | number:'1.0-2'}} & Checkout</span>
+            </button>
+            <button type="button" class="btn-add-custom-secondary" (click)="addMoneyToWalletAction()">
+                <span class="material-icons">add_circle_outline</span>
+                <span>Add Custom Amount</span>
+            </button>
+        </div>
+
+        <div class="online-disabled-alert" *ngIf="!cartService.enableRazorpay">
+            <span class="material-icons">info</span>
+            <span>Online payment via Razorpay is temporarily disabled. Please choose Cash on Delivery below to place your order.</span>
+        </div>
+
+        <!-- COD Alternative Option -->
+        <div class="payment-cod-divider" *ngIf="cartService.enableCod">
+            <span>OR PAY VIA CASH</span>
+        </div>
+
+        <button type="button" class="payment-cod-card-btn" (click)="payWithCODAction()" *ngIf="cartService.enableCod">
+            <div class="cod-icon-wrap">
+                <span class="material-icons">local_shipping</span>
+            </div>
+            <div class="cod-text-wrap">
+                <span class="cod-title">Cash on Delivery (COD)</span>
+                <span class="cod-sub">Pay in cash when your order arrives</span>
+            </div>
+            <span class="material-icons cod-arrow">arrow_forward</span>
+        </button>
+
+        <div class="payment-modal-footer-note">
+            <span class="material-icons">verified_user</span>
+            <span>100% Safe & Encrypted Payments with Razorpay</span>
         </div>
     </div>
 </div>
