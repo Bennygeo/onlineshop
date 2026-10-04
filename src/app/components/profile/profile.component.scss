@@ -1,7 +1,7 @@
 @import "../../../assets/styles/global-constants.scss";
 
 .profile-page-wrapper {
-    max-width: 520px;
+    // max-width: 520px;
     margin: 0 auto;
     padding: 16px 16px 90px 16px;
     font-family: $inter;
@@ -40,6 +40,7 @@
         transform: translate(-50%, -20px);
         opacity: 0;
     }
+
     to {
         transform: translate(-50%, 0);
         opacity: 1;
@@ -703,6 +704,7 @@
         opacity: 0;
         transform: scaleY(0.92) translateY(-8px);
     }
+
     to {
         opacity: 1;
         transform: scaleY(1) translateY(0);

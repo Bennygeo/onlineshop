@@ -2,31 +2,42 @@
 
     <!-- 1. STICKY TOP APP HEADER -->
     <header class="detail-top-nav">
-        <div class="nav-left">
-            <button class="nav-icon-btn back-btn" (click)="goBack()" title="Go Back">
-                <span class="material-icons">arrow_back</span>
-            </button>
-            <div class="header-brand-wrap" (click)="router.navigate(['/home/view'])">
-                <img src="assets/home/logo_wo.png" alt="TomorrowNeeds" class="nav-logo" />
+        <div class="nav-inner-container">
+            <div class="nav-left">
+                <button class="nav-icon-btn back-btn" (click)="goBack()" title="Go Back">
+                    <span class="material-icons">arrow_back</span>
+                </button>
+                <div class="header-brand-wrap" (click)="router.navigate(['/home/view'])">
+                    <img src="assets/home/logo_main.png" alt="TomorrowNeeds" class="nav-logo" />
+                </div>
             </div>
-        </div>
 
-        <div class="nav-actions">
-            <!-- Share Button -->
-            <button class="nav-icon-btn share-btn" (click)="shareProduct()" title="Share this product">
-                <span class="material-icons">share</span>
-            </button>
+            <!-- Desktop Search Box Trigger (Matches Home Page dropshadow box) -->
+            <div class="desktop-search-trigger" (click)="goToSearch()">
+                <span class="material-icons search-lead-icon">search</span>
+                <span class="search-placeholder-txt">Search veggies, milk, batter, fruits...</span>
+                <div class="search-arrow-badge">
+                    <span class="material-icons">arrow_forward</span>
+                </div>
+            </div>
 
-            <!-- Search Button -->
-            <button class="nav-icon-btn search-btn" (click)="goToSearch()" title="Search products">
-                <span class="material-icons">search</span>
-            </button>
+            <div class="nav-actions">
+                <!-- Mobile Search Button (visible only on mobile) -->
+                <button class="nav-icon-btn search-btn mobile-only" (click)="goToSearch()" title="Search products">
+                    <span class="material-icons">search</span>
+                </button>
 
-            <!-- Cart Button with Live Counter Badge -->
-            <button class="nav-icon-btn cart-btn" (click)="goToCart()" title="View Cart">
-                <span class="material-icons">shopping_cart</span>
-                <span class="cart-badge" *ngIf="totalCartItems > 0">{{ totalCartItems }}</span>
-            </button>
+                <!-- Share Button -->
+                <button class="nav-icon-btn share-btn" (click)="shareProduct()" title="Share this product">
+                    <span class="material-icons">share</span>
+                </button>
+
+                <!-- Cart Button with Live Counter Badge -->
+                <button class="nav-icon-btn cart-btn" (click)="goToCart()" title="View Cart">
+                    <span class="material-icons">shopping_cart</span>
+                    <span class="cart-badge" *ngIf="totalCartItems > 0">{{ totalCartItems }}</span>
+                </button>
+            </div>
         </div>
     </header>
 

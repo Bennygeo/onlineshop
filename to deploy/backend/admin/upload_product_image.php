@@ -47,14 +47,25 @@ $safeBase = preg_replace('/[^a-z0-9_\-]/i', '_', pathinfo($origName, PATHINFO_FI
 $safeBase = substr($safeBase, 0, 60);
 $filename = $safeBase . '_' . time() . '_' . rand(100, 999) . '.' . $ext;
 
-// Save to <docroot>/uploads/products/  (sibling of admin/)
-// __DIR__ = <docroot>/admin  →  ../uploads/products/
-$uploadDir = __DIR__ . '/../uploads/products/';
+// Resolve docroot dynamically
+// backend/admin/ -> 2 levels up is project root (<docroot>)
+$webRoot = dirname(dirname(__DIR__));
+if (!empty($_SERVER['DOCUMENT_ROOT']) && is_dir($_SERVER['DOCUMENT_ROOT'])) {
+    $docRootCandidate = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
+    if (is_dir($docRootCandidate)) {
+        $webRoot = $docRootCandidate;
+    }
+}
+
+$uploadDir = rtrim($webRoot, '/\\') . '/uploads/products/';
 
 if (!is_dir($uploadDir)) {
-    if (!mkdir($uploadDir, 0755, true)) {
-        sendJson(['error' => 'Could not create upload directory. Check server write permissions.'], 500);
+    if (!@mkdir($uploadDir, 0755, true)) {
+        if (!@mkdir($uploadDir, 0777, true)) {
+            sendJson(['error' => 'Could not create upload directory on server. Check write permissions.'], 500);
+        }
     }
+    @chmod($uploadDir, 0755);
 }
 
 $destPath = $uploadDir . $filename;
@@ -64,8 +75,8 @@ if (!move_uploaded_file($tmpPath, $destPath)) {
 }
 
 // Build the public URL dynamically from the request
-$scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host     = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+$scheme   = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) ? 'https' : 'http';
+$host     = $_SERVER['HTTP_HOST'] ?? 'www.tomorrowneeds.in';
 $publicUrl = $scheme . '://' . $host . '/uploads/products/' . $filename;
 
 sendJson([
@@ -73,3 +84,4 @@ sendJson([
     'url'     => $publicUrl,
     'message' => 'Image uploaded successfully',
 ]);
+

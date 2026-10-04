@@ -138,10 +138,11 @@ font-size: 20px; font-weight: bolder;">
 </div>
 
 
-<div class="main-header-bar"
-    style="z-index: 100; padding: 13px 23px 9px 12px; height: 54px; background-color: #f5f5f5; position: sticky; top: 0; width: 100%;"
+<div class="main-header-bar mobile-type6-bar"
+    style="z-index: 100; position: sticky; top: 0; width: 100%;"
     *ngIf="type==='type6'">
-    <div>
+    <!-- Mobile type6 view (Original untouched layout) -->
+    <div class="mobile-type6-inner">
         <img class="logo_wo" src="assets/home/logo_wo.png" style="left: 6px; position: absolute; top: 6px;"
             routerLink="/" />
         <div class="searchBar" style="top:-6px">
@@ -156,6 +157,37 @@ font-size: 20px; font-weight: bolder;">
             <div style="width: 40px; height: 40px; background-color: #FFC529; border-radius: 12px; margin-top: -6px;"
                 (click)="profileAction()">
                 <img src="assets/home/profile_icon.png" alt="user" style="margin-right: 9px;" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Desktop type6 view (Greenish background with home page logo) -->
+    <div class="desktop-type6-inner">
+        <div (click)="homeBtnClick()" class="headerItems" style="cursor: pointer; display: flex; align-items: center;">
+            <div class="logoCont">
+                <img src="assets/home/logo_main.png" class="logoImg" style="top: 0; max-height: 38px;" alt="TomorrowNeeds" />
+            </div>
+        </div>
+
+        <div class="header-search-wrapper">
+            <span class="material-icons search-lead-icon">search</span>
+            <input class="searchInput" type="text" placeholder="Search fresh vegetables, fruits, groceries..."
+                (input)="searchChange($event)" />
+            <div class="search-action-arrow" (click)="searchChange($event)">
+                <span class="material-icons">arrow_forward</span>
+            </div>
+        </div>
+
+        <div class="headerItems rightMenu" style="display: flex; align-items: center; gap: 12px; float: none; top: 0;">
+            <div style="text-align: right; cursor: pointer;" (click)="addressSelection()">
+                <div style="line-height: 12px; font-size: 11px; color: #ffffff; opacity: 0.9;">Deliver to&nbsp;&nbsp;<span
+                        class="down-arrow">▼</span></div>
+                <div class="addressTitle"
+                    style="font-size: 13px; font-weight: 700; color: #ffffff; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2;">
+                    {{addressName}}</div>
+            </div>
+            <div class="profileBtn" (click)="profileAction()">
+                <img src="assets/home/profile_icon.png" alt="user" />
             </div>
         </div>
     </div>

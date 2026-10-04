@@ -15,17 +15,18 @@
     height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 10px 4px 85px 4px;
+    padding: 16px 16px 90px 16px;
     box-sizing: border-box;
     scroll-behavior: smooth;
 
     @media (min-width: 769px) {
-        padding: 4px 2px 10px 2px;
+        padding: 16px 16px 90px 16px;
     }
 
     &::-webkit-scrollbar {
         width: 4px;
     }
+
     &::-webkit-scrollbar-thumb {
         background: #e2e8f0;
         border-radius: 4px;
@@ -502,10 +503,10 @@
 }
 
 // Custom Material Radio colors
-::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled:checked + .mdc-radio__background .mdc-radio__outer-circle {
+::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled:checked+.mdc-radio__background .mdc-radio__outer-circle {
     border-color: $teal-100 !important;
 }
 
-::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled + .mdc-radio__background .mdc-radio__inner-circle {
+::ng-deep .mat-mdc-radio-button .mdc-radio .mdc-radio__native-control:enabled+.mdc-radio__background .mdc-radio__inner-circle {
     border-color: $teal-100 !important;
 }

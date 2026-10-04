@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Allow: /home/
+Allow: /products/
+Allow: /assets/
+
+# Disallow internal admin & sensitive management panels
+Disallow: /admin/
+Disallow: /admin/*
+
+# Sitemap Reference
+Sitemap: https://tomorrowneeds.in/sitemap.xml

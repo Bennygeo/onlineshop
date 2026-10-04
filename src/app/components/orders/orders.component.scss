@@ -9,7 +9,7 @@
 }
 
 .orders-page-wrapper {
-    max-width: 860px;
+    // max-width: 860px;
     margin: 0 auto;
     padding: 24px 16px 80px 16px;
     color: #0f172a;
@@ -89,6 +89,7 @@
         opacity: 0;
         transform: translateY(-16px) scale(0.96);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -339,6 +340,7 @@
 
             &:hover {
                 background: #e2e8f0;
+
                 .copy-icon {
                     color: #0f172a;
                 }
@@ -429,42 +431,60 @@
                     background: #fffbeb;
                     color: #b45309;
                     border: 1px solid #fde68a;
-                    .status-dot { background: #f59e0b; }
+
+                    .status-dot {
+                        background: #f59e0b;
+                    }
                 }
 
                 &.status-packed {
                     background: #f5f3ff;
                     color: #6d28d9;
                     border: 1px solid #ddd6fe;
-                    .status-dot { background: #7c3aed; }
+
+                    .status-dot {
+                        background: #7c3aed;
+                    }
                 }
 
                 &.status-out {
                     background: #ecfdf5;
                     color: #047857;
                     border: 1px solid #a7f3d0;
-                    .status-dot { background: #10b981; }
+
+                    .status-dot {
+                        background: #10b981;
+                    }
                 }
 
                 &.status-delivered {
                     background: #f0fdf4;
                     color: #15803d;
                     border: 1px solid #bbf7d0;
-                    .status-dot { background: #22c55e; }
+
+                    .status-dot {
+                        background: #22c55e;
+                    }
                 }
 
                 &.status-undelivered {
                     background: #fff1f2;
                     color: #be123c;
                     border: 1px solid #fecdd3;
-                    .status-dot { background: #f43f5e; }
+
+                    .status-dot {
+                        background: #f43f5e;
+                    }
                 }
 
                 &.status-cancelled {
                     background: #f8fafc;
                     color: #64748b;
                     border: 1px solid #e2e8f0;
-                    .status-dot { background: #94a3b8; }
+
+                    .status-dot {
+                        background: #94a3b8;
+                    }
                 }
             }
         }
@@ -523,6 +543,7 @@
                     border-color: #e2e8f0;
                     font-size: 11.5px;
                     padding: 3px 9px;
+
                     .material-icons {
                         color: #64748b;
                         font-size: 13px;
@@ -602,12 +623,25 @@
                 font-weight: 600;
                 color: #15803d;
 
-                .icon-green { color: #16a34a; }
-                .icon-red { color: #dc2626; }
-                .icon-gray { color: #64748b; }
+                .icon-green {
+                    color: #16a34a;
+                }
 
-                &.undelivered-desc { color: #dc2626; }
-                &.cancelled-desc { color: #64748b; }
+                .icon-red {
+                    color: #dc2626;
+                }
+
+                .icon-gray {
+                    color: #64748b;
+                }
+
+                &.undelivered-desc {
+                    color: #dc2626;
+                }
+
+                &.cancelled-desc {
+                    color: #64748b;
+                }
             }
 
             .refund-inline-badge {
@@ -691,6 +725,7 @@
                     color: #ffffff;
                     box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
                 }
+
                 .step-label {
                     color: #065f46;
                     font-weight: 700;
@@ -704,6 +739,7 @@
                     color: #ffffff;
                     box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
                 }
+
                 .step-label {
                     color: #0f766e;
                     font-weight: 700;
@@ -835,6 +871,7 @@
 
             .chevron {
                 transition: transform 0.2s ease;
+
                 &.rotated {
                     transform: rotate(180deg);
                 }
@@ -941,6 +978,7 @@
                     background: #f1f5f9;
                     color: #64748b;
                 }
+
                 .slot-time-highlight {
                     color: #334155;
                 }
@@ -1209,8 +1247,13 @@
                     color: #475569;
                     margin-bottom: 6px;
 
-                    .icon-teal { color: #0d9488; }
-                    .icon-amber { color: #d97706; }
+                    .icon-teal {
+                        color: #0d9488;
+                    }
+
+                    .icon-amber {
+                        color: #d97706;
+                    }
                 }
 
                 .meta-box-content {
@@ -1239,7 +1282,8 @@
                 color: #64748b;
                 padding: 4px 0;
 
-                .refund-lbl, .refund-val {
+                .refund-lbl,
+                .refund-val {
                     color: #0284c7;
                     font-weight: 700;
                 }
@@ -1436,7 +1480,11 @@
                 background: #fffbeb;
                 border: 1px solid #fde68a;
                 color: #92400e;
-                .material-icons { color: #d97706; flex-shrink: 0; }
+
+                .material-icons {
+                    color: #d97706;
+                    flex-shrink: 0;
+                }
             }
         }
 
@@ -1498,6 +1546,7 @@
         opacity: 0;
         transform: scale(0.92);
     }
+
     to {
         opacity: 1;
         transform: scale(1);
@@ -1505,10 +1554,21 @@
 }
 
 /* Material Icons size helper */
-.size-11 { font-size: 11px !important; }
-.size-12 { font-size: 12px !important; }
-.size-14 { font-size: 14px !important; }
-.size-16 { font-size: 16px !important; }
+.size-11 {
+    font-size: 11px !important;
+}
+
+.size-12 {
+    font-size: 12px !important;
+}
+
+.size-14 {
+    font-size: 14px !important;
+}
+
+.size-16 {
+    font-size: 16px !important;
+}
 
 .item-delivery-date-chip {
     display: inline-flex;
@@ -1711,6 +1771,7 @@
             .card-header-top-row {
                 .order-tag-btn {
                     padding: 2px 6px;
+
                     .order-id-txt {
                         font-size: 11.5px;
                     }
@@ -1732,7 +1793,8 @@
                     font-size: 11px;
                 }
 
-                .payment-chip, .referral-chip {
+                .payment-chip,
+                .referral-chip {
                     font-size: 10.5px;
                     padding: 2px 6px;
                 }
@@ -1749,7 +1811,8 @@
                     padding: 3px 8px;
                 }
 
-                .hero-timing-text, .past-status-desc {
+                .hero-timing-text,
+                .past-status-desc {
                     font-size: 12.5px;
                 }
             }
@@ -1758,6 +1821,7 @@
                 .hero-total-price {
                     font-size: 16px;
                 }
+
                 .hero-items-count {
                     font-size: 11px;
                 }
@@ -1798,4 +1862,3 @@
         }
     }
 }
-

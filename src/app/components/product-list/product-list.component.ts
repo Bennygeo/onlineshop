@@ -195,8 +195,10 @@ export class ProductListComponent implements OnInit, OnDestroy {
       // console.log("height :: " + productContHeight);
       //update product page height (page height - menu height - footer height)
       let timeout = setTimeout(() => {
-        const contWidth = window.innerWidth >= 1200 ? "calc(1200px - 67px)" : "calc(100% - 67px)";
-        this._utils.css(".productsCont", { top: "9px", height: productContHeight, width: contWidth, "overflow-y": "scroll" });
+        if (window.innerWidth < 768) {
+          const contWidth = "calc(100% - 67px)";
+          this._utils.css(".productsCont", { top: "9px", height: productContHeight, width: contWidth, "overflow-y": "scroll" });
+        }
         clearTimeout(timeout);
       });
     });
@@ -328,9 +330,11 @@ export class ProductListComponent implements OnInit, OnDestroy {
     if (_sub_categories.length === 0) _sub_categories.push(this.menus.activeMenu);
 
     let timeout = setTimeout(() => {
-      let productContHeight = (this.isCart) ? (window.innerHeight - 116) + "px" : (window.innerHeight - 50) + "px";
-      const contWidth = window.innerWidth >= 1200 ? "calc(1200px - 67px)" : "calc(100% - 67px)";
-      this._utils.css(".productsCont", { top: "9px", height: productContHeight, width: contWidth, "overflow-y": "scroll" });
+      if (window.innerWidth < 768) {
+        let productContHeight = (this.isCart) ? (window.innerHeight - 116) + "px" : (window.innerHeight - 50) + "px";
+        const contWidth = "calc(100% - 67px)";
+        this._utils.css(".productsCont", { top: "9px", height: productContHeight, width: contWidth, "overflow-y": "scroll" });
+      }
       clearTimeout(timeout);
     });
 

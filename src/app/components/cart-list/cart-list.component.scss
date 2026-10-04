@@ -15,7 +15,7 @@
    ========================================================================== */
 .cart-page-wrap {
     width: 100%;
-    max-width: 680px;
+    // max-width: 680px;
     margin: 0 auto;
     padding: 16px 16px 20px 16px;
     box-sizing: border-box;
@@ -1794,9 +1794,12 @@
         }
 
         @keyframes checkmark-scale {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: none;
             }
+
             50% {
                 transform: scale3d(1.08, 1.08, 1);
             }
@@ -1954,7 +1957,9 @@
                 color: #0f766e;
             }
 
-            .size-16 { font-size: 16px; }
+            .size-16 {
+                font-size: 16px;
+            }
         }
     }
 
@@ -1983,7 +1988,9 @@
                 color: #065f46;
                 border: 1px solid #a7f3d0;
 
-                .size-14 { font-size: 14px; }
+                .size-14 {
+                    font-size: 14px;
+                }
 
                 &.unserviceable-pin {
                     background: #fef2f2;
@@ -2013,7 +2020,10 @@
         .warning-icon-box {
             color: #d97706;
             margin-top: 1px;
-            .material-icons { font-size: 20px; }
+
+            .material-icons {
+                font-size: 20px;
+            }
         }
 
         .warning-text-box {
@@ -2090,7 +2100,9 @@
                 color: #0f172a;
             }
 
-            .material-icons { font-size: 18px; }
+            .material-icons {
+                font-size: 18px;
+            }
         }
 
         .modal-badge-icon {
@@ -2154,7 +2166,10 @@
                 letter-spacing: 0.5px;
                 margin-bottom: 8px;
 
-                .info-icon { font-size: 16px; color: #0d9488; }
+                .info-icon {
+                    font-size: 16px;
+                    color: #0d9488;
+                }
             }
 
             .serviceable-hub-pill {
@@ -2213,7 +2228,9 @@
                     box-shadow: 0 6px 18px rgba(13, 148, 136, 0.45);
                 }
 
-                .material-icons { font-size: 20px; }
+                .material-icons {
+                    font-size: 20px;
+                }
             }
 
             .btn-secondary-action {
@@ -2241,6 +2258,7 @@
         opacity: 0;
         transform: scale(0.92);
     }
+
     to {
         opacity: 1;
         transform: scale(1);

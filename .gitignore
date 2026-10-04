@@ -51,3 +51,5 @@ Thumbs.db
 *.sqlite
 .schema_ensured
 scratch/
+graphify-out/
+backend (*).zip

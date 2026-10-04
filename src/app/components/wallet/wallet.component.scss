@@ -1,7 +1,7 @@
 @import "../../../assets/styles/global-constants.scss";
 
 .walletContainer {
-    max-width: 600px;
+    // max-width: 600px;
     margin: 0 auto;
     padding: 12px 12px 40px 12px;
     color: #1e293b;
@@ -557,6 +557,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    text-align: center;
 
     .modalBackdrop {
         position: absolute;
@@ -942,6 +943,7 @@
     0% {
         transform: translateY(100%);
     }
+
     100% {
         transform: translateY(0);
     }
@@ -952,6 +954,7 @@
         opacity: 0;
         transform: scale(0.95);
     }
+
     100% {
         opacity: 1;
         transform: scale(1);
@@ -961,10 +964,15 @@
 @media (min-width: 768px) {
     .addMoneyModal {
         align-items: center;
+        text-align: center;
 
         .modalSheet {
             border-radius: 24px;
             max-height: 80vh;
         }
     }
+}
+
+#wallet-recharge-amount-input {
+    text-align: center;
 }

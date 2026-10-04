@@ -4,6 +4,7 @@ import { CartService } from './services/cart.service';
 import { CartDetails, PopupType } from './utils/types';
 import { Common } from './modal/Common';
 import { LoginService } from './services/login.service';
+import { AnalyticsService } from './services/analytics.service';
 import { Utils } from './utils/utils';
 
 @Component({
@@ -32,8 +33,10 @@ export class AppComponent implements OnInit {
     public loginS: LoginService,
     public cartS: CartService,
     private activatedRoute: ActivatedRoute,
-    private utils: Utils
+    private utils: Utils,
+    private analyticsS: AnalyticsService
   ) {
+    this.analyticsS.init();
 
     this.loginS.popupEvent.subscribe((res: PopupType) => {
       this.popupItem = res;

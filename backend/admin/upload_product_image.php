@@ -52,14 +52,25 @@ $safeBase = preg_replace('/[^a-z0-9_\-]/i', '_', pathinfo($origName, PATHINFO_FI
 $safeBase = substr($safeBase, 0, 60);
 $filename = $safeBase . '_' . time() . '_' . rand(100, 999) . '.' . $ext;
 
-// Resolve upload directory relative to this PHP file
-// backend/admin/ → go up two levels → project root → assets/uploads/products/
-$uploadDir = realpath(__DIR__ . '/../../') . '/assets/uploads/products/';
+// Resolve docroot dynamically
+// backend/admin/ -> 2 levels up is project root (<docroot>)
+$webRoot = dirname(dirname(__DIR__));
+if (!empty($_SERVER['DOCUMENT_ROOT']) && is_dir($_SERVER['DOCUMENT_ROOT'])) {
+    $docRootCandidate = rtrim($_SERVER['DOCUMENT_ROOT'], '/\\');
+    if (is_dir($docRootCandidate)) {
+        $webRoot = $docRootCandidate;
+    }
+}
+
+$uploadDir = rtrim($webRoot, '/\\') . '/uploads/products/';
 
 if (!is_dir($uploadDir)) {
-    if (!mkdir($uploadDir, 0755, true)) {
-        sendJson(['error' => 'Could not create upload directory on server.'], 500);
+    if (!@mkdir($uploadDir, 0755, true)) {
+        if (!@mkdir($uploadDir, 0777, true)) {
+            sendJson(['error' => 'Could not create upload directory on server. Check write permissions.'], 500);
+        }
     }
+    @chmod($uploadDir, 0755);
 }
 
 $destPath = $uploadDir . $filename;
@@ -68,12 +79,14 @@ if (!move_uploaded_file($tmpPath, $destPath)) {
     sendJson(['error' => 'Failed to save uploaded file. Check server write permissions.'], 500);
 }
 
-// Return the public URL path (relative to the Angular app root)
-// $publicUrl = 'assets/uploads/products/' . $filename;
-$publicUrl = '/uploads/products/' . $filename;
+// Build public URL dynamically
+$scheme    = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) ? 'https' : 'http';
+$host      = $_SERVER['HTTP_HOST'] ?? 'www.tomorrowneeds.in';
+$publicUrl = $scheme . '://' . $host . '/uploads/products/' . $filename;
 
 sendJson([
     'status'  => 'SUCCESS',
     'url'     => $publicUrl,
     'message' => 'Image uploaded successfully',
 ]);
+

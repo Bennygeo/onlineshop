@@ -3,7 +3,7 @@
     <div class="walletHeroCard">
         <div class="cardAmbientGlow"></div>
         <div class="cardPattern"></div>
-        
+
         <div class="cardHeaderRow">
             <div class="brandCol">
                 <div class="brandBadge">
@@ -98,12 +98,8 @@
             <!-- Search Bar -->
             <div class="historySearchBox">
                 <span class="material-icons-round searchIcon">search</span>
-                <input 
-                    type="text" 
-                    [(ngModel)]="searchTerm" 
-                    placeholder="Search by ID or description..." 
-                    class="historySearchInput"
-                />
+                <input type="text" [(ngModel)]="searchTerm" placeholder="Search by ID or description..."
+                    class="historySearchInput" />
                 <button *ngIf="searchTerm" class="clearSearchBtn" (click)="searchTerm = ''">
                     <span class="material-icons-round">close</span>
                 </button>
@@ -158,7 +154,7 @@
 <!-- Add Money Bottom Sheet Modal -->
 <div class="addMoneyModal" *ngIf="rcWindowFlg" [@fadeInOut]>
     <div class="modalBackdrop" (click)="rcWindowClose()"></div>
-    
+
     <div class="modalSheet">
         <div class="sheetHandleBar" (click)="rcWindowClose()"></div>
 
@@ -174,16 +170,10 @@
 
         <!-- Amount Input Card -->
         <div class="amountInputCard">
-            <span class="inputCurrencyPrefix">₹</span>
+            <!-- <span class="inputCurrencyPrefix">₹</span> -->
             <form [formGroup]="walletForm" class="amountForm">
-                <input 
-                    formControlName="amount" 
-                    type="text" 
-                    TextInputFilter 
-                    placeholder="0"
-                    class="customAmountInput"
-                    id="wallet-recharge-amount-input"
-                />
+                <input formControlName="amount" type="text" TextInputFilter placeholder="0" class="customAmountInput"
+                    id="wallet-recharge-amount-input" />
             </form>
         </div>
 
@@ -191,12 +181,8 @@
         <div class="quickPillsSection">
             <span class="sectionSublabel">Select Recommended Amount</span>
             <div class="pillsGrid">
-                <button 
-                    type="button"
-                    *ngFor="let amt of rechargeAmounts; let i = index;"
-                    class="amountPill" 
-                    [class.active]="rechargeActiveAmtindex === i" 
-                    (click)="rcOptionClickAction(amt)">
+                <button type="button" *ngFor="let amt of rechargeAmounts; let i = index;" class="amountPill"
+                    [class.active]="rechargeActiveAmtindex === i" (click)="rcOptionClickAction(amt)">
                     <span class="pillText">{{ amt }}</span>
                     <span class="popularBadge" *ngIf="amt === '₹500' || amt === '₹1000'">Popular</span>
                 </button>
@@ -221,15 +207,18 @@
             <span>100% Safe & Secure Payments via Razorpay (UPI, Cards, NetBanking)</span>
         </div>
 
-        <div class="trustSecurityBanner" *ngIf="!cartS.enableRazorpay" style="background: #fef2f2; border-color: #fecaca; color: #991b1b;">
+        <div class="trustSecurityBanner" *ngIf="!cartS.enableRazorpay"
+            style="background: #fef2f2; border-color: #fecaca; color: #991b1b;">
             <span class="material-icons-round lockIcon" style="color: #dc2626;">block</span>
             <span>Online wallet recharge is temporarily disabled by the store administration.</span>
         </div>
 
         <!-- Submit Button -->
         <div class="modalActions">
-            <button class="proceedPayBtn" (click)="addMoneyToWallet($event)" [disabled]="parsedRechargeAmt <= 0 || !cartS.enableRazorpay">
-                <span>{{ cartS.enableRazorpay ? ('Proceed to Pay ' + rechargeAmt) : 'Recharge Temporarily Disabled' }}</span>
+            <button class="proceedPayBtn" (click)="addMoneyToWallet($event)"
+                [disabled]="parsedRechargeAmt <= 0 || !cartS.enableRazorpay">
+                <span>{{ cartS.enableRazorpay ? ('Proceed to Pay ' + rechargeAmt) : 'Recharge Temporarily Disabled'
+                    }}</span>
                 <span class="material-icons-round" *ngIf="cartS.enableRazorpay">arrow_forward</span>
             </button>
         </div>
@@ -244,10 +233,11 @@
             <span class="material-icons-round">event_repeat</span>
         </div>
         <h3 class="infoModalTitle">What is Ledger Balance?</h3>
-        
+
         <div class="infoModalBody">
             <p>
-                <strong>Ledger Balance</strong> is the amount automatically set aside in your TomorrowNeeds wallet to guarantee uninterrupted daily deliveries for your milk, vegetables, and recurring subscriptions.
+                <strong>Ledger Balance</strong> is the amount automatically set aside in your TomorrowNeeds wallet to
+                guarantee uninterrupted daily deliveries for your milk, vegetables, and recurring subscriptions.
             </p>
             <div class="infoHighlightBox">
                 <div class="infoItem">
@@ -256,7 +246,8 @@
                 </div>
                 <div class="infoItem">
                     <span class="material-icons-round checkIcon">check_circle</span>
-                    <span><strong>Ledger Balance:</strong> Kept reserved for your upcoming scheduled subscriptions.</span>
+                    <span><strong>Ledger Balance:</strong> Kept reserved for your upcoming scheduled
+                        subscriptions.</span>
                 </div>
             </div>
         </div>
