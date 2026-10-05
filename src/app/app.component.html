@@ -27,7 +27,7 @@
 
     <!-- SEPARATE DESKTOP VIEW FOR CUSTOMER (maxWidth: 1200px) -->
     <div class="customer-desktop-frame" *ngIf="!isMobile">
-        <app-header></app-header>
+        <app-header *ngIf="!isSearchPage"></app-header>
         <div class="customer-desktop-content-area">
             <router-outlet></router-outlet>
         </div>
@@ -55,7 +55,7 @@
 
     <!-- MOBILE VIEW FOR CUSTOMER -->
     <div class="customer-mobile-frame" *ngIf="isMobile">
-        <app-header></app-header>
+        <app-header *ngIf="!isSearchPage"></app-header>
         <router-outlet></router-outlet>
 
         <div id="bottom_cart_view" [class]="bottombarClass" *ngIf="cartS.isCart$ | async"

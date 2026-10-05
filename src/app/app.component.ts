@@ -27,6 +27,7 @@ export class AppComponent implements OnInit {
   popupItem: PopupType;
   isMobile: boolean = false;
   isAdminPage: boolean = false;
+  isSearchPage: boolean = false;
 
 
   constructor(
@@ -60,6 +61,7 @@ export class AppComponent implements OnInit {
         const url = this.cartS.router.url.split("?")[0];
         const hash = window.location.hash || "";
         this.isAdminPage = url.startsWith("/admin") || hash.includes("admin") || window.location.pathname.includes("admin");
+        this.isSearchPage = url === "/products/search" || url.startsWith("/products/search");
 
         if (!this.isAdminPage) {
           if (url === "/web") {
@@ -113,6 +115,7 @@ export class AppComponent implements OnInit {
       }
 
       this.isAdminPage = false;
+      this.isSearchPage = currentUrl === "/products/search" || currentUrl.startsWith("/products/search");
 
       // In admin impersonation mode, treat as active store view so admin can place orders directly
       if (isAdminMode) {

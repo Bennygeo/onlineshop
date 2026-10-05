@@ -29,19 +29,19 @@
                 </div>
             </div>
 
-            <!-- Interactive Search & AI Voice Bar Trigger -->
+            <!-- Interactive Search & AI Chat Bar Trigger -->
             <div class="search-bar-trigger" (click)="goToSearch()">
                 <span class="material-icons search-icon">search</span>
                 <span class="search-placeholder">Search veggies, milk, batter, fruits...</span>
 
                 <div class="search-actions-group">
-                    <!-- 100% Free AI Voice Shopping Trigger -->
-                    <!-- <button class="voice-search-trigger-btn" (click)="openVoiceModal(); $event.stopPropagation()"
-                        title="Shop with Voice AI (English / தமிழ்)">
-                        <span class="material-icons voice-mic-icon">mic</span>
-                        <span class="voice-btn-label">Voice AI</span>
-                        <span class="voice-pulse-ring"></span>
-                    </button> -->
+                    <!-- AI Chat Shopping Trigger -->
+                    <button class="ai-chat-search-btn" (click)="openChatModal(); $event.stopPropagation()"
+                        title="Shop with AI Assistant (Recipes, Diets, Instant Cart)">
+                        <span class="material-icons ai-sparkle-icon">auto_awesome</span>
+                        <span class="ai-btn-label">AI Chat</span>
+                        <span class="ai-pulse-dot"></span>
+                    </button>
 
                     <span class="search-action-badge">
                         <span class="material-icons size-16">arrow_forward</span>
@@ -339,11 +339,11 @@
                             <div class="goal-banner-desc">{{ getActiveGoal().desc }}</div>
                         </div>
                     </div>
-                    <button class="voice-ask-diet-btn"
-                        (click)="openVoiceModal(); sendVoiceQuery(getActiveGoal().label + ' meal plan')"
-                        title="Ask AI Chef about this diet">
-                        <span class="material-icons size-16">psychology</span>
-                        <span>Ask AI Chef</span>
+                    <button class="ai-ask-diet-btn"
+                        (click)="openChatModal(getActiveGoal().label + ' meal plan and ingredients')"
+                        title="Chat with AI Chef about this diet">
+                        <span class="material-icons size-16">chat</span>
+                        <span>Chat with AI</span>
                     </button>
                 </div>
 
@@ -517,136 +517,157 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- 100% FREE MULTILINGUAL AI VOICE SHOPPING MODAL & SOUNDWAVE DRAWER -->
+<!-- SMART AI CHAT SHOPPING FLOATING BUTTON -->
 <!-- ========================================================================= -->
-<div class="voice-modal-backdrop" *ngIf="showVoiceModal" (click)="closeVoiceModal()">
-    <div class="voice-modal-sheet" (click)="$event.stopPropagation()">
+<button class="floating-ai-chat-fab" (click)="openChatModal()" title="Chat with AI Chef & Shopping Assistant">
+    <div class="fab-icon-wrap">
+        <span class="material-icons fab-sparkle">auto_awesome</span>
+    </div>
+    <span class="fab-label">AI Chat</span>
+    <span class="fab-glow-ring"></span>
+</button>
 
-        <!-- Header & Language Switcher -->
-        <div class="voice-sheet-header">
-            <div class="sheet-title-group">
-                <div class="sheet-icon-circle">
-                    <span class="material-icons">mic</span>
+<!-- ========================================================================= -->
+<!-- INTERACTIVE AI CHAT SHOPPING DRAWER / MODAL -->
+<!-- ========================================================================= -->
+<div class="ai-chat-modal-backdrop" *ngIf="showAiChatModal" (click)="closeChatModal()">
+    <div class="ai-chat-modal-sheet" (click)="$event.stopPropagation()">
+
+        <!-- 1. Header with Avatar & Controls -->
+        <div class="chat-sheet-header">
+            <div class="chat-title-group">
+                <div class="chat-ai-avatar">
+                    <span class="material-icons">auto_awesome</span>
+                    <span class="avatar-online-dot"></span>
                 </div>
                 <div>
-                    <h3 class="sheet-title">TomorrowNeeds AI Voice Shopping</h3>
-                    <p class="sheet-subtitle">Speak to search or say "Add 2 Apples" to order by voice</p>
+                    <div class="chat-title-row">
+                        <h3 class="chat-title">TomorrowNeeds AI Assistant</h3>
+                        <span class="chat-badge-ai">AI Chef & Cart</span>
+                    </div>
+                    <p class="chat-subtitle">Recipes, Meal Plans, Diets & 1-Click Cart Addition</p>
                 </div>
             </div>
-            <button class="sheet-close-btn" (click)="closeVoiceModal()" aria-label="Close voice shopping">
-                <span class="material-icons">close</span>
-            </button>
-        </div>
-
-        <!-- Language Selector Chips -->
-        <div class="voice-lang-selector">
-            <span class="lang-selector-label">Language:</span>
-            <button class="lang-pill" [class.active]="voiceLang === 'en-IN'" (click)="setVoiceLanguage('en-IN')">
-                <span>English (India)</span>
-            </button>
-            <button class="lang-pill" [class.active]="voiceLang === 'ta-IN'" (click)="setVoiceLanguage('ta-IN')">
-                <span>தமிழ் (Tamil)</span>
-            </button>
-        </div>
-
-        <!-- Central Mic & Soundwave Animation Area -->
-        <div class="voice-center-stage">
-            <div class="mic-wave-container" [class.listening]="isListening" [class.processing]="isAiVoiceProcessing"
-                (click)="isListening ? stopVoiceListening() : startVoiceListening()">
-                <div class="wave-ring ring-1"></div>
-                <div class="wave-ring ring-2"></div>
-                <div class="wave-ring ring-3"></div>
-                <button class="big-mic-button" [attr.aria-label]="isListening ? 'Stop listening' : 'Start listening'">
-                    <span class="material-icons big-mic-icon">{{ isAiVoiceProcessing ? 'psychology' : (isListening ?
-                        'mic' : 'mic_none') }}</span>
+            <div class="chat-header-actions">
+                <button class="chat-header-btn" (click)="clearChatHistory()" title="Clear Chat History" aria-label="Clear chat">
+                    <span class="material-icons size-18">refresh</span>
                 </button>
-            </div>
-
-            <div class="mic-status-text">
-                <span *ngIf="isListening" class="status-listening">🎙️ Listening... Speak now</span>
-                <span *ngIf="isAiVoiceProcessing" class="status-processing">✨ Processing voice command...</span>
-                <span *ngIf="!isListening && !isAiVoiceProcessing && !voiceTranscript" class="status-idle">Tap mic & say
-                    e.g. "Add 2 Apples" or "Sambar items"</span>
-            </div>
-
-            <!-- Live Transcript Bubble -->
-            <div class="transcript-bubble" *ngIf="voiceTranscript">
-                <span class="transcript-quote">"{{ voiceTranscript }}"</span>
-            </div>
-
-            <!-- Toast alert inside modal -->
-            <div class="modal-toast" *ngIf="voiceToastMsg">
-                <span class="material-icons">check_circle</span>
-                <span>{{ voiceToastMsg }}</span>
-            </div>
-        </div>
-
-        <!-- Quick Sample Voice Prompts -->
-        <div class="sample-prompts-tray" *ngIf="!isAiVoiceProcessing && !aiVoiceReply">
-            <span class="prompts-title">Try saying:</span>
-            <div class="prompts-list">
-                <button class="prompt-chip" *ngFor="let sample of sampleVoicePrompts"
-                    (click)="sendVoiceQuery(sample.text)">
-                    <span class="prompt-tag">{{ sample.lang }}</span>
-                    <span class="prompt-text">{{ sample.text }}</span>
+                <button class="chat-close-btn" (click)="closeChatModal()" title="Close Chat" aria-label="Close chat">
+                    <span class="material-icons size-20">close</span>
                 </button>
             </div>
         </div>
 
-        <!-- AI Reply & Product Results Tray -->
-        <div class="ai-results-tray" *ngIf="aiVoiceReply || (aiVoiceProducts && aiVoiceProducts.length > 0)">
-
-            <!-- AI Assistant Response Box (Audio playback removed as requested) -->
-            <div class="ai-reply-card" *ngIf="aiVoiceReply">
-                <div class="ai-reply-header">
-                    <span class="material-icons ai-sparkle-icon">auto_awesome</span>
-                    <span class="ai-header-title">TomorrowNeeds AI Assistant</span>
-                </div>
-                <div class="ai-reply-body" [innerHTML]="aiVoiceReply.replace('\n', '<br>')"></div>
+        <!-- 2. Quick Action Prompt Chips Carousel -->
+        <div class="chat-prompts-tray">
+            <span class="prompts-tag-label">Try asking:</span>
+            <div class="chat-prompts-scroll">
+                <button class="chat-prompt-pill" *ngFor="let sample of sampleChatPrompts"
+                    (click)="sendChatMessage(sample.text)">
+                    <span class="prompt-icon">{{ sample.icon }}</span>
+                    <span class="prompt-name">{{ sample.label }}</span>
+                </button>
             </div>
+        </div>
 
-            <!-- Suggested Products Direct Cart List -->
-            <div class="ai-products-section" *ngIf="aiVoiceProducts && aiVoiceProducts.length > 0">
-                <div class="results-header-row">
-                    <span class="results-title">Matched Farm Essentials ({{ aiVoiceProducts.length }})</span>
-                    <button class="add-all-voice-btn" (click)="addAllVoiceProductsToCart()">
-                        <span class="material-icons size-16">add_shopping_cart</span>
-                        <span>Add All ({{ aiVoiceProducts.length }}) to Cart</span>
-                    </button>
+        <!-- 3. Scrollable Message Stream -->
+        <div class="chat-messages-container" #chatScrollContainer>
+
+            <div class="chat-message-item" *ngFor="let msg of chatMessages" [ngClass]="'msg-' + msg.sender">
+                
+                <!-- Assistant Avatar -->
+                <div class="msg-avatar-icon" *ngIf="msg.sender === 'assistant'">
+                    <span class="material-icons size-18">auto_awesome</span>
                 </div>
 
-                <div class="voice-tip-line">
-                    <span class="material-icons size-14">tips_and_updates</span>
-                    <span>Say <strong>"Add all to cart"</strong> or <strong>"Add [item name]"</strong> to add via
-                        voice!</span>
-                </div>
+                <div class="msg-bubble-wrap">
+                    <div class="msg-bubble">
+                        <div class="msg-text-content" [innerHTML]="formatChatMessage(msg.text)"></div>
+                    </div>
 
-                <div class="voice-products-grid">
-                    <div class="voice-product-card" *ngFor="let prod of aiVoiceProducts">
-                        <img [src]="prod.img_url || 'assets/general/product_placeholder.svg'" class="vp-img"
-                            [alt]="prod.name || 'Product'"
-                            onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
-                        <div class="vp-info">
-                            <span class="vp-name">{{ prod.name }}</span>
-                            <span class="vp-weight">{{ prod.updated_weight || prod.weight }} {{ prod.unit_name || ''
-                                }}</span>
-                            <div class="vp-price-row">
-                                <span class="vp-price">₹{{ prod.price | number:'1.0-0' }}</span>
-                                <span class="vp-orig-price"
-                                    *ngIf="prod.original_price && prod.original_price > prod.price">₹{{
-                                    prod.original_price | number:'1.0-0' }}</span>
+                    <!-- Embedded Matched Products Section -->
+                    <div class="chat-matched-products-card" *ngIf="msg.products && msg.products.length > 0">
+                        <div class="matched-header-row">
+                            <div class="matched-title-tag">
+                                <span class="material-icons size-15">storefront</span>
+                                <span>Fresh Farm Essentials ({{ msg.products.length }})</span>
+                            </div>
+                            <button class="chat-add-all-btn" (click)="addAllChatProductsToCart(msg.products)">
+                                <span class="material-icons size-15">add_shopping_cart</span>
+                                <span>Add All ({{ msg.products.length }})</span>
+                            </button>
+                        </div>
+
+                        <div class="chat-products-list">
+                            <div class="chat-prod-row" *ngFor="let prod of msg.products">
+                                <img [src]="prod.img_url || 'assets/general/product_placeholder.svg'" class="cpr-img"
+                                    [alt]="prod.name || 'Product'"
+                                    onerror="this.onerror=null;this.src='assets/general/product_placeholder.svg';" />
+                                
+                                <div class="cpr-info">
+                                    <span class="cpr-name" [title]="prod.name">{{ prod.name }}</span>
+                                    <span class="cpr-weight">{{ prod.updated_weight || prod.weight }} {{ prod.unit_name || '' }}</span>
+                                    <div class="cpr-price-row">
+                                        <span class="cpr-price">₹{{ prod.price | number:'1.0-0' }}</span>
+                                        <span class="cpr-orig-price" *ngIf="prod.original_price && prod.original_price > prod.price">
+                                            ₹{{ prod.original_price | number:'1.0-0' }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="cpr-action">
+                                    <plus-minus [caption]="" [inputVal]="(prod.units || 0)" [stepVal]="1" [minVal]="0"
+                                        [maxVal]="(prod.stock_qty !== undefined && prod.stock_qty !== null) ? prod.stock_qty : 10"
+                                        [disabled]="prod['disabled'] || prod['disable']"
+                                        (onChange)="plusMinusValue($event, prod)">
+                                    </plus-minus>
+                                </div>
                             </div>
                         </div>
-                        <div class="vp-action-wrap">
-                            <plus-minus [caption]="" [inputVal]="(prod.units || 0)" [stepVal]="1" [minVal]="0"
-                                [maxVal]="(prod.stock_qty !== undefined && prod.stock_qty !== null) ? prod.stock_qty : 10"
-                                [disabled]="prod['disabled'] || prod['disable']"
-                                (onChange)="plusMinusValue($event, prod)">
-                            </plus-minus>
+                    </div>
+
+                    <span class="msg-timestamp">{{ msg.time }}</span>
+                </div>
+            </div>
+
+            <!-- Thinking / Loading Indicator -->
+            <div class="chat-message-item msg-assistant" *ngIf="isAiChatProcessing">
+                <div class="msg-avatar-icon">
+                    <span class="material-icons size-18">auto_awesome</span>
+                </div>
+                <div class="msg-bubble-wrap">
+                    <div class="msg-bubble typing-bubble">
+                        <div class="typing-dots">
+                            <span class="dot dot-1"></span>
+                            <span class="dot dot-2"></span>
+                            <span class="dot dot-3"></span>
                         </div>
+                        <span class="typing-text">AI Chef is finding recipes & items...</span>
                     </div>
                 </div>
             </div>
+
+        </div>
+
+        <!-- 4. Inside Toast Alert Notification -->
+        <div class="chat-modal-toast" *ngIf="chatToastMsg">
+            <span class="material-icons size-16">check_circle</span>
+            <span>{{ chatToastMsg }}</span>
+        </div>
+
+        <!-- 5. Bottom Interactive Input Box -->
+        <div class="chat-input-toolbar">
+            <div class="chat-input-wrapper">
+                <span class="material-icons input-lead-icon">edit_note</span>
+                <input type="text" class="chat-text-input" [(ngModel)]="chatInputText"
+                    (keyup.enter)="sendChatMessage()"
+                    placeholder="Ask recipes, diets or 'Add 2kg onion & 1kg tomato'..."
+                    [disabled]="isAiChatProcessing" />
+            </div>
+            <button class="chat-send-action-btn" [disabled]="!chatInputText || !chatInputText.trim() || isAiChatProcessing"
+                (click)="sendChatMessage()" title="Send message" aria-label="Send message">
+                <span class="material-icons size-20">send</span>
+            </button>
         </div>
 
     </div>

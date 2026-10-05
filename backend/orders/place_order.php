@@ -79,11 +79,12 @@ if (!empty($referral_code) && $referral_code !== 'WELCOME25' && $pdo) {
 
 // Delivery Option & Scheduling (Strictly Asia/Kolkata IST)
 $delivery_option = isset($details['delivery_option']) ? trim($details['delivery_option']) : 'NEXT_DAY_7AM';
-$delivery_cutoff_ist = '12:00 Midnight IST';
+$delivery_cutoff_ist = '11:30 PM IST';
 $delivery_expected_at = null;
 
 // Operating hours for instant 10, 30, 60 mins deliveries: 8:00 AM (8) to 8:00 PM (20) IST
 $currentIstHour = (int)date('G');
+$currentIstMinute = (int)date('i');
 $isImmediateOperatingHours = ($currentIstHour >= 8 && $currentIstHour < 20);
 
 if (!$isImmediateOperatingHours && in_array($delivery_option, ['IMMEDIATE_10', 'IMMEDIATE_30', 'IMMEDIATE_60'])) {
@@ -106,7 +107,8 @@ if ($delivery_option === 'IMMEDIATE_10') {
     if ($delivery_date_raw && $delivery_date_timestamp && $delivery_date_timestamp > 0) {
         $delivery_date = date('Y-m-d', $delivery_date_timestamp);
     } else {
-        $delivery_date = date('Y-m-d', strtotime('+1 day'));
+        $isPastCutoff = ($currentIstHour > 23) || ($currentIstHour === 23 && $currentIstMinute >= 30);
+        $delivery_date = date('Y-m-d', strtotime($isPastCutoff ? '+2 days' : '+1 day'));
     }
     // Will be adjusted for weekly_off_day after weeklyOffDay is loaded
 }

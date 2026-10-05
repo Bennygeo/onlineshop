@@ -379,9 +379,15 @@ export class CartService {
   storeSettingsUpdateEvent: BehaviorSubject<StoreSettings> = new BehaviorSubject<StoreSettings>({ weekly_off_day: 'None', enable_razorpay: '1', enable_cod: '1' });
 
   /*
-  * order checkout time limits
+  * order checkout time limits (11:30 PM IST cutoff for next-day delivery rollover)
   */
-  timeLimit: number = 22;
+  timeLimitHour: number = 23;
+  timeLimitMinute: number = 30;
+
+  isPastOrderCutoff(): boolean {
+    const ist = this.getIstParts(this.serverTime);
+    return (ist.hours > 23) || (ist.hours === 23 && ist.minutes >= 30);
+  }
 
   orderID: string = undefined;
 
@@ -488,10 +494,12 @@ export class CartService {
     const istHours = ist.hours;
     const istMinutes = ist.minutes;
 
-    // Time remaining until 12:00 Midnight IST (24:00)
-    const totalMinsUntilMidnight = (24 * 60) - (istHours * 60 + istMinutes);
-    const remainingHrs = Math.floor(totalMinsUntilMidnight / 60);
-    const remainingMins = totalMinsUntilMidnight % 60;
+    // Time remaining until 11:30 PM IST cutoff (23:30)
+    const currentIstMins = istHours * 60 + istMinutes;
+    const cutoffMins = 23 * 60 + 30; // 11:30 PM IST
+    const totalMinsUntilCutoff = Math.max(0, cutoffMins - currentIstMins);
+    const remainingHrs = Math.floor(totalMinsUntilCutoff / 60);
+    const remainingMins = totalMinsUntilCutoff % 60;
 
     // Delivery date calculation: Next day 7:00 AM IST (adjusted for store weekly off day)
     const scheduledDate = this.deliveryDate;
@@ -516,12 +524,16 @@ export class CartService {
     const est30 = new Date(this.serverTime.getTime() + 30 * 60000);
     const est60 = new Date(this.serverTime.getTime() + 60 * 60000);
 
+    const cutoffRemainingStr = totalMinsUntilCutoff > 0
+      ? `${remainingHrs}h ${remainingMins}m left before 11:30 PM cutoff`
+      : 'Order cutoff passed for next-day delivery';
+
     return {
       currentIstTimeStr,
       nextDayDeliveryDateStr,
       countdownHours: remainingHrs,
       countdownMinutes: remainingMins,
-      cutoffRemainingStr: `${remainingHrs}h ${remainingMins}m left before midnight cutoff`,
+      cutoffRemainingStr,
       immediate10EstimateStr: formatTime(est10),
       immediate30EstimateStr: formatTime(est30),
       immediate60EstimateStr: formatTime(est60)
@@ -1015,7 +1027,7 @@ export class CartService {
     this.todaysDate = new DateE(base);
     this.deliveryDate = new DateE(base);
 
-    if (ist.hours >= this.timeLimit) {
+    if (this.isPastOrderCutoff()) {
       this.deliveryDate['addDays'](2);
     } else {
       this.deliveryDate['addDays'](1);

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { Common } from 'src/app/modal/Common';
 import { User } from 'src/app/modals/user';
 import { CartService } from 'src/app/services/cart.service';
@@ -26,12 +26,21 @@ export interface DietaryGoal {
   keywords: string[];
 }
 
+export interface AiChatMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  time: string;
+  products?: Array<Product>;
+}
+
 @Component({
   selector: 'app-view',
   templateUrl: './view.component.html',
   styleUrls: ['./view.component.scss']
 })
 export class ViewComponent implements OnInit, OnDestroy {
+  @ViewChild('chatScrollContainer') private chatScrollContainer!: ElementRef;
   user: User;
 
   userName: string = "there";
@@ -53,24 +62,19 @@ export class ViewComponent implements OnInit, OnDestroy {
   activeUpcomingOrder: any = null;
   walletBalance: number = 0;
 
-  // --- 1. MULTILINGUAL AI VOICE SHOPPING ---
-  showVoiceModal: boolean = false;
-  isListening: boolean = false;
-  voiceLang: string = 'en-IN'; // 'en-IN' | 'ta-IN'
-  voiceTranscript: string = '';
-  isAiVoiceProcessing: boolean = false;
-  aiVoiceReply: string = '';
-  aiVoiceProducts: Array<Product> = [];
-  isSpeaking: boolean = false;
-  speechSupported: boolean = true;
-  voiceToastMsg: string = '';
-  private recognition: any = null;
+  // --- 1. SMART AI CHAT SHOPPING ASSISTANT ---
+  showAiChatModal: boolean = false;
+  chatInputText: string = '';
+  isAiChatProcessing: boolean = false;
+  chatMessages: Array<AiChatMessage> = [];
+  chatToastMsg: string = '';
 
-  sampleVoicePrompts = [
-    { text: 'Add 2 Apples to cart', lang: 'Voice Add' },
-    { text: 'Add Bitter Gourd (Pavakkai)', lang: 'Voice Add' },
-    { text: 'Sambar recipe essentials', lang: 'Recipe Kit' },
-    { text: 'Diabetic-friendly vegetables', lang: 'Diet' }
+  sampleChatPrompts = [
+    { icon: '🍲', label: 'Sambar Kit', text: 'Ingredients for authentic Tamil Sambar' },
+    { icon: '🥗', label: 'Healthy Salad', text: 'Fresh ingredients for low-calorie weight loss salad' },
+    { icon: '🥑', label: 'Diabetic Diet', text: 'Best diabetic friendly low-glycemic vegetables' },
+    { icon: '🥛', label: 'Daily Dairy', text: 'Fresh milk, curd and morning essentials' },
+    { icon: '🛒', label: 'Quick Cart Add', text: 'Add 1kg Tomato and 500g Onion to cart' }
   ];
 
   // --- 2. AI HEALTH & DIETARY CURATIONS ---
@@ -496,7 +500,13 @@ export class ViewComponent implements OnInit, OnDestroy {
     this.syncProductUnits(this.recent_products);
     this.syncProductUnits(this.batter_products);
     this.syncProductUnits(this.curatedDietaryProducts);
-    this.syncProductUnits(this.aiVoiceProducts);
+    if (this.chatMessages && this.chatMessages.length > 0) {
+      for (let msg of this.chatMessages) {
+        if (msg.products && msg.products.length > 0) {
+          this.syncProductUnits(msg.products);
+        }
+      }
+    }
     if (this.restockPredictions && this.restockPredictions.length > 0) {
       this.syncProductUnits(this.restockPredictions.map(r => r.product));
     }
@@ -537,102 +547,51 @@ export class ViewComponent implements OnInit, OnDestroy {
     }
   }
 
-  // --- 1. MULTILINGUAL AI VOICE SHOPPING LOGIC (100% Free Browser Web Speech API) ---
+  // --- 1. SMART AI CHAT SHOPPING ASSISTANT LOGIC ---
 
-  openVoiceModal() {
-    this.showVoiceModal = true;
-    this.voiceTranscript = '';
-    this.aiVoiceReply = '';
-    this.aiVoiceProducts = [];
-    this.initSpeechRecognition();
-    this.startVoiceListening();
+  openChatModal(initialQuery?: string) {
+    this.showAiChatModal = true;
+    if (!this.chatMessages || this.chatMessages.length === 0) {
+      this.initWelcomeMessage();
+    }
+    if (initialQuery && initialQuery.trim()) {
+      setTimeout(() => {
+        this.sendChatMessage(initialQuery);
+      }, 250);
+    }
+    this.scrollToBottom();
   }
 
-  closeVoiceModal() {
-    this.stopVoiceListening();
-    this.stopSpeaking();
-    this.showVoiceModal = false;
+  closeChatModal() {
+    this.showAiChatModal = false;
   }
 
-  setVoiceLanguage(lang: string) {
-    this.voiceLang = lang;
-    if (this.isListening) {
-      this.stopVoiceListening();
-      setTimeout(() => this.startVoiceListening(), 200);
-    }
-  }
-
-  initSpeechRecognition() {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      this.speechSupported = false;
-      return;
-    }
-    this.speechSupported = true;
-
-    try {
-      this.recognition = new SpeechRecognition();
-      this.recognition.continuous = false;
-      this.recognition.interimResults = true;
-      this.recognition.lang = this.voiceLang;
-
-      this.recognition.onstart = () => {
-        this.isListening = true;
-        this.cdr.detectChanges();
-      };
-
-      this.recognition.onresult = (event: any) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          transcript += event.results[i][0].transcript;
-        }
-        this.voiceTranscript = transcript;
-        this.cdr.detectChanges();
-      };
-
-      this.recognition.onerror = (event: any) => {
-        this.isListening = false;
-        this.cdr.detectChanges();
-      };
-
-      this.recognition.onend = () => {
-        this.isListening = false;
-        this.cdr.detectChanges();
-        if (this.voiceTranscript && this.voiceTranscript.trim().length > 1) {
-          this.sendVoiceQuery(this.voiceTranscript);
-        }
-      };
-    } catch (e) {
-      this.speechSupported = false;
-    }
-  }
-
-  startVoiceListening() {
-    if (!this.speechSupported) return;
-    if (!this.recognition) {
-      this.initSpeechRecognition();
-    }
-    this.voiceTranscript = '';
-    try {
-      if (this.recognition) {
-        this.recognition.lang = this.voiceLang;
-        this.recognition.start();
+  initWelcomeMessage() {
+    this.chatMessages = [
+      {
+        id: 'msg_welcome',
+        sender: 'assistant',
+        text: `👋 **Welcome to TomorrowNeeds AI Shopping Assistant!**\n\nHow can I help you today?\n• 🍲 **Authentic Recipes & Kits** (Sambar, Veg Kurma, Salad, Dosa)\n• 🥗 **Personalized Diets** (Diabetic-care, High Protein, Detox)\n• 🛒 **Quick Cart Order** (e.g. *"Add 1kg Tomato and 500g Onion"*)\n\nAsk any question or tap a suggestion below to get started!`,
+        time: this.getCurrentTimeString()
       }
-    } catch (e) {
-      // If already started, ignore error
-    }
+    ];
   }
 
-  stopVoiceListening() {
-    if (this.recognition) {
-      try {
-        this.recognition.stop();
-      } catch (e) { }
-    }
-    this.isListening = false;
+  clearChatHistory() {
+    this.initWelcomeMessage();
+    this.showChatToast('Chat history cleared');
   }
 
-  parseVoiceCommand(text: string): { isAddCommand: boolean; isAddAll: boolean; quantity: number; targetItem: string } {
+  getCurrentTimeString(): string {
+    const now = new Date();
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${hours}:${minutes} ${ampm}`;
+  }
+
+  parseChatCommand(text: string): { isAddCommand: boolean; isAddAll: boolean; quantity: number; targetItem: string } {
     const raw = text.toLowerCase().trim();
 
     // Check for "add all" intent
@@ -675,11 +634,9 @@ export class ViewComponent implements OnInit, OnDestroy {
   findMatchingProduct(target: string, products: Product[]): Product | null {
     if (!target || !products || products.length === 0) return null;
     const cleanTarget = target.toLowerCase().trim();
-    // 1. Exact or partial substring match
     const exact = products.find(p => p.name.toLowerCase().includes(cleanTarget) || (p['tamil_name'] && p['tamil_name'].toLowerCase().includes(cleanTarget)));
     if (exact) return exact;
 
-    // 2. Token match
     const words = cleanTarget.split(/\s+/).filter(w => w.length > 2);
     for (let word of words) {
       const match = products.find(p => p.name.toLowerCase().includes(word) || (p['tamil_name'] && p['tamil_name'].toLowerCase().includes(word)));
@@ -688,114 +645,135 @@ export class ViewComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  sendVoiceQuery(queryText?: string) {
-    const text = (queryText || this.voiceTranscript || '').trim();
-    if (!text) return;
-    this.stopVoiceListening();
-    this.stopSpeaking(); // Audio playing disabled as requested
-    this.voiceTranscript = text;
+  sendChatMessage(queryText?: string) {
+    const text = (queryText || this.chatInputText || '').trim();
+    if (!text || this.isAiChatProcessing) return;
 
-    const cmd = this.parseVoiceCommand(text);
+    this.chatInputText = '';
 
-    // 1. If user says "Add all" and products are already displayed in modal
-    if (cmd.isAddAll && this.aiVoiceProducts && this.aiVoiceProducts.length > 0) {
-      this.addAllVoiceProductsToCart();
-      this.aiVoiceReply = `🛒 Added all ${this.aiVoiceProducts.length} matched farm essentials to your cart!`;
-      this.showToast(`Added all ${this.aiVoiceProducts.length} items to cart!`);
-      this.cdr.detectChanges();
-      return;
-    }
+    // Append user message
+    const userMsg: AiChatMessage = {
+      id: 'usr_' + Date.now(),
+      sender: 'user',
+      text: text,
+      time: this.getCurrentTimeString()
+    };
+    this.chatMessages.push(userMsg);
+    this.scrollToBottom();
 
-    // 2. If user commanded to add an item that is already listed
-    if (cmd.isAddCommand && cmd.targetItem && this.aiVoiceProducts && this.aiVoiceProducts.length > 0) {
-      const existingMatch = this.findMatchingProduct(cmd.targetItem, this.aiVoiceProducts);
-      if (existingMatch) {
-        const targetUnits = (existingMatch.units || 0) + cmd.quantity;
-        this.plusMinusValue(targetUnits, existingMatch);
-        this.aiVoiceReply = `🛒 Added ${cmd.quantity}x **${existingMatch.name}** to your cart!`;
-        this.showToast(`🛒 Added ${cmd.quantity}x ${existingMatch.name} to Cart!`);
-        this.cdr.detectChanges();
-        return;
-      }
-    }
+    const cmd = this.parseChatCommand(text);
 
-    // 3. Query AI Chef & product matcher
-    this.isAiVoiceProcessing = true;
-    this.aiVoiceReply = '';
-    this.aiVoiceProducts = [];
+    this.isAiChatProcessing = true;
+    this.scrollToBottom();
 
     const mobile = this.loginS.user?.mobile || '';
     this.aiS.askAssistant(text, mobile).subscribe({
       next: (res: AiMessageResponse) => {
-        this.isAiVoiceProcessing = false;
-        this.aiVoiceReply = res.reply || 'Here are the fresh farm items matching your request!';
+        this.isAiChatProcessing = false;
+        let replyText = res.reply || 'Here are the fresh farm items matching your request!';
+        let matchedProducts: Array<Product> = [];
+
         if (res.suggested_products && res.suggested_products.length > 0) {
-          this.aiVoiceProducts = res.suggested_products.map((p: any) => ({
+          matchedProducts = res.suggested_products.map((p: any) => ({
             ...p,
             id: String(p.id),
             units: this.cartS.cartProducts[p.id]?.units || 0
           }));
-          this.syncProductUnits(this.aiVoiceProducts);
+          this.syncProductUnits(matchedProducts);
 
-          // Direct Voice Command: Auto-add to cart on "Add" intent!
+          // Instant Auto-Add if user explicitly gave an Add command
           if (cmd.isAddCommand) {
             if (cmd.isAddAll) {
-              this.addAllVoiceProductsToCart();
-              this.aiVoiceReply = `🛒 **Added all ${this.aiVoiceProducts.length} items to your cart!**\n\n` + this.aiVoiceReply;
+              this.addAllChatProductsToCart(matchedProducts);
+              replyText = `🛒 **Added all ${matchedProducts.length} items to your cart!**\n\n` + replyText;
             } else {
-              const matchedProd = this.findMatchingProduct(cmd.targetItem, this.aiVoiceProducts) || this.aiVoiceProducts[0];
+              const matchedProd = this.findMatchingProduct(cmd.targetItem, matchedProducts) || matchedProducts[0];
               if (matchedProd && !matchedProd.disabled) {
                 const targetUnits = (matchedProd.units || 0) + cmd.quantity;
                 this.plusMinusValue(targetUnits, matchedProd);
-                this.showToast(`🛒 Added ${cmd.quantity}x ${matchedProd.name} to Cart!`);
-                this.aiVoiceReply = `🛒 **Added ${cmd.quantity}x ${matchedProd.name} to your cart!**\n\n` + this.aiVoiceReply;
+                this.showChatToast(`🛒 Added ${cmd.quantity}x ${matchedProd.name} to Cart!`);
+                replyText = `🛒 **Added ${cmd.quantity}x ${matchedProd.name} to your cart!**\n\n` + replyText;
               }
             }
           }
         }
-        // Audio playback option removed per user request
+
+        const assistantMsg: AiChatMessage = {
+          id: 'ai_' + Date.now(),
+          sender: 'assistant',
+          text: replyText,
+          time: this.getCurrentTimeString(),
+          products: matchedProducts
+        };
+        this.chatMessages.push(assistantMsg);
+        this.syncAllProductUnits();
+        this.scrollToBottom();
         this.cdr.detectChanges();
       },
       error: () => {
-        this.isAiVoiceProcessing = false;
-        this.aiVoiceReply = 'I found these fresh essentials for your kitchen. Check them below!';
+        this.isAiChatProcessing = false;
+        this.chatMessages.push({
+          id: 'ai_' + Date.now(),
+          sender: 'assistant',
+          text: "I'm having a little trouble reaching our AI cooking server right now, but feel free to browse all fresh vegetables and daily farm essentials!",
+          time: this.getCurrentTimeString()
+        });
+        this.scrollToBottom();
         this.cdr.detectChanges();
       }
     });
   }
 
-  stopSpeaking() {
-    if ('speechSynthesis' in window) {
-      try {
-        window.speechSynthesis.cancel();
-      } catch (e) { }
-    }
-    this.isSpeaking = false;
-  }
-
-  addVoiceProductToCart(p: Product) {
-    const currentUnits = p.units || 0;
-    const nextUnits = currentUnits > 0 ? currentUnits + 1 : 1;
-    this.plusMinusValue(nextUnits, p);
-    this.showToast(`Added ${p.name} to Cart`);
-  }
-
-  addAllVoiceProductsToCart() {
-    if (!this.aiVoiceProducts || this.aiVoiceProducts.length === 0) return;
-    for (let p of this.aiVoiceProducts) {
+  addAllChatProductsToCart(products?: Array<Product>) {
+    const list = products || [];
+    if (!list || list.length === 0) return;
+    for (let p of list) {
       if (!p.disabled) {
-        this.plusMinusValue(1, p);
+        const targetUnits = (p.units || 0) > 0 ? p.units : 1;
+        this.plusMinusValue(targetUnits, p);
       }
     }
-    this.showToast(`Added all ${this.aiVoiceProducts.length} items to cart!`);
+    this.showChatToast(`Added all ${list.length} items to cart!`);
+  }
+
+  showChatToast(msg: string) {
+    this.chatToastMsg = msg;
+    setTimeout(() => {
+      this.chatToastMsg = '';
+      this.cdr.detectChanges();
+    }, 3000);
   }
 
   showToast(msg: string) {
-    this.voiceToastMsg = msg;
+    this.showChatToast(msg);
+  }
+
+  formatChatMessage(text: string): string {
+    if (!text) return '';
+    let formatted = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Bold **text**
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Italic *text*
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Bullet points
+    formatted = formatted.replace(/(^|\n)[•\-\*]\s+(.*)/g, '$1<div class="chat-bullet-item"><span class="bullet-dot">•</span><span>$2</span></div>');
+    // Newlines
+    formatted = formatted.replace(/\n/g, '<br>');
+    return formatted;
+  }
+
+  scrollToBottom() {
     setTimeout(() => {
-      this.voiceToastMsg = '';
-      this.cdr.detectChanges();
-    }, 3000);
+      try {
+        if (this.chatScrollContainer && this.chatScrollContainer.nativeElement) {
+          this.chatScrollContainer.nativeElement.scrollTop = this.chatScrollContainer.nativeElement.scrollHeight;
+        }
+      } catch (e) { }
+    }, 80);
   }
 
   // --- 2. AI HEALTH & DIETARY CURATIONS LOGIC (100% Free Smart Deterministic Intelligence) ---
@@ -1089,8 +1067,6 @@ export class ViewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopAutoSlide();
-    this.stopVoiceListening();
-    this.stopSpeaking();
     this.closeOffDayPopup();
     this.subs.unsubscribe();
   }

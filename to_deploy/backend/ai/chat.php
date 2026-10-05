@@ -202,9 +202,9 @@ if (empty($reply)) {
                . "• **Tender Coconut & Citrus Fruits**\n\n"
                . "👉 *Boost your immunity naturally with farm-fresh produce!*";
     } else {
-        $reply = "👋 Hello! I am your **TomorrowNeeds AI Chef & Voice Shopping Assistant**.\n\n"
+        $reply = "👋 Hello! I am your **TomorrowNeeds AI Chef & Shopping Assistant**.\n\n"
                . "I can help you with:\n"
-               . "1. 🎙️ **Voice Order & Grocery Search**: Speak in English, தமிழ் (Tamil), or Tanglish (e.g., *'1kg thakkali, paal, dosai maavu'*).\n"
+               . "1. 🛒 **Smart Grocery Search & Instant Cart**: Type in English, தமிழ் (Tamil), or Tanglish (e.g., *'1kg thakkali, paal, dosai maavu'* or *'Add 2kg onions'*).\n"
                . "2. 🥘 **Recipe Kits**: Sambar, Kurma, Rasam, Chutney, Soup, and Poriyal bundles.\n"
                . "3. 🥗 **Dietary Guidance**: Diabetic-friendly, High Protein, Immunity, and Weight Care curations.\n"
                . "4. 📦 **Morning 7 AM Doorstep Delivery** & Subscriptions.\n\n"
