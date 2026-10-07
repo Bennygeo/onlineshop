@@ -6,12 +6,18 @@
  *  - Google Gemini (gemini-3.6-flash / gemini-1.5-flash) via GEMINI_API_KEY
  *  - Groq Cloud (Llama 3.3 70B / Llama 3.1 8B) via GROQ_API_KEY
  *  - Grounded Store Product Catalog Search & 1-Click Cart Addition
+ *  - Live User Orders & Saved Addresses retrieval (with users table & orders fallback)
  *  - Smart Rule-based Grounded Fallback when offline
  */
 require_once __DIR__ . '/../config/db.php';
 
 $message = trim(getParam('message') ?: getParam('query') ?: '');
-$mobile  = trim(getParam('mobile') ?: '');
+$rawMobile = trim(getParam('mobile') ?: getParam('id') ?: '');
+
+// Clean & normalize mobile variations (e.g. +91, spaces, 10-digit)
+$cleanMobile = preg_replace('/[^0-9]/', '', $rawMobile);
+$shortMobile = (strlen($cleanMobile) >= 10) ? substr($cleanMobile, -10) : $cleanMobile;
+$mobile = (!empty($shortMobile) && $shortMobile !== 'xxxxxxxxxx') ? $shortMobile : '';
 
 if (empty($message)) {
     sendJson(['error' => 'Message or query is required'], 400);
@@ -26,6 +32,168 @@ if ($pdo) {
     } catch (Exception $e) {}
 }
 
+// 2. Fetch User Orders and Saved Addresses if user is logged in
+$userOrders = [];
+$userAddresses = [];
+$userOrdersContext = "No prior orders on record.";
+$userAddressesContext = "No saved addresses on record.";
+
+if (!empty($mobile) && $pdo) {
+    $mobileVariants = array_values(array_unique(array_filter([
+        $rawMobile,
+        $cleanMobile,
+        $shortMobile,
+        '+91' . $shortMobile,
+        '91' . $shortMobile,
+        '+91 ' . $shortMobile,
+        '0' . $shortMobile
+    ])));
+
+    $inPlaceholders = implode(',', array_fill(0, count($mobileVariants), '?'));
+    $queryParams = array_merge($mobileVariants, ["%{$shortMobile}"]);
+
+    // 2.1 Fetch user addresses from user_addresses table
+    try {
+        $stmtAddr = $pdo->prepare("
+            SELECT id, mobile, name, address, pincode, landmark, 
+                   COALESCE(title, landmark, 'My Home') AS title, 
+                   is_default, is_default AS `default`, is_default AS active 
+            FROM user_addresses 
+            WHERE mobile IN ($inPlaceholders) OR mobile LIKE ? 
+            ORDER BY is_default DESC, id DESC
+        ");
+        $stmtAddr->execute($queryParams);
+        $userAddresses = $stmtAddr->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Exception $e) {
+        $userAddresses = [];
+    }
+
+    // 2.1.1 Fallback: Fetch address from users table if user_addresses is empty
+    if (empty($userAddresses)) {
+        try {
+            $stmtUser = $pdo->prepare("
+                SELECT id, mobile, name, address, pincode, landmark 
+                FROM users 
+                WHERE (mobile IN ($inPlaceholders) OR mobile LIKE ?) 
+                  AND address IS NOT NULL AND address != '' 
+                ORDER BY id DESC LIMIT 1
+            ");
+            $stmtUser->execute($queryParams);
+            $uRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+            if ($uRow && !empty(trim($uRow['address']))) {
+                $userAddresses[] = [
+                    'id' => (int)($uRow['id'] ?? 1),
+                    'mobile' => $uRow['mobile'],
+                    'name' => $uRow['name'] ?? '',
+                    'address' => $uRow['address'],
+                    'pincode' => $uRow['pincode'] ?? '',
+                    'landmark' => $uRow['landmark'] ?? '',
+                    'title' => 'Home',
+                    'is_default' => 1,
+                    'default' => 1,
+                    'active' => 1
+                ];
+            }
+        } catch (Exception $eUser) {}
+    }
+
+    // 2.1.2 Fallback: Fetch address from recent orders if still empty
+    if (empty($userAddresses)) {
+        try {
+            $stmtOrdAddr = $pdo->prepare("
+                SELECT address_json 
+                FROM orders 
+                WHERE (mobile IN ($inPlaceholders) OR mobile LIKE ?) 
+                  AND address_json IS NOT NULL AND address_json != '' 
+                ORDER BY id DESC LIMIT 1
+            ");
+            $stmtOrdAddr->execute($queryParams);
+            $oRow = $stmtOrdAddr->fetch(PDO::FETCH_ASSOC);
+            if ($oRow && !empty($oRow['address_json'])) {
+                $dec = json_decode($oRow['address_json'], true);
+                if ($dec && !empty($dec['address'])) {
+                    $userAddresses[] = [
+                        'id' => 1,
+                        'mobile' => $shortMobile,
+                        'name' => $dec['name'] ?? '',
+                        'address' => $dec['address'],
+                        'pincode' => $dec['pincode'] ?? '',
+                        'landmark' => $dec['landmark'] ?? '',
+                        'title' => 'Primary Address',
+                        'is_default' => 1,
+                        'default' => 1,
+                        'active' => 1
+                    ];
+                }
+            }
+        } catch (Exception $eOrdAddr) {}
+    }
+
+    if (!empty($userAddresses)) {
+        $addrLines = [];
+        foreach ($userAddresses as $ua) {
+            $defTag = (!empty($ua['is_default']) || !empty($ua['default'])) ? '[Default] ' : '';
+            $addrLines[] = "{$defTag}{$ua['title']}: {$ua['address']}, Pincode: {$ua['pincode']}" . (!empty($ua['landmark']) ? " (Landmark: {$ua['landmark']})" : "");
+        }
+        $userAddressesContext = implode("; ", $addrLines);
+    }
+
+    // 2.2 Fetch recent orders (latest 5) with items
+    try {
+        $stmtOrd = $pdo->prepare("
+            SELECT o.order_id, o.mobile, o.total_amount, o.status, o.delivery_date, 
+                   COALESCE(o.delivery_slot_label, 'Anytime Delivery') AS delivery_slot_label,
+                   o.created_at, o.payment_type
+            FROM orders o 
+            WHERE o.mobile IN ($inPlaceholders) OR o.mobile LIKE ? 
+            ORDER BY o.id DESC 
+            LIMIT 5
+        ");
+        $stmtOrd->execute($queryParams);
+        $rawOrders = $stmtOrd->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        if (!empty($rawOrders)) {
+            $orderLines = [];
+            foreach ($rawOrders as $ro) {
+                $itemsList = [];
+                try {
+                    $stmtOi = $pdo->prepare("
+                        SELECT oi.product_id, COALESCE(NULLIF(oi.product_name, ''), p.name, 'Item') AS product_name, oi.quantity, oi.price, oi.weight, p.unit_name
+                        FROM order_items oi
+                        LEFT JOIN products p ON oi.product_id = p.id
+                        WHERE oi.order_id = ?
+                    ");
+                    $stmtOi->execute([$ro['order_id']]);
+                    $itemsList = $stmtOi->fetchAll(PDO::FETCH_ASSOC) ?: [];
+                } catch (Exception $eOi) {}
+
+                $itemStrs = [];
+                $cleanItems = [];
+                foreach ($itemsList as $it) {
+                    $itemStrs[] = "{$it['quantity']}x {$it['product_name']}";
+                    $cleanItems[] = [
+                        'name' => $it['product_name'],
+                        'quantity' => (int)$it['quantity'],
+                        'price' => (float)$it['price'],
+                        'unit_name' => $it['unit_name'] ?? ''
+                    ];
+                }
+
+                $ro['items'] = $cleanItems;
+                $ro['total_amount'] = (float)$ro['total_amount'];
+                $userOrders[] = $ro;
+
+                $orderLines[] = "Order #{$ro['order_id']} [Status: {$ro['status']}, Total: ₹{$ro['total_amount']}, Delivery: {$ro['delivery_date']} {$ro['delivery_slot_label']}, Items: " . implode(', ', $itemStrs) . "]";
+            }
+            $userOrdersContext = implode("\n", $orderLines);
+        }
+    } catch (Exception $e) {}
+}
+
+// Intent Detection for Orders and Addresses
+$isOrderIntent = preg_match('/\b(order|orders|booking|booked|track|tracking|status of|delivery status|my items|bought|purchased|last order|recent order|past order|order history)\b/i', $message);
+$isAddressIntent = preg_match('/\b(address|addresses|delivery address|delivery location|saved address|my location|ship to|shipping address|pincode|landmark|location)\b/i', $message);
+
 // Prepare concise catalog sample for the AI context
 $sampleCatalog = [];
 foreach (array_slice($availableProducts, 0, 60) as $p) {
@@ -34,14 +202,27 @@ foreach (array_slice($availableProducts, 0, 60) as $p) {
 }
 $catalogStr = implode(', ', $sampleCatalog);
 
-$systemPrompt = "You are 'TomorrowNeeds AI Chef & Shopping Assistant', the friendly cooking and fresh grocery guide for TomorrowNeeds Farm Fresh in Chennai / Tamil Nadu.
-Your goal is to assist customers with:
+$systemPrompt = "You are 'TomorrowNeeds AI Chef & Shopping Assistant', the friendly cooking, grocery and account guide for TomorrowNeeds Farm Fresh in Chennai / Tamil Nadu.
+Your capabilities:
 1. Authentic recipes and dish ideas (e.g. Sambar, Veg Kurma, Crunchy Salad, Dosa & Chutney, Rasam, Biryani, Soup, Tea, Poriyal, Dal).
-2. Suggesting fresh ingredients available in our store (Vegetables, Fruits, Batters, Dairy, Cold-pressed Oils, Greens & Herbs).
-3. Subscription info (Morning 7 AM doorstep delivery, pause & resume anytime).
+2. Grounded suggestions for fresh ingredients available in our store (Vegetables, Fruits, Batters, Dairy, Cold-pressed Oils, Greens & Herbs).
+3. Checking the customer's recent orders, delivery status, ordered items, and order history.
+4. Checking the customer's saved delivery addresses and pincodes.
+5. Subscription and delivery info (Morning 7 AM doorstep delivery, pause & resume anytime).
+
+Logged-in Customer Mobile: " . (!empty($mobile) ? $mobile : 'Not Logged In (Guest)') . "
+Customer Saved Addresses: {$userAddressesContext}
+Customer Recent Orders:
+{$userOrdersContext}
 
 Sample store catalog items: {$catalogStr}.
-Keep your reply friendly, structured with short bullet points, and explicitly mention store ingredients to cook the dish.";
+
+Guidelines:
+- Keep your reply friendly, concise, and structured with short bullet points.
+- If the customer asks about their orders, cite the exact Order ID, Status, Items, and Delivery Date from their recent orders.
+- If the customer asks about their address, cite their saved delivery addresses and default location.
+- If a guest asks for their personal orders or addresses, politely remind them to log in with their mobile number.
+- Explicitly mention fresh store ingredients when suggesting recipes.";
 
 // Read API keys from Environment or configuration
 $geminiKey = getenv('GEMINI_API_KEY') ?: (defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '');
@@ -50,7 +231,7 @@ $groqKey   = getenv('GROQ_API_KEY')   ?: (defined('GROQ_API_KEY')   ? GROQ_API_K
 $reply = null;
 $source = 'mock';
 
-// 2. Try Google Gemini API if key is present
+// 3. Try Google Gemini API if key is present
 if (!empty($geminiKey)) {
     $modelsToTry = ['gemini-3.6-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'];
     foreach ($modelsToTry as $gemModel) {
@@ -65,7 +246,7 @@ if (!empty($geminiKey)) {
             ],
             "generationConfig" => [
                 "temperature" => 0.7,
-                "maxOutputTokens" => 600
+                "maxOutputTokens" => 650
             ]
         ];
 
@@ -91,7 +272,7 @@ if (!empty($geminiKey)) {
     }
 }
 
-// 3. Try Groq API (Llama 3.3 70B) if Gemini was not used or failed
+// 4. Try Groq API (Llama 3.3 70B) if Gemini was not used or failed
 if (empty($reply) && !empty($groqKey)) {
     $url = "https://api.groq.com/openai/v1/chat/completions";
     $payload = [
@@ -100,7 +281,7 @@ if (empty($reply) && !empty($groqKey)) {
             ["role" => "system", "content" => $systemPrompt],
             ["role" => "user", "content" => $message]
         ],
-        "max_tokens" => 600,
+        "max_tokens" => 650,
         "temperature" => 0.7
     ];
 
@@ -127,12 +308,50 @@ if (empty($reply) && !empty($groqKey)) {
     }
 }
 
-// 4. Smart Local Rule-based Fallback (Works 100% offline out-of-the-box)
+// 5. Smart Local Rule-based Fallback (Works 100% offline out-of-the-box)
 if (empty($reply)) {
     $lower = strtolower($message);
     $source = 'offline-assistant';
 
-    if (strpos($lower, 'sambar') !== false) {
+    if ($isOrderIntent) {
+        if (empty($mobile)) {
+            $reply = "🔒 **Order History Access:**\n\nPlease log in with your mobile number to view and track your orders!";
+        } else if (empty($userOrders)) {
+            $reply = "📦 **No Recent Orders Found**\n\nYou haven't placed any orders yet with mobile **{$mobile}**.\n\n👉 *Browse our fresh farm vegetables, dairy & breakfast batters to place your first order!*";
+        } else {
+            $reply = "📦 **Your Recent Orders:**\n\n";
+            foreach ($userOrders as $idx => $ord) {
+                $statusEmoji = ($ord['status'] === 'DELIVERED') ? '✅' : (($ord['status'] === 'CANCELLED') ? '❌' : '🚚');
+                $reply .= "• **Order #{$ord['order_id']}** — {$statusEmoji} **{$ord['status']}**\n";
+                $reply .= "  - **Total:** ₹{$ord['total_amount']}\n";
+                if (!empty($ord['delivery_date'])) {
+                    $reply .= "  - **Delivery:** {$ord['delivery_date']} ({$ord['delivery_slot_label']})\n";
+                }
+                if (!empty($ord['items'])) {
+                    $itemNames = array_map(function($i) { return "{$i['quantity']}x {$i['name']}"; }, $ord['items']);
+                    $reply .= "  - **Items:** " . implode(', ', array_slice($itemNames, 0, 4)) . "\n";
+                }
+                $reply .= "\n";
+            }
+            $reply .= "👉 *You can view full details or re-order anytime from the Orders tab!*";
+        }
+    } else if ($isAddressIntent) {
+        if (empty($mobile)) {
+            $reply = "🔒 **Saved Addresses Access:**\n\nPlease log in to view and manage your saved delivery addresses!";
+        } else if (empty($userAddresses)) {
+            $reply = "📍 **No Saved Addresses Found**\n\nYou don't have any saved delivery addresses yet.\n\n👉 *Add your delivery address in Profile or during checkout for 7 AM morning doorstep delivery!*";
+        } else {
+            $reply = "📍 **Your Saved Delivery Addresses:**\n\n";
+            foreach ($userAddresses as $ua) {
+                $isDef = (!empty($ua['is_default']) || !empty($ua['default'])) ? ' ⭐ *(Default)*' : '';
+                $reply .= "• **{$ua['title']}**{$isDef}\n";
+                if (!empty($ua['name'])) $reply .= "  - **Name:** {$ua['name']}\n";
+                $reply .= "  - **Address:** {$ua['address']}\n";
+                $reply .= "  - **Pincode:** {$ua['pincode']}" . (!empty($ua['landmark']) ? " (Landmark: {$ua['landmark']})" : "") . "\n\n";
+            }
+            $reply .= "👉 *Morning doorstep deliveries will be dispatched to your default address.*";
+        }
+    } else if (strpos($lower, 'sambar') !== false) {
         $reply = "🥘 **Sambar Ingredients & Recipe:**\n"
                . "• **Tomatoes (Nattu Thakkali)** – Fresh & juicy for rich tangy base\n"
                . "• **Small Onions (Shallots)** – Essential for authentic aroma\n"
@@ -202,17 +421,17 @@ if (empty($reply)) {
                . "• **Tender Coconut & Citrus Fruits**\n\n"
                . "👉 *Boost your immunity naturally with farm-fresh produce!*";
     } else {
-        $reply = "👋 Hello! I am your **TomorrowNeeds AI Chef & Shopping Assistant**.\n\n"
+        $reply = "👋 Hello! I am your **TomorrowNeeds AI Assistant**.\n\n"
                . "I can help you with:\n"
-               . "1. 🛒 **Smart Grocery Search & Instant Cart**: Type in English, தமிழ் (Tamil), or Tanglish (e.g., *'1kg thakkali, paal, dosai maavu'* or *'Add 2kg onions'*).\n"
-               . "2. 🥘 **Recipe Kits**: Sambar, Kurma, Rasam, Chutney, Soup, and Poriyal bundles.\n"
-               . "3. 🥗 **Dietary Guidance**: Diabetic-friendly, High Protein, Immunity, and Weight Care curations.\n"
-               . "4. 📦 **Morning 7 AM Doorstep Delivery** & Subscriptions.\n\n"
-               . "What would you like to cook or order today?";
+               . "1. 📦 **My Orders & Tracking**: View your recent orders and delivery status.\n"
+               . "2. 📍 **Saved Addresses**: Check and view your delivery addresses.\n"
+               . "3. 🛒 **Smart Grocery Search & 1-Click Cart**: Type in English, தமிழ் (Tamil), or Tanglish (e.g., *'1kg thakkali, paal, dosai maavu'* or *'Add 2kg onions'*).\n"
+               . "4. 🥘 **Recipe Kits & Diets**: Sambar, Kurma, Dosa batter, Diabetic, Protein, and Weight Care baskets.\n\n"
+               . "What would you like to ask or order today?";
     }
 }
 
-// 5. Intelligent Grounded Product Catalog Matching with Tamil & Tanglish Support
+// 6. Intelligent Grounded Product Catalog Matching with Tamil & Tanglish Support
 $combinedText = strtolower($message . ' ' . $reply);
 $replyText = strtolower($reply);
 
@@ -273,7 +492,8 @@ $genericStopWords = [
     'tomorrowneeds', 'thinkspot', 'fresh', 'farm', 'gram', 'grams', 'pack', 'small', 'big', 'kg', 'unit',
     'red', 'white', 'green', 'yellow', 'black', 'raw', 'long', 'sweet', 'organic', 'leaf', 'leaves',
     'super', 'pure', 'rich', 'best', 'good', 'item', 'items', 'with', 'for', 'and', 'the', 'from', 'your', 'powder',
-    'venum', 'thevai', 'naalaiku', 'kaalaila', 'kudukavum', 'kudu', 'order', 'please', 'add', 'want', 'need', 'give'
+    'venum', 'thevai', 'naalaiku', 'kaalaila', 'kudukavum', 'kudu', 'order', 'orders', 'please', 'add', 'want', 'need', 'give',
+    'address', 'addresses', 'status', 'track', 'recent', 'where', 'show', 'tell', 'what', 'list'
 ];
 
 // Recipe ingredient associations
@@ -305,62 +525,65 @@ foreach ($recipeIngredients as $key => $ingredients) {
 }
 
 $scoredProducts = [];
-foreach ($availableProducts as $prod) {
-    $cleanName = strtolower(trim(preg_replace('/^(tomorrowneeds|thinkspot)\s+/i', '', $prod['name'])));
-    $rawName = strtolower($prod['name']);
-    $tamilName = strtolower($prod['tamil_name'] ?? '');
+// Only match products if user didn't purely ask for orders / addresses
+if (!$isOrderIntent && !$isAddressIntent) {
+    foreach ($availableProducts as $prod) {
+        $cleanName = strtolower(trim(preg_replace('/^(tomorrowneeds|thinkspot)\s+/i', '', $prod['name'])));
+        $rawName = strtolower($prod['name']);
+        $tamilName = strtolower($prod['tamil_name'] ?? '');
 
-    $score = 0;
+        $score = 0;
 
-    // 1. Direct mention in AI's reply gets highest priority
-    if (strlen($cleanName) >= 3 && strpos($replyText, $cleanName) !== false) {
-        $score += 60;
-    }
+        // 1. Direct mention in AI's reply gets highest priority
+        if (strlen($cleanName) >= 3 && strpos($replyText, $cleanName) !== false) {
+            $score += 60;
+        }
 
-    // 2. Direct mention in user message
-    if (strlen($cleanName) >= 3 && strpos(strtolower($message), $cleanName) !== false) {
-        $score += 40;
-    }
+        // 2. Direct mention in user message
+        if (strlen($cleanName) >= 3 && strpos(strtolower($message), $cleanName) !== false) {
+            $score += 40;
+        }
 
-    // 3. Match specific recipe association tokens
-    foreach ($recipeTokens as $rt) {
-        if ($cleanName === $rt || strpos($cleanName, $rt) !== false) {
-            $score += 25;
+        // 3. Match specific recipe association tokens
+        foreach ($recipeTokens as $rt) {
+            if ($cleanName === $rt || strpos($cleanName, $rt) !== false) {
+                $score += 25;
+            }
+        }
+
+        // 4. Match individual significant words from clean name in reply or query
+        $nameWords = array_filter(explode(' ', preg_replace('/[^a-z0-9]/', ' ', $cleanName)), function($w) use ($genericStopWords) {
+            return strlen($w) >= 3 && !in_array($w, $genericStopWords);
+        });
+
+        foreach ($nameWords as $nw) {
+            if (strpos($replyText, $nw) !== false) {
+                $score += 15;
+            } else if (strpos(strtolower($message), $nw) !== false) {
+                $score += 10;
+            }
+        }
+
+        // 5. Match Tamil name if present
+        if ($tamilName && $tamilName !== $rawName && strlen($tamilName) >= 3) {
+            if (strpos($replyText, $tamilName) !== false) {
+                $score += 30;
+            }
+        }
+
+        if ($score > 0) {
+            $scoredProducts[] = [
+                'product' => $prod,
+                'score' => $score
+            ];
         }
     }
 
-    // 4. Match individual significant words from clean name in reply or query
-    $nameWords = array_filter(explode(' ', preg_replace('/[^a-z0-9]/', ' ', $cleanName)), function($w) use ($genericStopWords) {
-        return strlen($w) >= 3 && !in_array($w, $genericStopWords);
+    // Sort by score descending
+    usort($scoredProducts, function($a, $b) {
+        return $b['score'] - $a['score'];
     });
-
-    foreach ($nameWords as $nw) {
-        if (strpos($replyText, $nw) !== false) {
-            $score += 15;
-        } else if (strpos(strtolower($message), $nw) !== false) {
-            $score += 10;
-        }
-    }
-
-    // 5. Match Tamil name if present
-    if ($tamilName && $tamilName !== $rawName && strlen($tamilName) >= 3) {
-        if (strpos($replyText, $tamilName) !== false) {
-            $score += 30;
-        }
-    }
-
-    if ($score > 0) {
-        $scoredProducts[] = [
-            'product' => $prod,
-            'score' => $score
-        ];
-    }
 }
-
-// Sort by score descending
-usort($scoredProducts, function($a, $b) {
-    return $b['score'] - $a['score'];
-});
 
 $matchedProducts = [];
 $matchedIds = [];
@@ -385,9 +608,19 @@ foreach ($scoredProducts as $sp) {
     }
 }
 
-sendJson([
+$responsePayload = [
     'status' => 'success',
     'reply' => $reply,
     'source' => $source,
     'suggested_products' => $matchedProducts
-]);
+];
+
+// Attach structured user orders or addresses if relevant
+if ($isOrderIntent && !empty($userOrders)) {
+    $responsePayload['user_orders'] = $userOrders;
+}
+if ($isAddressIntent && !empty($userAddresses)) {
+    $responsePayload['user_addresses'] = $userAddresses;
+}
+
+sendJson($responsePayload);

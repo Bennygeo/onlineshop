@@ -18,11 +18,43 @@ export interface AiSuggestedProduct {
   sub_cat?: string;
 }
 
+export interface AiOrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  unit_name?: string;
+}
+
+export interface AiOrderSummary {
+  order_id: string;
+  status: string;
+  total_amount: number;
+  delivery_date?: string;
+  delivery_slot_label?: string;
+  created_at?: string;
+  payment_type?: string;
+  items?: Array<AiOrderItem>;
+}
+
+export interface AiAddressSummary {
+  id: string | number;
+  title?: string;
+  name?: string;
+  address: string;
+  pincode: string;
+  landmark?: string;
+  is_default?: number | boolean;
+  default?: number | boolean;
+  active?: number | boolean;
+}
+
 export interface AiMessageResponse {
   status: string;
   reply: string;
   source: string;
   suggested_products?: Array<AiSuggestedProduct>;
+  user_orders?: Array<AiOrderSummary>;
+  user_addresses?: Array<AiAddressSummary>;
 }
 
 @Injectable({

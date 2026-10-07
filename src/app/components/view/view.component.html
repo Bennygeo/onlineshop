@@ -626,6 +626,77 @@
                         </div>
                     </div>
 
+                    <!-- Embedded Recent Orders Section -->
+                    <div class="chat-user-orders-card" *ngIf="msg.orders && msg.orders.length > 0">
+                        <div class="matched-header-row">
+                            <div class="matched-title-tag">
+                                <span class="material-icons size-15">local_shipping</span>
+                                <span>Recent Orders ({{ msg.orders.length }})</span>
+                            </div>
+                            <button class="chat-view-link-btn" (click)="goToOrdersPage()">
+                                <span>View All</span>
+                                <span class="material-icons size-14">arrow_forward</span>
+                            </button>
+                        </div>
+
+                        <div class="chat-orders-list">
+                            <div class="chat-order-row" *ngFor="let ord of msg.orders" (click)="goToOrdersPage()">
+                                <div class="order-top-bar">
+                                    <span class="order-id-tag">#{{ ord.order_id }}</span>
+                                    <span class="order-badge" [ngClass]="'status-' + (ord.status || 'placed').toLowerCase()">
+                                        {{ ord.status || 'PLACED' }}
+                                    </span>
+                                </div>
+                                <div class="order-items-summary" *ngIf="ord.items && ord.items.length > 0">
+                                    <span class="order-item-pill" *ngFor="let item of ord.items.slice(0, 3)">
+                                        {{ item.quantity }}x {{ item.name }}
+                                    </span>
+                                    <span class="order-more-pill" *ngIf="ord.items.length > 3">+{{ ord.items.length - 3 }} more</span>
+                                </div>
+                                <div class="order-foot-bar">
+                                    <span class="order-delivery-info" *ngIf="ord.delivery_date">
+                                        <span class="material-icons size-13">schedule</span>
+                                        <span>{{ ord.delivery_date }}</span>
+                                    </span>
+                                    <span class="order-amount">₹{{ ord.total_amount | number:'1.0-0' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Embedded Saved Addresses Section -->
+                    <div class="chat-user-addresses-card" *ngIf="msg.addresses && msg.addresses.length > 0">
+                        <div class="matched-header-row">
+                            <div class="matched-title-tag">
+                                <span class="material-icons size-15">location_on</span>
+                                <span>Saved Delivery Addresses ({{ msg.addresses.length }})</span>
+                            </div>
+                            <button class="chat-view-link-btn" (click)="goToProfilePage()">
+                                <span>Manage</span>
+                                <span class="material-icons size-14">arrow_forward</span>
+                            </button>
+                        </div>
+
+                        <div class="chat-addresses-list">
+                            <div class="chat-address-row" *ngFor="let addr of msg.addresses" (click)="goToProfilePage()">
+                                <div class="addr-header">
+                                    <div class="addr-name-group">
+                                        <span class="material-icons size-14">home</span>
+                                        <span class="addr-title-text">{{ addr.title || 'Delivery Address' }}</span>
+                                    </div>
+                                    <span class="addr-def-badge" *ngIf="addr.is_default == 1 || addr.default == 1 || addr.active == 1">
+                                        Default
+                                    </span>
+                                </div>
+                                <div class="addr-body-text">{{ addr.address }}</div>
+                                <div class="addr-meta-row">
+                                    <span class="addr-pincode-tag">PIN: {{ addr.pincode }}</span>
+                                    <span class="addr-landmark-text" *ngIf="addr.landmark">Near {{ addr.landmark }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <span class="msg-timestamp">{{ msg.time }}</span>
                 </div>
             </div>

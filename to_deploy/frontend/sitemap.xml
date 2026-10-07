@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+        http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+    <!-- Storefront Home / Discovery -->
+    <url>
+        <loc>https://tomorrowneeds.in/home/view</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>1.0</priority>
+    </url>
+
+    <!-- Product Search & AI Assistant -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/search</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- Category: Farm Fresh Vegetables -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/category/Vegetables</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- Category: Fresh Fruits -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/category/Fruits</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.9</priority>
+    </url>
+
+    <!-- Category: Fresh Greens -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/category/Greens</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Category: Milk & Dairy -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/category/Milk%20%26%20Dairy</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Category: Fresh Batters -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/category/Batter</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>daily</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Category: Flowers & Pooja Needs -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/category/Flowers</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <!-- Category: Cold Pressed & Cooking Oils -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/category/Oils</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+    <!-- Customer Cart -->
+    <url>
+        <loc>https://tomorrowneeds.in/products/cart</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <!-- Referral & Rewards Program -->
+    <url>
+        <loc>https://tomorrowneeds.in/home/referral</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <!-- Customer Support & Contact -->
+    <url>
+        <loc>https://tomorrowneeds.in/home/support</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+
+    <!-- Store Policies & FAQs -->
+    <url>
+        <loc>https://tomorrowneeds.in/home/policy</loc>
+        <lastmod>2026-10-03</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.5</priority>
+    </url>
+
+</urlset>

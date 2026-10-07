@@ -666,328 +666,123 @@
   }
 }
 
-/* Daily Purchase & Packing List Summary View */
-.purchase-summary-card {
+/* Daily Purchase & Packing List - Single-Line Excel Spreadsheet View */
+.purchase-summary-card.excel-mode {
   background: #ffffff;
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
-  padding: 24px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
 
-  .summary-header {
+  .excel-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
     border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 16px;
+    padding-bottom: 14px;
+    flex-wrap: wrap;
 
-    h3 { 
-      margin: 0 0 4px 0; 
-      font-size: 20px; 
-      font-weight: 800; 
-      color: #0f172a;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      .title-icon { color: #2eb9ac; font-size: 24px; }
-    }
-    p { margin: 0; font-size: 14px; color: #64748b; }
-
-    .copy-list-btn {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: #0f172a;
-      color: #ffffff;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 14px;
-      font-weight: 700;
-      font-size: 13px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
-      transition: all 0.2s ease;
-
-      &:hover { background: #1e293b; transform: translateY(-1px); }
-    }
-  }
-
-  /* Procurement KPI Grid */
-  .procurement-kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-  }
-
-  .proc-kpi-card {
-    background: #f8fafc;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
-    padding: 18px 20px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0,0,0,0.05);
-    }
-
-    .kpi-icon {
-      width: 46px;
-      height: 46px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-
-      .material-icons { font-size: 24px; }
-    }
-
-    &.varieties .kpi-icon { background: #e0f2fe; color: #0284c7; }
-    &.client-rev .kpi-icon { background: #dcfce7; color: #16a34a; }
-    &.market-cost .kpi-icon { background: #fef3c7; color: #d97706; }
-    &.margin.positive .kpi-icon { background: #dcfce7; color: #16a34a; }
-    &.margin.negative .kpi-icon { background: #fee2e2; color: #dc2626; }
-
-    .kpi-body {
-      display: flex;
-      flex-direction: column;
-
-      .kpi-label {
-        font-size: 11px;
-        font-weight: 700;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-      .kpi-val {
-        font-size: 20px;
+    .title-area {
+      h3 {
+        margin: 0 0 2px 0;
+        font-size: 18px;
         font-weight: 800;
         color: #0f172a;
-        margin: 2px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .title-icon { color: #10b981; font-size: 22px; }
       }
-      .kpi-sub {
-        font-size: 11px;
-        color: #94a3b8;
-      }
-    }
-  }
-
-  /* Procurement Table */
-  .procurement-table-wrapper {
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
-    overflow: hidden;
-  }
-
-  .procurement-table {
-    width: 100%;
-    border-collapse: collapse;
-
-    thead th {
-      background: #f8fafc;
-      padding: 14px 18px;
-      text-align: left;
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-      color: #64748b;
-      border-bottom: 2px solid #e2e8f0;
+      p { margin: 0; font-size: 13px; color: #64748b; }
     }
 
-    tbody tr.proc-row {
-      border-bottom: 1px solid #f1f5f9;
-      transition: background 0.15s ease;
-
-      &:hover {
-        background: #f8fafc;
-      }
-
-      td {
-        padding: 16px 18px;
-        vertical-align: middle;
-      }
-    }
-
-    .prod-cell {
+    /* 30-Second Auto-Save Live Status Pill */
+    .autosave-status-pill {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1.5px solid #e2e8f0;
+      background: #f8fafc;
+      transition: all 0.3s ease;
 
-      .p-thumb {
-        width: 44px;
-        height: 44px;
-        border-radius: 10px;
-        object-fit: cover;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-      }
+      .status-icon { font-size: 18px; }
 
-      .prod-text {
+      .status-texts {
         display: flex;
         flex-direction: column;
-        gap: 3px;
+        line-height: 1.2;
 
-        .p-name {
-          font-weight: 800;
-          font-size: 14px;
+        .main-status {
+          font-size: 12px;
           color: #0f172a;
         }
-
-        .base-qty-tag {
-          font-size: 11px;
-          font-weight: 700;
-          color: #0284c7;
-          background: #e0f2fe;
-          padding: 2px 8px;
-          border-radius: 8px;
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          width: fit-content;
-
-          .material-icons { font-size: 13px; }
-        }
-      }
-    }
-
-    .qty-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-
-      .total-qty {
-        font-size: 16px;
-        font-weight: 800;
-        color: #0f172a;
-      }
-      .breakdown-tag {
-        font-size: 12px;
-        font-weight: 700;
-        color: #475569;
-        background: #f1f5f9;
-        padding: 2px 8px;
-        border-radius: 6px;
-        width: fit-content;
-      }
-      .orders-count {
-        font-size: 11px;
-        color: #94a3b8;
-      }
-    }
-
-    .price-cell {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-
-      &.client {
-        .total-client-amt {
-          font-size: 16px;
-          font-weight: 800;
-          color: #16a34a;
-        }
-        .rate-sub {
-          font-size: 12px;
+        .sub-status {
+          font-size: 10px;
           color: #64748b;
-          font-weight: 600;
+          font-weight: 500;
         }
       }
 
-      &.market {
-        .market-input-group {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-
-          .currency-prefix {
-            font-size: 14px;
-            font-weight: 800;
-            color: #d97706;
-          }
-
-          .market-price-input {
-            width: 80px;
-            padding: 5px 8px;
-            border: 1.5px solid #cbd5e1;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 800;
-            color: #0f172a;
-            outline: none;
-            background: #ffffff;
-            transition: all 0.2s ease;
-
-            &:focus {
-              border-color: #2eb9ac;
-              box-shadow: 0 0 0 3px rgba(46, 185, 172, 0.15);
-            }
-
-            &.saved-input {
-              border-color: #16a34a;
-              background: #f0fdf4;
-              box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
-            }
-          }
-
-          .per-unit-label {
-            font-size: 12px;
-            font-weight: 700;
-            color: #64748b;
-          }
-        }
-
-        .total-market-amt {
-          font-size: 13px;
-          font-weight: 800;
-          color: #d97706;
-        }
+      &.synced {
+        border-color: #bbf7d0;
+        background: #f0fdf4;
+        .status-icon { color: #16a34a; }
+        .main-status { color: #166534; font-weight: 700; }
       }
-    }
 
-    .margin-cell {
-      .profit-badge {
+      &.dirty {
+        border-color: #fde68a;
+        background: #fffbeb;
+        .status-icon { color: #d97706; }
+        .main-status { color: #92400e; }
+      }
+
+      &.saving {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        .status-icon { color: #2563eb; animation: spin 1s linear infinite; }
+        .main-status { color: #1e40af; font-weight: 700; }
+      }
+
+      .manual-save-now-btn {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        padding: 6px 12px;
-        border-radius: 12px;
+        background: #d97706;
+        color: #ffffff;
+        border: none;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
         font-weight: 800;
-        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-left: 4px;
 
-        .material-icons { font-size: 16px; }
-
-        &.positive {
-          background: #dcfce7;
-          color: #15803d;
-        }
-
-        &.negative {
-          background: #fee2e2;
-          color: #b91c1c;
-        }
-
-        small {
-          font-size: 11px;
-          opacity: 0.85;
-          margin-left: 2px;
-        }
+        .material-icons { font-size: 14px; }
+        &:hover:not(:disabled) { background: #b45309; transform: scale(1.02); }
       }
     }
 
-    .action-cell {
-      .save-prod-btn {
+    .header-btns {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .export-excel-btn {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: #0f172a;
+        background: #10b981;
         color: #ffffff;
         border: none;
         padding: 8px 14px;
@@ -996,27 +791,471 @@
         font-weight: 700;
         cursor: pointer;
         transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+
+        .material-icons { font-size: 16px; }
+        &:hover { background: #059669; transform: translateY(-1px); }
+      }
+
+      .copy-list-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #0f172a;
+        color: #ffffff;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        .material-icons { font-size: 16px; }
+        &:hover { background: #1e293b; transform: translateY(-1px); }
+      }
+    }
+  }
+
+  /* Filter & Metrics Toolbar */
+  .excel-filter-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 10px 14px;
+    border-radius: 12px;
+
+    .excel-search-box {
+      display: flex;
+      align-items: center;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 4px 10px;
+      gap: 6px;
+      width: 220px;
+
+      .material-icons { font-size: 18px; color: #94a3b8; }
+
+      input {
+        border: none;
+        outline: none;
+        font-size: 12px;
+        width: 100%;
+        color: #0f172a;
+      }
+      .clear-search {
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 11px;
+        cursor: pointer;
+        padding: 0;
+      }
+    }
+
+    .excel-cat-filter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+
+      .material-icons { font-size: 16px; color: #64748b; }
+
+      select {
+        padding: 5px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        background: #ffffff;
+        font-size: 12px;
+        font-weight: 600;
+        color: #0f172a;
+        outline: none;
+      }
+    }
+
+    /* Single-Line KPI Metric Chips */
+    .excel-kpi-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-left: auto;
+
+      .kpi-chip {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 800;
+        color: #0f172a;
+
+        .kpi-tag {
+          font-weight: 600;
+          color: #64748b;
+        }
+
+        &.stock-chip { background: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+        &.procure-chip { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+        &.sales-chip { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+        &.cost-chip { background: #fefce8; border-color: #fef08a; color: #a16207; }
+        &.profit-chip.pos { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+        &.profit-chip.neg { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+      }
+    }
+  }
+
+  /* Single-Line Excel Grid Container */
+  .excel-grid-container {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    max-height: 65vh;
+    box-shadow: inset 0 0 0 1px #cbd5e1;
+
+    &::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: #94a3b8;
+      border-radius: 4px;
+    }
+  }
+
+  /* Single-Line Spreadsheet Table */
+  .excel-spreadsheet-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-family: 'Inter', -apple-system, sans-serif;
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #f1f5f9;
+      color: #334155;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 8px 10px;
+      border: 1px solid #cbd5e1;
+      white-space: nowrap;
+      z-index: 5;
+      text-align: left;
+
+      &.col-idx { width: 36px; text-align: center; }
+      &.col-product { min-width: 200px; }
+      &.col-cat { width: 110px; }
+      &.col-unit { width: 90px; text-align: center; }
+      &.col-stock { width: 120px; }
+      &.col-ordered { width: 120px; }
+      &.col-net-procure { width: 120px; }
+      &.col-client-rate { width: 100px; text-align: right; }
+      &.col-client-total { width: 105px; text-align: right; }
+      &.col-market-rate { width: 120px; }
+      &.col-market-total { width: 115px; text-align: center; }
+      &.col-prod-price { width: 115px; text-align: center; }
+      &.col-margin { width: 125px; text-align: right; }
+      &.col-action { width: 90px; text-align: center; }
+    }
+
+    tbody tr.excel-row {
+      border-bottom: 1px solid #e2e8f0;
+      transition: background 0.1s ease;
+      height: 38px;
+
+      &:nth-child(even) {
+        background: #fafafa;
+      }
+
+      &:hover {
+        background: #f1f5f9;
+      }
+
+      &.row-dirty {
+        background: #fffbeb !important;
+      }
+
+      &.row-saved {
+        background: #f0fdf4 !important;
+      }
+
+      td {
+        padding: 4px 8px;
+        border: 1px solid #e2e8f0;
+        vertical-align: middle;
         white-space: nowrap;
+        color: #0f172a;
+      }
 
-        .material-icons { font-size: 15px; }
+      .cell-center { text-align: center; }
+      .cell-right { text-align: right; }
 
-        &:hover:not(:disabled) {
-          background: #2eb9ac;
-          transform: translateY(-1px);
+      .col-idx {
+        font-weight: 700;
+        color: #64748b;
+        font-size: 11px;
+      }
+
+      /* Product Cell (Single line) */
+      .excel-prod-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        .excel-thumb {
+          width: 26px;
+          height: 26px;
+          border-radius: 6px;
+          object-fit: cover;
+          border: 1px solid #cbd5e1;
+          flex-shrink: 0;
         }
 
-        &.saved {
-          background: #16a34a;
+        .excel-prod-name {
+          font-weight: 700;
+          font-size: 12px;
+          color: #0f172a;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+      .cat-pill {
+        font-size: 10px;
+        font-weight: 700;
+        color: #475569;
+        background: #e2e8f0;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .base-unit-tag {
+        font-size: 11px;
+        font-weight: 700;
+        color: #0284c7;
+        background: #e0f2fe;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      /* Editable In-Cell Inputs */
+      .excel-input-wrapper {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 5px;
+        padding: 2px 4px;
+        transition: all 0.15s ease;
+
+        &:focus-within {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        }
+
+        &.product-price-wrapper {
+          border-color: #cbd5e1;
+          background: #f8fafc;
+          &:focus-within {
+            background: #ffffff;
+            border-color: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+          }
+          .price-input-direct {
+            color: #0f172a;
+            font-weight: 800;
+            &.is-modified {
+              color: #059669;
+              font-weight: 800;
+            }
+          }
+        }
+
+        .excel-cell-input {
+          border: none;
+          outline: none;
+          background: transparent;
+          font-family: inherit;
+          font-size: 12px;
+          font-weight: 800;
+          color: #0f172a;
+          text-align: right;
+          width: 58px;
+          padding: 0;
+
+          &.is-modified {
+            color: #d97706;
+          }
+        }
+
+        .curr-symbol {
+          font-size: 11px;
+          font-weight: 700;
+          color: #64748b;
+        }
+
+        .cell-unit-label {
+          font-size: 10px;
+          font-weight: 700;
+          color: #64748b;
+        }
+      }
+
+      .unit-rate-hint, .unit-price-hint {
+        font-size: 10px;
+        color: #64748b;
+        margin-top: 2px;
+        line-height: 1.1;
+      }
+      .unit-price-hint {
+        color: #059669;
+        font-weight: 600;
+      }
+
+      .ordered-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+        .ordered-qty-num {
+          font-weight: 800;
+          font-size: 12px;
+          color: #0f172a;
+        }
+        .orders-count-badge {
+          font-size: 10px;
+          font-weight: 600;
+          color: #64748b;
+          background: #e2e8f0;
+          padding: 1px 4px;
+          border-radius: 4px;
+        }
+      }
+
+      .net-buy-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-weight: 800;
+        font-size: 11px;
+
+        .badge-icon { font-size: 13px; }
+
+        &.fulfilled {
+          background: #dcfce7;
+          color: #15803d;
+        }
+        &.needs-procure {
+          background: #ffedd5;
+          color: #c2410c;
+        }
+      }
+
+      .currency-text {
+        font-weight: 700;
+        color: #475569;
+      }
+
+      .sales-text {
+        font-weight: 800;
+        color: #16a34a;
+      }
+
+      .cost-text {
+        font-weight: 800;
+        color: #d97706;
+      }
+
+      .margin-pill {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 800;
+        font-size: 11px;
+
+        &.pos {
+          color: #15803d;
+          background: #dcfce7;
+        }
+        &.neg {
+          color: #b91c1c;
+          background: #fee2e2;
+        }
+
+        small {
+          font-size: 10px;
+          opacity: 0.9;
+          font-weight: 600;
+        }
+      }
+
+      .excel-action-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+
+        .sync-indicator {
+          display: inline-flex;
+          align-items: center;
+          gap: 2px;
+          font-size: 10px;
+          font-weight: 700;
+
+          .material-icons { font-size: 14px; }
+
+          &.saved {
+            color: #16a34a;
+          }
+          &.pending {
+            color: #d97706;
+          }
+          &.saving {
+            color: #2563eb;
+          }
+        }
+
+        .row-save-btn {
+          background: #0f172a;
           color: #ffffff;
-        }
+          border: none;
+          width: 22px;
+          height: 22px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.15s ease;
 
-        &:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-        }
-
-        .spin {
-          animation: spin 1s linear infinite;
+          .material-icons { font-size: 13px; }
+          &:hover { background: #2563eb; }
         }
       }
     }
@@ -1029,11 +1268,11 @@
 
   .empty-purchase-state {
     text-align: center;
-    padding: 60px 20px;
+    padding: 50px 20px;
     color: #94a3b8;
 
-    .material-icons { font-size: 48px; color: #cbd5e1; margin-bottom: 12px; }
-    p { margin: 0; font-size: 15px; font-weight: 600; }
+    .material-icons { font-size: 40px; color: #cbd5e1; margin-bottom: 8px; }
+    p { margin: 0; font-size: 14px; font-weight: 600; }
   }
 }
 
@@ -1831,4 +2070,405 @@
   .partners-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* =========================================================
+   EXCEL-LIKE SPREADSHEET TABLE & SIMPLIFIED DAILY PURCHASE
+   ========================================================= */
+.purchase-summary-card.excel-mode {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  overflow: hidden;
+
+  .purchase-excel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .excel-title-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .material-icons {
+        font-size: 24px;
+        color: #0284c7;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+      }
+
+      .excel-mode-pill {
+        background: #e0f2fe;
+        color: #0369a1;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+    }
+
+    .excel-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+
+      .autosave-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: #f1f5f9;
+        color: #64748b;
+
+        .material-icons {
+          font-size: 15px;
+        }
+
+        &.pending {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        &.saving {
+          background: #dbeafe;
+          color: #1d4ed8;
+
+          .spinning {
+            animation: spin 1s linear infinite;
+          }
+        }
+      }
+
+      .btn-save-now {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #0284c7;
+        color: #ffffff;
+        border: none;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover:not(:disabled) {
+          background: #0369a1;
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        .material-icons {
+          font-size: 16px;
+        }
+      }
+
+      .btn-export-excel {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: #f1f5f9;
+        }
+
+        .material-icons {
+          font-size: 16px;
+          color: #15803d;
+        }
+      }
+    }
+  }
+
+  .excel-table-container {
+    overflow-x: auto;
+    max-height: 520px;
+
+    .excel-spreadsheet-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: #f1f5f9;
+
+        th {
+          padding: 10px 12px;
+          color: #475569;
+          font-weight: 700;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          border-bottom: 2px solid #cbd5e1;
+          border-right: 1px solid #e2e8f0;
+          white-space: nowrap;
+
+          &.cell-center { text-align: center; }
+          &.cell-right { text-align: right; }
+        }
+      }
+
+      tbody {
+        tr.excel-row {
+          border-bottom: 1px solid #f1f5f9;
+          transition: background 0.15s ease;
+
+          &:hover {
+            background: #f8fafc;
+          }
+
+          &.row-dirty {
+            background: #fffbeb !important;
+          }
+
+          &.row-saved {
+            background: #f0fdf4 !important;
+          }
+
+          td {
+            padding: 8px 12px;
+            border-right: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: #1e293b;
+
+            &.cell-center { text-align: center; }
+            &.cell-right { text-align: right; }
+          }
+        }
+      }
+
+      tfoot {
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        background: #0f172a;
+        color: #ffffff;
+
+        tr td {
+          padding: 10px 12px;
+          font-weight: 800;
+          font-size: 13px;
+          border-top: 2px solid #334155;
+          color: #f8fafc;
+
+          &.cell-center { text-align: center; }
+          &.cell-right { text-align: right; }
+
+          .foot-profit {
+            color: #4ade80;
+            &.neg { color: #f87171; }
+          }
+        }
+      }
+    }
+  }
+
+  .excel-prod-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .excel-thumb {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      object-fit: cover;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      flex-shrink: 0;
+    }
+
+    .excel-prod-name {
+      font-weight: 700;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 220px;
+    }
+  }
+
+  .stock-readonly-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+
+    &.has-stock {
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-color: #bfdbfe;
+    }
+  }
+
+  .net-buy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+
+    .badge-icon {
+      font-size: 14px;
+    }
+
+    &.needs-procure {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    &.fulfilled {
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+  }
+
+  .sales-text {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .excel-input-wrapper.total-cost-wrapper {
+    display: inline-flex;
+    align-items: center;
+    background: #ffffff;
+    border: 1.5px solid #0284c7;
+    border-radius: 6px;
+    padding: 2px 6px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+
+    .curr-symbol {
+      font-weight: 800;
+      color: #0284c7;
+      font-size: 12px;
+      margin-right: 2px;
+    }
+
+    .cost-input-direct {
+      border: none;
+      outline: none;
+      width: 75px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #0f172a;
+      background: transparent;
+      text-align: right;
+
+      &.is-modified {
+        color: #b45309;
+      }
+    }
+  }
+
+  .unit-rate-hint {
+    font-size: 10px;
+    color: #0284c7;
+    font-weight: 700;
+    margin-top: 2px;
+    white-space: nowrap;
+    display: block;
+    text-align: center;
+  }
+
+  .margin-pill {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+
+    &.pos {
+      background: #f0fdf4;
+      color: #15803d;
+    }
+
+    &.neg {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    small {
+      font-size: 10px;
+      margin-left: 2px;
+    }
+  }
+
+  .excel-action-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    .sync-indicator {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+
+      &.saved {
+        color: #16a34a;
+        .material-icons { font-size: 18px; }
+      }
+
+      &.pending {
+        color: #f59e0b;
+        .material-icons { font-size: 18px; }
+      }
+
+      &.saving {
+        color: #0284c7;
+        .material-icons {
+          font-size: 18px;
+          animation: spin 1s linear infinite;
+        }
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

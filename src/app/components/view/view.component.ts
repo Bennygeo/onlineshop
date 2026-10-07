@@ -4,7 +4,7 @@ import { User } from 'src/app/modals/user';
 import { CartService } from 'src/app/services/cart.service';
 import { LoginService } from 'src/app/services/login.service';
 import { OrderService } from 'src/app/services/order.service';
-import { AiService, AiMessageResponse } from 'src/app/services/ai.service';
+import { AiService, AiMessageResponse, AiOrderSummary, AiAddressSummary } from 'src/app/services/ai.service';
 import { Banner, Product } from 'src/app/utils/types';
 import { Subscription } from 'rxjs';
 
@@ -32,6 +32,8 @@ export interface AiChatMessage {
   text: string;
   time: string;
   products?: Array<Product>;
+  orders?: Array<AiOrderSummary>;
+  addresses?: Array<AiAddressSummary>;
 }
 
 @Component({
@@ -70,10 +72,11 @@ export class ViewComponent implements OnInit, OnDestroy {
   chatToastMsg: string = '';
 
   sampleChatPrompts = [
+    { icon: '📦', label: 'My Orders', text: 'Show my recent orders and delivery status' },
+    { icon: '📍', label: 'My Address', text: 'Show my saved delivery addresses' },
     { icon: '🍲', label: 'Sambar Kit', text: 'Ingredients for authentic Tamil Sambar' },
     { icon: '🥗', label: 'Healthy Salad', text: 'Fresh ingredients for low-calorie weight loss salad' },
     { icon: '🥑', label: 'Diabetic Diet', text: 'Best diabetic friendly low-glycemic vegetables' },
-    { icon: '🥛', label: 'Daily Dairy', text: 'Fresh milk, curd and morning essentials' },
     { icon: '🛒', label: 'Quick Cart Add', text: 'Add 1kg Tomato and 500g Onion to cart' }
   ];
 
@@ -571,7 +574,7 @@ export class ViewComponent implements OnInit, OnDestroy {
       {
         id: 'msg_welcome',
         sender: 'assistant',
-        text: `👋 **Welcome to TomorrowNeeds AI Shopping Assistant!**\n\nHow can I help you today?\n• 🍲 **Authentic Recipes & Kits** (Sambar, Veg Kurma, Salad, Dosa)\n• 🥗 **Personalized Diets** (Diabetic-care, High Protein, Detox)\n• 🛒 **Quick Cart Order** (e.g. *"Add 1kg Tomato and 500g Onion"*)\n\nAsk any question or tap a suggestion below to get started!`,
+        text: `👋 **Welcome to TomorrowNeeds AI Assistant!**\n\nHow can I help you today?\n• 📦 **My Orders & Tracking** — View past & live deliveries\n• 📍 **Saved Delivery Addresses** — View your saved locations\n• 🍲 **Authentic Recipes & Kits** — Sambar, Veg Kurma, Salad, Dosa\n• 🥗 **Personalized Diets** — Diabetic-care, High Protein, Detox\n• 🛒 **Quick Cart Order** — e.g. *"Add 1kg Tomato and 500g Onion"*\n\nAsk any question or tap a suggestion below to get started!`,
         time: this.getCurrentTimeString()
       }
     ];
@@ -580,6 +583,16 @@ export class ViewComponent implements OnInit, OnDestroy {
   clearChatHistory() {
     this.initWelcomeMessage();
     this.showChatToast('Chat history cleared');
+  }
+
+  goToOrdersPage() {
+    this.closeChatModal();
+    this.cartS.router.navigate(['/home/orders']);
+  }
+
+  goToProfilePage() {
+    this.closeChatModal();
+    this.cartS.router.navigate(['/home/profile']);
   }
 
   getCurrentTimeString(): string {
@@ -666,12 +679,86 @@ export class ViewComponent implements OnInit, OnDestroy {
     this.isAiChatProcessing = true;
     this.scrollToBottom();
 
-    const mobile = this.loginS.user?.mobile || '';
-    this.aiS.askAssistant(text, mobile).subscribe({
+    let userMobile = '';
+    if (this.loginS.user?.mobile && this.loginS.user.mobile !== 'xxxxxxxxxx') {
+      userMobile = this.loginS.user.mobile;
+    } else {
+      const stored = localStorage.getItem('tnk_local_user') || sessionStorage.getItem('tnk_local_user') || '';
+      if (stored && stored !== 'xxxxxxxxxx') {
+        userMobile = stored;
+      }
+    }
+
+    this.aiS.askAssistant(text, userMobile).subscribe({
       next: (res: AiMessageResponse) => {
         this.isAiChatProcessing = false;
         let replyText = res.reply || 'Here are the fresh farm items matching your request!';
         let matchedProducts: Array<Product> = [];
+
+        // Address fallback from local LoginService state if needed
+        let addresses = (res.user_addresses && res.user_addresses.length > 0) ? res.user_addresses : undefined;
+        const isAddrQuery = /\b(address|addresses|location|where.*deliver)\b/i.test(text);
+        if (!addresses && isAddrQuery) {
+          if (this.loginS.user?.addresses && this.loginS.user.addresses.length > 0) {
+            addresses = this.loginS.user.addresses.map((a: any, idx: number) => ({
+              id: a.id || idx,
+              title: a.title || a.landmark || 'Delivery Address',
+              name: a.name || this.loginS.user?.name || '',
+              address: a.address || '',
+              pincode: a.pincode || this.loginS.user?.pincode || '',
+              landmark: a.landmark || '',
+              is_default: a.default || a.is_default || a.active || 0,
+              default: a.default || a.is_default || a.active || 0,
+              active: a.active || 0
+            }));
+            if (replyText.includes('No Saved Addresses Found') || replyText.includes('Saved Addresses Access')) {
+              replyText = `📍 **Your Saved Delivery Addresses:**\n\n` +
+                addresses.map(a => `• **${a.title}**${(a.is_default ? ' ⭐ *(Default)*' : '')}\n  - **Address:** ${a.address}\n  - **Pincode:** ${a.pincode}`).join('\n\n') +
+                `\n\n👉 *Morning doorstep deliveries will be dispatched to your default address.*`;
+            }
+          } else if (this.loginS.user?.address && this.loginS.user.address.address) {
+            const singleAddr: any = this.loginS.user.address;
+            addresses = [{
+              id: singleAddr.id || 1,
+              title: singleAddr.title || singleAddr.landmark || 'Home',
+              name: singleAddr.name || this.loginS.user?.name || '',
+              address: singleAddr.address || '',
+              pincode: singleAddr.pincode || this.loginS.user?.pincode || '',
+              landmark: singleAddr.landmark || '',
+              is_default: 1,
+              default: 1,
+              active: 1
+            }];
+            if (replyText.includes('No Saved Addresses Found') || replyText.includes('Saved Addresses Access')) {
+              replyText = `📍 **Your Saved Delivery Address:**\n\n• **${addresses[0].title}** ⭐ *(Default)*\n  - **Address:** ${addresses[0].address}\n  - **Pincode:** ${addresses[0].pincode}\n\n👉 *Morning doorstep deliveries will be dispatched to your default address.*`;
+            }
+          }
+        }
+
+        // Orders fallback from local OrderService state if needed
+        let orders = (res.user_orders && res.user_orders.length > 0) ? res.user_orders : undefined;
+        const isOrdQuery = /\b(order|orders|track|status)\b/i.test(text);
+        const localOrders = this.orderService.ordersEvent?.value;
+        if (!orders && isOrdQuery && Array.isArray(localOrders) && localOrders.length > 0) {
+          orders = localOrders.slice(0, 5).map((o: any) => ({
+            order_id: o.order_id,
+            status: o.status || 'PLACED',
+            total_amount: Number(o.total_amount || 0),
+            delivery_date: o.delivery_date,
+            delivery_slot_label: o.delivery_slot_label || 'Anytime Delivery',
+            created_at: o.created_at,
+            items: (o.items || []).map((it: any) => ({
+              name: it.product_name || it.name || 'Item',
+              quantity: Number(it.quantity || 1),
+              price: Number(it.price || 0)
+            }))
+          }));
+          if (replyText.includes('No Recent Orders Found') || replyText.includes('Order History Access')) {
+            replyText = `📦 **Your Recent Orders:**\n\n` +
+              orders.map(o => `• **Order #${o.order_id}** — **${o.status}** (₹${o.total_amount})`).join('\n') +
+              `\n\n👉 *You can view full details or re-order anytime from the Orders tab!*`;
+          }
+        }
 
         if (res.suggested_products && res.suggested_products.length > 0) {
           matchedProducts = res.suggested_products.map((p: any) => ({
@@ -703,7 +790,9 @@ export class ViewComponent implements OnInit, OnDestroy {
           sender: 'assistant',
           text: replyText,
           time: this.getCurrentTimeString(),
-          products: matchedProducts
+          products: matchedProducts,
+          orders: orders,
+          addresses: addresses
         };
         this.chatMessages.push(assistantMsg);
         this.syncAllProductUnits();
@@ -715,7 +804,7 @@ export class ViewComponent implements OnInit, OnDestroy {
         this.chatMessages.push({
           id: 'ai_' + Date.now(),
           sender: 'assistant',
-          text: "I'm having a little trouble reaching our AI cooking server right now, but feel free to browse all fresh vegetables and daily farm essentials!",
+          text: "I'm having a little trouble reaching our AI assistant server right now, but feel free to browse all fresh vegetables and daily farm essentials!",
           time: this.getCurrentTimeString()
         });
         this.scrollToBottom();

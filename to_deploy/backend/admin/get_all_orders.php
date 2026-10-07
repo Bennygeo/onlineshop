@@ -72,7 +72,7 @@ try {
         // Fetch all items from order_items table for this order
         try {
             $stmtItems = $pdo->prepare("
-                SELECT oi.*, p.img_url, p.unit_name, p.price as base_product_price, p.stock_price, p.weight as base_weight
+                SELECT oi.*, p.img_url, p.unit_name, p.cat, p.price as base_product_price, p.stock_price, p.weight as base_weight, p.stock_qty, p.in_stock
                 FROM order_items oi 
                 LEFT JOIN products p ON oi.product_id = p.id 
                 WHERE oi.order_id = ?
@@ -87,12 +87,15 @@ try {
                         'id' => $dbItem['product_id'],
                         'product_id' => $dbItem['product_id'],
                         'name' => !empty($dbItem['product_name']) ? $dbItem['product_name'] : 'Product',
+                        'cat' => !empty($dbItem['cat']) ? $dbItem['cat'] : 'Produce',
                         'quantity' => (int)$dbItem['quantity'],
                         'price' => floatval($dbItem['price']),
                         'weight' => $dbItem['weight'],
                         'unit_name' => !empty($dbItem['unit_name']) ? $dbItem['unit_name'] : 'grams',
                         'base_product_price' => isset($dbItem['base_product_price']) ? floatval($dbItem['base_product_price']) : floatval($dbItem['price']),
                         'stock_price' => isset($dbItem['stock_price']) ? floatval($dbItem['stock_price']) : 0.00,
+                        'stock_qty' => isset($dbItem['stock_qty']) ? floatval($dbItem['stock_qty']) : 0.00,
+                        'in_stock' => isset($dbItem['in_stock']) ? (int)$dbItem['in_stock'] : 1,
                         'base_weight' => isset($dbItem['base_weight']) ? $dbItem['base_weight'] : $dbItem['weight'],
                         'img_url' => !empty($dbItem['img_url']) ? $dbItem['img_url'] : 'assets/categories/Thinkspot_veggiesIcon.png',
                         'subscriptionType' => $dbItem['subscriptionType'],

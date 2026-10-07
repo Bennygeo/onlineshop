@@ -377,152 +377,256 @@
     </div>
   </ng-container>
 
-  <!-- VIEW 2: DAILY PROCUREMENT & PACKING LIST -->
+  <!-- VIEW 2: DAILY PROCUREMENT & PACKING LIST (EXCEL SPREADSHEET VIEW) -->
   <ng-container *ngIf="activeViewTab === 'purchase_list'">
-    <div class="purchase-summary-card">
-      <div class="summary-header">
-        <div>
-          <h3><span class="material-icons title-icon">inventory_2</span> Daily Procurement, Purchase & Packing List</h3>
-          <p>Market purchase cost vs client selling price for date: <b>{{ selectedDateStr }}</b> (Total {{ filteredOrders.length }} orders)</p>
+    <div class="purchase-summary-card excel-mode">
+      <!-- Spreadsheet Top Toolbar -->
+      <div class="summary-header excel-header">
+        <div class="title-area">
+          <h3>
+            <span class="material-icons title-icon">grid_on</span>
+            <span>Daily Purchase & Packing List (Excel Grid)</span>
+          </h3>
+          <p>
+            Delivery Date: <b>{{ selectedDateStr }}</b> &bull; 
+            Showing <b>{{ filteredPurchaseList.length }}</b> of <b>{{ dailyPurchaseList.length }}</b> items &bull; 
+            <b>{{ filteredOrders.length }}</b> customer orders
+          </p>
         </div>
+
+        <!-- 30-Second Auto Save Live Status Badge -->
+        <div class="autosave-status-pill" [class.saving]="isAutoSaving" [class.dirty]="dirtyProductIds.size > 0" [class.synced]="dirtyProductIds.size === 0 && !isAutoSaving">
+          <span class="material-icons status-icon" *ngIf="isAutoSaving">sync</span>
+          <span class="material-icons status-icon" *ngIf="!isAutoSaving && dirtyProductIds.size > 0">edit_note</span>
+          <span class="material-icons status-icon" *ngIf="!isAutoSaving && dirtyProductIds.size === 0">check_circle</span>
+
+          <div class="status-texts">
+            <span class="main-status" *ngIf="isAutoSaving">Saving changes to database...</span>
+            <span class="main-status" *ngIf="!isAutoSaving && dirtyProductIds.size > 0">
+              <b>{{ dirtyProductIds.size }}</b> modified item(s) &bull; Auto-saving in <b>{{ autoSaveCountdown }}s</b>
+            </span>
+            <span class="main-status" *ngIf="!isAutoSaving && dirtyProductIds.size === 0">
+              All changes auto-saved to DB {{ lastAutoSavedAt ? 'at ' + lastAutoSavedAt : '(Live)' }}
+            </span>
+            <small class="sub-status">30s Auto-Sync Active</small>
+          </div>
+
+          <button 
+            type="button" 
+            class="manual-save-now-btn" 
+            *ngIf="dirtyProductIds.size > 0" 
+            [disabled]="isAutoSaving"
+            (click)="saveAllChangesNow()"
+            title="Save pending changes immediately to database"
+          >
+            <span class="material-icons">save</span>
+            <span>Save Now</span>
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
         <div class="header-btns">
-          <button class="copy-list-btn" (click)="copyPurchaseListText()">
+          <button class="export-excel-btn" (click)="exportToExcel()" title="Download as CSV spreadsheet">
+            <span class="material-icons">table_view</span>
+            <span>Export Excel</span>
+          </button>
+
+          <button class="copy-list-btn" (click)="copyPurchaseListText()" title="Copy text summary for WhatsApp">
             <span class="material-icons">content_copy</span>
-            <span>Copy Purchase List (WhatsApp)</span>
+            <span>Copy Text</span>
           </button>
         </div>
       </div>
 
-      <!-- Financial KPI Metrics for Today's Procurement -->
-      <div class="procurement-kpi-grid" *ngIf="dailyPurchaseList.length > 0">
-        <div class="proc-kpi-card varieties">
-          <div class="kpi-icon"><span class="material-icons">category</span></div>
-          <div class="kpi-body">
-            <span class="kpi-label">Items to Procure</span>
-            <h4 class="kpi-val">{{ purchaseTotals.count }} Varieties</h4>
-            <span class="kpi-sub">{{ filteredOrders.length }} customer orders</span>
-          </div>
+      <!-- Compact Search & Metrics Toolbar -->
+      <div class="excel-filter-toolbar">
+        <div class="excel-search-box">
+          <span class="material-icons">search</span>
+          <input 
+            type="text" 
+            placeholder="Search product..." 
+            [(ngModel)]="purchaseSearchQuery" 
+          />
+          <button *ngIf="purchaseSearchQuery" class="clear-search" (click)="purchaseSearchQuery = ''">✕</button>
         </div>
 
-        <div class="proc-kpi-card client-rev">
-          <div class="kpi-icon"><span class="material-icons">point_of_sale</span></div>
-          <div class="kpi-body">
-            <span class="kpi-label">Client Selling Price (Total)</span>
-            <h4 class="kpi-val">₹ {{ purchaseTotals.totalClientRevenue | number:'1.2-2' }}</h4>
-            <span class="kpi-sub">Total billed to customers</span>
+        <!-- Single-Line Metrics Strip -->
+        <div class="excel-kpi-strip" *ngIf="dailyPurchaseList.length > 0">
+          <div class="kpi-chip">
+            <span class="kpi-tag">Items:</span>
+            <b>{{ purchaseTotals.count }}</b>
           </div>
-        </div>
-
-        <div class="proc-kpi-card market-cost">
-          <div class="kpi-icon"><span class="material-icons">shopping_cart_checkout</span></div>
-          <div class="kpi-body">
-            <span class="kpi-label">Market Purchase Cost</span>
-            <h4 class="kpi-val">₹ {{ purchaseTotals.totalMarketCost | number:'1.2-2' }}</h4>
-            <span class="kpi-sub">Total procurement cost</span>
+          <div class="kpi-chip stock-chip">
+            <span class="kpi-tag">In Stock:</span>
+            <b>{{ purchaseTotals.totalExistingStock }}</b>
           </div>
-        </div>
-
-        <div class="proc-kpi-card margin" [class.positive]="purchaseTotals.totalProfit >= 0" [class.negative]="purchaseTotals.totalProfit < 0">
-          <div class="kpi-icon"><span class="material-icons">{{ purchaseTotals.totalProfit >= 0 ? 'trending_up' : 'trending_down' }}</span></div>
-          <div class="kpi-body">
-            <span class="kpi-label">Net Profit / Loss</span>
-            <h4 class="kpi-val">₹ {{ (purchaseTotals.totalProfit < 0 ? -purchaseTotals.totalProfit : purchaseTotals.totalProfit) | number:'1.2-2' }}</h4>
-            <span class="kpi-sub">{{ purchaseTotals.totalProfit >= 0 ? 'Profit Margin' : 'Loss Margin' }} ({{ purchaseTotals.marginPercent }}%)</span>
+          <div class="kpi-chip procure-chip">
+            <span class="kpi-tag">To Buy:</span>
+            <b>{{ purchaseTotals.totalNetProcure }}</b>
+          </div>
+          <div class="kpi-chip sales-chip">
+            <span class="kpi-tag">Sales:</span>
+            <b>₹ {{ purchaseTotals.totalClientRevenue | number:'1.0-0' }}</b>
+          </div>
+          <div class="kpi-chip cost-chip">
+            <span class="kpi-tag">Cost:</span>
+            <b>₹ {{ purchaseTotals.totalMarketCost | number:'1.0-0' }}</b>
+          </div>
+          <div class="kpi-chip profit-chip" [class.pos]="purchaseTotals.totalProfit >= 0" [class.neg]="purchaseTotals.totalProfit < 0">
+            <span class="kpi-tag">Margin:</span>
+            <b>₹ {{ purchaseTotals.totalProfit | number:'1.0-0' }} ({{ purchaseTotals.marginPercent }}%)</b>
           </div>
         </div>
       </div>
 
-      <!-- Procurement Details Table (Desktop) -->
-      <div class="procurement-table-wrapper desktop-only" *ngIf="dailyPurchaseList.length > 0">
-        <table class="procurement-table">
+      <!-- Single-Line Clean Excel Grid Table -->
+      <div class="excel-grid-container" *ngIf="filteredPurchaseList.length > 0">
+        <table class="excel-spreadsheet-table simplified">
           <thead>
             <tr>
-              <th>Product & Base Unit</th>
-              <th>Total Ordered Qty</th>
-              <th>Client Selling Price</th>
-              <th>Market Purchase Price (Stock Cost)</th>
-              <th>Profit / Loss Margin</th>
-              <th>Action</th>
+              <th class="col-idx">#</th>
+              <th class="col-product">Product Item</th>
+              <th class="col-stock cell-center">Existing Stock</th>
+              <th class="col-net-procure cell-center">To Buy (Qty)</th>
+              <th class="col-client-total cell-right">Client Price (Total ₹)</th>
+              <th class="col-market-total cell-center">Market Cost (Total ₹)</th>
+              <th class="col-prod-price cell-center">Product Price (Store ₹)</th>
+              <th class="col-margin cell-right">Profit / Margin (₹)</th>
+              <th class="col-action cell-center">Sync</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let pItem of dailyPurchaseList; trackBy: trackByProductId" class="proc-row">
-              <!-- Product Info & Base Qty -->
-              <td>
-                <div class="prod-cell">
-                  <img [src]="pItem.imgUrl" alt="{{ pItem.productName }}" class="p-thumb" />
-                  <div class="prod-text">
-                    <span class="p-name">{{ pItem.productName }}</span>
-                    <span class="base-qty-tag">
-                      <span class="material-icons">scale</span>
-                      Base: {{ pItem.baseDisplay }}
-                    </span>
-                  </div>
+            <tr 
+              *ngFor="let pItem of filteredPurchaseList; let idx = index; trackBy: trackByProductId" 
+              class="excel-row"
+              [class.row-dirty]="pItem.isDirty"
+              [class.row-saved]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
+            >
+              <!-- 1. Index -->
+              <td class="col-idx cell-center">{{ idx + 1 }}</td>
+
+              <!-- 2. Product Name & Thumb -->
+              <td class="col-product">
+                <div class="excel-prod-cell" title="{{ pItem.productName }}">
+                  <img [src]="pItem.imgUrl" alt="{{ pItem.productName }}" class="excel-thumb" />
+                  <span class="excel-prod-name">{{ pItem.productName }}</span>
                 </div>
               </td>
 
-              <!-- Total Ordered Quantity -->
-              <td>
-                <div class="qty-cell">
-                  <span class="total-qty">{{ pItem.totalDisplay }}</span>
-                  <span class="breakdown-tag" *ngIf="pItem.breakdownSummary !== '()'">{{ pItem.breakdownSummary }}</span>
-                  <small class="orders-count">{{ pItem.ordersCount }} order(s)</small>
+              <!-- 3. Existing Stock (Read-only) -->
+              <td class="col-stock cell-center">
+                <span class="stock-readonly-badge" [class.has-stock]="pItem.existingStock > 0">
+                  {{ pItem.existingStockDisplay }}
+                </span>
+              </td>
+
+              <!-- 4. To Buy / Net Procure (Qty) -->
+              <td class="col-net-procure cell-center">
+                <span 
+                  class="net-buy-badge" 
+                  [class.fulfilled]="pItem.netProcureQty <= 0" 
+                  [class.needs-procure]="pItem.netProcureQty > 0"
+                >
+                  <span class="material-icons badge-icon" *ngIf="pItem.netProcureQty <= 0">check</span>
+                  <span class="material-icons badge-icon" *ngIf="pItem.netProcureQty > 0">shopping_bag</span>
+                  <span>{{ pItem.netProcureDisplay }}</span>
+                </span>
+              </td>
+
+              <!-- 5. Client Selling Price (Total ₹) -->
+              <td class="col-client-total cell-right">
+                <span class="sales-text">₹ {{ pItem.totalClientSellingPrice | number:'1.2-2' }}</span>
+              </td>
+
+              <!-- 6. Market Cost (Total ₹ - Admin enters overall amount paid) -->
+              <td class="col-market-total cell-center">
+                <div class="excel-input-wrapper total-cost-wrapper">
+                  <span class="curr-symbol">₹</span>
+                  <input 
+                    type="number" 
+                    step="1"
+                    min="0"
+                    [(ngModel)]="totalCostEdits[pItem.productId]"
+                    (ngModelChange)="onOverallCostChange(pItem)"
+                    class="excel-cell-input cost-input-direct"
+                    [class.is-modified]="totalCostEdits[pItem.productId] !== pItem.initialTotalCost"
+                    placeholder="Total ₹"
+                    title="Enter overall market cost paid for this quantity"
+                  />
+                </div>
+                <div class="unit-rate-hint" *ngIf="pItem.baseStockPrice > 0" title="Calculated base unit market cost">
+                  Cost: ₹{{ pItem.baseStockPrice | number:'1.2-2' }} / {{ pItem.baseDisplay }}
                 </div>
               </td>
 
-              <!-- Client Selling Price -->
-              <td>
-                <div class="price-cell client">
-                  <span class="total-client-amt">₹ {{ pItem.totalClientSellingPrice | number:'1.2-2' }}</span>
-                  <small class="rate-sub">Rate: ₹ {{ pItem.basePrice | number:'1.2-2' }} / {{ pItem.baseDisplay }}</small>
+              <!-- 7. Product Price (Store Selling Price ₹ / base display) -->
+              <td class="col-prod-price cell-center">
+                <div class="excel-input-wrapper product-price-wrapper">
+                  <span class="curr-symbol">₹</span>
+                  <input 
+                    type="number" 
+                    step="1"
+                    min="0"
+                    [(ngModel)]="productPriceEdits[pItem.productId]"
+                    (ngModelChange)="onProductPriceChange(pItem)"
+                    class="excel-cell-input price-input-direct"
+                    [class.is-modified]="productPriceEdits[pItem.productId] !== pItem.initialBasePrice"
+                    placeholder="Store ₹"
+                    title="Customer app product price per {{ pItem.baseDisplay }}"
+                  />
+                </div>
+                <div class="unit-price-hint" title="Customer app selling price per {{ pItem.baseDisplay }}">
+                  App: / {{ pItem.baseDisplay }}
                 </div>
               </td>
 
-              <!-- Market Purchase / Stock Price -->
-              <td>
-                <div class="price-cell market">
-                  <div class="market-input-group">
-                    <span class="currency-prefix">₹</span>
-                    <input 
-                      type="number" 
-                      step="0.5"
-                      [(ngModel)]="stockPriceEdits[pItem.productId]"
-                      (ngModelChange)="onStockPriceChange(pItem)"
-                      class="market-price-input"
-                      [class.saved-input]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
-                      placeholder="Cost"
-                    />
-                    <span class="per-unit-label">/ {{ pItem.baseDisplay }}</span>
-                  </div>
-                  <span class="total-market-amt">Total: ₹ {{ pItem.totalMarketCost | number:'1.2-2' }}</span>
-                </div>
+              <!-- 7. Net Margin / Profit -->
+              <td class="col-margin cell-right">
+                <span 
+                  class="margin-pill" 
+                  [class.pos]="pItem.profitOrLoss >= 0" 
+                  [class.neg]="pItem.profitOrLoss < 0"
+                >
+                  {{ pItem.profitOrLoss >= 0 ? '+' : '' }}₹ {{ pItem.profitOrLoss | number:'1.2-2' }}
+                  <small>({{ pItem.marginPercent }}%)</small>
+                </span>
               </td>
 
-              <!-- Profit / Margin -->
-              <td>
-                <div class="margin-cell">
-                  <span class="profit-badge" [class.positive]="pItem.profitOrLoss >= 0" [class.negative]="pItem.profitOrLoss < 0">
-                    <span class="material-icons">{{ pItem.profitOrLoss >= 0 ? 'arrow_upward' : 'arrow_downward' }}</span>
-                    <span>{{ pItem.profitOrLoss >= 0 ? '+' : '' }}₹ {{ pItem.profitOrLoss | number:'1.2-2' }}</span>
-                    <small>({{ pItem.profitOrLoss >= 0 ? 'Profit' : 'Loss' }})</small>
-                  </span>
-                </div>
-              </td>
-
-              <!-- Action: Save to Products DB -->
-              <td>
-                <div class="action-cell">
-                  <button 
-                    class="save-prod-btn" 
-                    [class.saved]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
-                    [disabled]="savingProductMap[pItem.productId]"
-                    (click)="saveProductPrice(pItem)"
-                    title="Save this cost price into the Products table"
+              <!-- 8. Sync & Save Action -->
+              <td class="col-action cell-center">
+                <div class="excel-action-cell">
+                  <span 
+                    class="sync-indicator saved" 
+                    *ngIf="(savedSuccessMap[pItem.productId] || pItem.savedSuccess) && !pItem.isDirty" 
+                    title="Saved in database"
                   >
-                    <span class="material-icons" *ngIf="!savedSuccessMap[pItem.productId] && !pItem.savedSuccess && !savingProductMap[pItem.productId]">save</span>
-                    <span class="material-icons spin" *ngIf="savingProductMap[pItem.productId]">autorenew</span>
-                    <span class="material-icons" *ngIf="savedSuccessMap[pItem.productId] || pItem.savedSuccess">check_circle</span>
-                    <span>{{ (savedSuccessMap[pItem.productId] || pItem.savedSuccess) ? 'Updated in DB!' : 'Update Product' }}</span>
+                    <span class="material-icons">check_circle</span>
+                  </span>
+
+                  <span 
+                    class="sync-indicator pending" 
+                    *ngIf="pItem.isDirty && !savingProductMap[pItem.productId]" 
+                    title="Modified (Auto-saving in {{ autoSaveCountdown }}s)"
+                  >
+                    <span class="material-icons">hourglass_top</span>
+                  </span>
+
+                  <span 
+                    class="sync-indicator saving" 
+                    *ngIf="savingProductMap[pItem.productId]" 
+                    title="Saving to database..."
+                  >
+                    <span class="material-icons spin">autorenew</span>
+                  </span>
+
+                  <button 
+                    type="button" 
+                    class="row-save-btn" 
+                    *ngIf="pItem.isDirty && !savingProductMap[pItem.productId]" 
+                    (click)="saveProductPrice(pItem)" 
+                    title="Save this row now"
+                  >
+                    <span class="material-icons">save</span>
                   </button>
                 </div>
               </td>
@@ -531,76 +635,10 @@
         </table>
       </div>
 
-      <!-- Procurement Mobile Card List -->
-      <div class="procurement-mobile-list mobile-only" *ngIf="dailyPurchaseList.length > 0">
-        <div class="proc-mobile-card" *ngFor="let pItem of dailyPurchaseList; trackBy: trackByProductId">
-          <div class="pm-header">
-            <img [src]="pItem.imgUrl" alt="{{ pItem.productName }}" class="pm-thumb" />
-            <div class="pm-info">
-              <span class="pm-name">{{ pItem.productName }}</span>
-              <div class="pm-tags">
-                <span class="pm-base-tag">Base: {{ pItem.baseDisplay }}</span>
-                <span class="pm-qty-badge">{{ pItem.totalDisplay }} total</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="pm-body">
-            <div class="pm-row" *ngIf="pItem.breakdownSummary !== '()'">
-              <span class="pm-lbl">Order breakdown:</span>
-              <span class="pm-val breakdown">{{ pItem.breakdownSummary }} ({{ pItem.ordersCount }} orders)</span>
-            </div>
-
-            <div class="pm-row">
-              <span class="pm-lbl">Client selling price:</span>
-              <span class="pm-val">₹ {{ pItem.totalClientSellingPrice | number:'1.2-2' }} <small>(₹{{ pItem.basePrice }}/unit)</small></span>
-            </div>
-
-            <div class="pm-cost-row">
-              <span class="pm-lbl">Market cost price:</span>
-              <div class="market-input-group compact">
-                <span class="currency-prefix">₹</span>
-                <input 
-                  type="number" 
-                  step="0.5"
-                  [(ngModel)]="stockPriceEdits[pItem.productId]"
-                  (ngModelChange)="onStockPriceChange(pItem)"
-                  class="market-price-input"
-                  [class.saved-input]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
-                  placeholder="Cost"
-                />
-                <span class="per-unit-label">/ {{ pItem.baseDisplay }}</span>
-              </div>
-            </div>
-
-            <div class="pm-row margin-row">
-              <span class="pm-lbl">Profit / Loss:</span>
-              <span class="profit-badge compact" [class.positive]="pItem.profitOrLoss >= 0" [class.negative]="pItem.profitOrLoss < 0">
-                <span class="material-icons">{{ pItem.profitOrLoss >= 0 ? 'arrow_upward' : 'arrow_downward' }}</span>
-                <span>{{ pItem.profitOrLoss >= 0 ? '+' : '' }}₹ {{ pItem.profitOrLoss | number:'1.2-2' }}</span>
-              </span>
-            </div>
-          </div>
-
-          <div class="pm-footer">
-            <button 
-              class="save-prod-btn full-w" 
-              [class.saved]="savedSuccessMap[pItem.productId] || pItem.savedSuccess"
-              [disabled]="savingProductMap[pItem.productId]"
-              (click)="saveProductPrice(pItem)"
-            >
-              <span class="material-icons" *ngIf="!savedSuccessMap[pItem.productId] && !pItem.savedSuccess && !savingProductMap[pItem.productId]">save</span>
-              <span class="material-icons spin" *ngIf="savingProductMap[pItem.productId]">autorenew</span>
-              <span class="material-icons" *ngIf="savedSuccessMap[pItem.productId] || pItem.savedSuccess">check_circle</span>
-              <span>{{ (savedSuccessMap[pItem.productId] || pItem.savedSuccess) ? 'Cost Saved in DB' : 'Save Cost Price to DB' }}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="empty-purchase-state" *ngIf="dailyPurchaseList.length === 0">
+      <div class="empty-purchase-state" *ngIf="filteredPurchaseList.length === 0">
         <span class="material-icons">inventory_2</span>
-        <p>No orders found for date <b>{{ selectedDateStr }}</b>. Select another date tab above.</p>
+        <p *ngIf="dailyPurchaseList.length === 0">No orders found for date <b>{{ selectedDateStr }}</b>. Select another date tab above.</p>
+        <p *ngIf="dailyPurchaseList.length > 0">No items match your filter criteria. Try clearing search or category filter.</p>
       </div>
     </div>
   </ng-container>

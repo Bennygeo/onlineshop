@@ -49,14 +49,6 @@ export class AdminLoginComponent implements OnInit {
     this.showPassword = !this.showPassword;
   }
 
-  fillDemoCredentials(): void {
-    this.loginForm.patchValue({
-      username: 'admin',
-      password: 'admin123'
-    });
-    this.errorMessage = '';
-  }
-
   onSubmit(): void {
     this.submitted = true;
     this.errorMessage = '';
